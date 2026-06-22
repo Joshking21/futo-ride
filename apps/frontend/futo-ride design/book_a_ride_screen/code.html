@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Futo Ride - Book a Ride</title>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<!-- Tailwind Config -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+                "outline": "#757687",
+                "background": "#f8f9ff",
+                "on-tertiary": "#ffffff",
+                "inverse-surface": "#213145",
+                "primary-container": "#1d35d1",
+                "surface-bright": "#f8f9ff",
+                "secondary-container": "#dfe2eb",
+                "surface-container": "#e5eeff",
+                "outline-variant": "#c5c5d8",
+                "secondary-fixed": "#dfe2eb",
+                "error-container": "#ffdad6",
+                "on-secondary-fixed-variant": "#43474e",
+                "on-tertiary-fixed": "#181b24",
+                "surface-container-low": "#eff4ff",
+                "tertiary-fixed-dim": "#c3c6d2",
+                "on-error-container": "#93000a",
+                "on-secondary-fixed": "#181c22",
+                "on-error": "#ffffff",
+                "primary-fixed": "#dfe0ff",
+                "surface-tint": "#354be2",
+                "on-tertiary-container": "#bbbeca",
+                "on-secondary": "#ffffff",
+                "on-surface-variant": "#444655",
+                "on-surface": "#0b1c30",
+                "inverse-primary": "#bcc2ff",
+                "surface": "#f8f9ff",
+                "error": "#ba1a1a",
+                "primary-fixed-dim": "#bcc2ff",
+                "tertiary-container": "#4a4d57",
+                "on-primary-fixed": "#000c61",
+                "on-secondary-container": "#61646c",
+                "surface-container-high": "#dce9ff",
+                "surface-dim": "#cbdbf5",
+                "primary": "#001caa",
+                "surface-container-lowest": "#ffffff",
+                "on-background": "#0b1c30",
+                "on-primary-container": "#b1b9ff",
+                "on-primary-fixed-variant": "#112ccb",
+                "secondary-fixed-dim": "#c3c6cf",
+                "secondary": "#5b5e66",
+                "on-primary": "#ffffff",
+                "tertiary": "#333640",
+                "surface-variant": "#d3e4fe",
+                "on-tertiary-fixed-variant": "#434751",
+                "surface-container-highest": "#d3e4fe",
+                "inverse-on-surface": "#eaf1ff",
+                "tertiary-fixed": "#e0e2ef"
+        },
+        "borderRadius": {
+                "DEFAULT": "0.25rem",
+                "lg": "0.5rem",
+                "xl": "0.75rem",
+                "full": "9999px"
+        },
+        "spacing": {
+                "xl": "32px",
+                "lg": "24px",
+                "unit": "4px",
+                "gutter": "16px",
+                "margin-mobile": "20px",
+                "margin-desktop": "40px",
+                "xs": "4px",
+                "sm": "8px",
+                "md": "16px",
+                "stack-lg": "24px",
+                "stack-sm": "8px",
+                "stack-md": "16px",
+                "container-margin": "20px",
+                "touch-target": "48px"
+        },
+        "fontFamily": {
+                "body-md": [
+                        "Plus Jakarta Sans", "Inter", "sans-serif"
+                ],
+                "body-lg": [
+                        "Plus Jakarta Sans", "Inter", "sans-serif"
+                ],
+                "body-sm": [
+                        "Plus Jakarta Sans", "Inter", "sans-serif"
+                ],
+                "headline-md": [
+                        "Plus Jakarta Sans", "Inter", "sans-serif"
+                ],
+                "label-sm": [
+                        "Plus Jakarta Sans", "Inter", "sans-serif"
+                ],
+                "headline-lg-mobile": [
+                        "Plus Jakarta Sans", "Inter", "sans-serif"
+                ],
+                "headline-lg": [
+                        "Plus Jakarta Sans", "Inter", "sans-serif"
+                ],
+                "label-md": [
+                        "Plus Jakarta Sans", "Inter", "sans-serif"
+                ],
+                "headline-xl": [
+                        "Plus Jakarta Sans", "Inter", "sans-serif"
+                ],
+                "headline-sm": ["Inter", "sans-serif"],
+                "action-lg": ["Inter", "sans-serif"]
+        },
+        "fontSize": {
+                "body-md": [
+                        "16px",
+                        {
+                                "lineHeight": "24px",
+                                "fontWeight": "400"
+                        }
+                ],
+                "body-lg": [
+                        "18px",
+                        {
+                                "lineHeight": "28px",
+                                "fontWeight": "400"
+                        }
+                ],
+                "body-sm": [
+                        "14px",
+                        {
+                                "lineHeight": "20px",
+                                "fontWeight": "400"
+                        }
+                ],
+                "headline-md": [
+                        "24px",
+                        {
+                                "lineHeight": "32px",
+                                "fontWeight": "600"
+                        }
+                ],
+                "label-sm": [
+                        "12px",
+                        {
+                                "lineHeight": "16px",
+                                "fontWeight": "500"
+                        }
+                ],
+                "headline-lg-mobile": [
+                        "28px",
+                        {
+                                "lineHeight": "36px",
+                                "fontWeight": "700"
+                        }
+                ],
+                "headline-lg": [
+                        "32px",
+                        {
+                                "lineHeight": "40px",
+                                "letterSpacing": "-0.02em",
+                                "fontWeight": "700"
+                        }
+                ],
+                "label-md": [
+                        "14px",
+                        {
+                                "lineHeight": "20px",
+                                "fontWeight": "600"
+                        }
+                ],
+                "headline-xl": [
+                        "40px",
+                        {
+                                "lineHeight": "48px",
+                                "letterSpacing": "-0.02em",
+                                "fontWeight": "700"
+                        }
+                ],
+                "headline-sm": ["20px", {"lineHeight": "26px", "fontWeight": "600"}],
+                "action-lg": ["16px", {"lineHeight": "24px", "fontWeight": "600"}]
+        }
+},
+    },
+  }
+</script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-surface text-on-surface min-h-screen pb-24 pt-[48px] flex flex-col font-body-md antialiased relative selection:bg-primary-container selection:text-on-primary-container">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 flex justify-between items-center px-container-margin h-touch-target bg-surface border-b border-outline-variant text-primary font-body-md">
+<button aria-label="Go Back" class="flex items-center justify-center w-[48px] h-[48px] -ml-3 text-on-surface hover:bg-surface-container-high transition-colors rounded-full">
+<span class="material-symbols-outlined text-2xl">arrow_back</span>
+</button>
+<h1 class="text-headline-md font-headline-md font-bold text-primary">Futo Ride</h1>
+<button aria-label="Wallet" class="flex items-center justify-center w-[48px] h-[48px] -mr-3 text-secondary hover:bg-surface-container-high transition-colors rounded-full">
+<span class="material-symbols-outlined text-2xl">account_balance_wallet</span>
+</button>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 flex flex-col relative">
+<!-- Map Area -->
+<div class="relative w-full h-[353px] min-h-[250px] bg-surface-container-high overflow-hidden">
+<div class="absolute inset-0 bg-cover bg-center w-full h-full opacity-90" data-alt="A highly detailed, modern top-down map view of a university campus. The map features bright, high-contrast light mode aesthetics with crisp white roads, light gray building footprints, and vibrant campus green park areas. Subtle shadows give the 3D map depth. A clear blue line traces a route from one building to another. The overall style is clean, functional, and deeply minimalist, perfect for a modern transit app interface." data-location="Federal University of Technology Owerri" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBhChECydpDyPgt27hlQrat9Rk2U89C00BRo9HxQfDmpSr4MRrxjAG1pGL6iwr1A__rTa5hkvxx5VNhyBHIwUrgEL1XAzRh3vdUsCbmpnjEWdd5tXIJyvuoNbsf17_pEryhtId0Y6snYs2mm-iQfYuoPK3Zrsg2EAG-XD5-Bq8QCQpcEyE5GcSDWhm7yhm20vy7oBcRqJFt0hbOoiU-LdxjqFg6qiW_P7A1aJmd6buI9IlGZRklUN8jk7Fl9tud8gafRai7G4XXH9hL')"></div>
+<!-- Optional Map Overlay Gradient for readability -->
+<div class="absolute inset-0 bg-gradient-to-t from-surface to-transparent opacity-40"></div>
+</div>
+<!-- Booking Form Card (Floating Over Map) -->
+<div class="mx-container-margin -mt-12 bg-surface-container-lowest rounded-xl border border-outline-variant shadow-[0_4px_12px_rgba(0,0,0,0.05)] p-stack-lg relative z-10 flex flex-col gap-stack-lg">
+<!-- Route Inputs -->
+<div class="relative flex flex-col gap-stack-sm w-full">
+<!-- Visual Route Line -->
+<div class="absolute left-[23px] top-[24px] bottom-[24px] w-[2px] bg-outline-variant z-0 rounded-full"></div>
+<!-- From Input -->
+<div class="flex items-center gap-stack-md relative z-10 w-full">
+<div class="w-[48px] h-[48px] flex items-center justify-center shrink-0">
+<div class="w-3 h-3 rounded-full bg-primary ring-4 ring-primary-container"></div>
+</div>
+<div class="flex-1 relative">
+<input aria-label="Pickup Location" class="w-full h-[48px] px-3 bg-surface border border-outline-variant rounded-lg text-body-md font-body-md text-on-surface focus:outline-none focus:border-on-surface focus:border-2 transition-all placeholder:text-secondary-fixed-dim" placeholder="Current Location" type="text" value="FUTO Main Gate"/>
+</div>
+</div>
+<!-- To Input -->
+<div class="flex items-center gap-stack-md relative z-10 w-full">
+<div class="w-[48px] h-[48px] flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-tertiary" style="font-variation-settings: 'FILL' 1;">location_on</span>
+</div>
+<div class="flex-1 relative">
+<input aria-label="Dropoff Location" class="w-full h-[48px] px-3 bg-surface border border-outline-variant rounded-lg text-body-md font-body-md text-on-surface focus:outline-none focus:border-on-surface focus:border-2 transition-all placeholder:text-secondary-fixed-dim" placeholder="Where to?" type="text"/>
+</div>
+</div>
+</div>
+<hr class="border-t border-surface-container w-full"/>
+<!-- Vehicle Toggle -->
+<div class="flex flex-col gap-stack-sm w-full">
+<h2 class="text-body-sm font-body-sm text-secondary font-semibold uppercase tracking-wider">Ride Type</h2>
+<div class="flex gap-stack-sm w-full">
+<!-- Keke (Active) -->
+<button aria-pressed="true" class="flex-1 h-[48px] rounded-lg bg-on-surface text-on-primary flex items-center justify-center gap-2 font-action-lg text-action-lg transition-transform active:scale-95 shadow-sm">
+<span class="material-symbols-outlined text-[20px]">electric_rickshaw</span>
+                        Keke
+                    </button>
+<!-- Bus (Inactive) -->
+<button aria-pressed="false" class="flex-1 h-[48px] rounded-lg bg-surface-container text-on-surface flex items-center justify-center gap-2 border border-outline-variant font-action-lg text-action-lg hover:bg-surface-container-high transition-colors active:scale-95">
+<span class="material-symbols-outlined text-[20px]">directions_bus</span>
+                        Bus
+                    </button>
+</div>
+</div>
+<!-- Primary Action Button -->
+<button class="w-full h-[56px] rounded-lg bg-primary text-on-primary font-action-lg text-action-lg flex items-center justify-center shadow-md hover:bg-surface-tint transition-colors active:scale-[0.98] mt-stack-sm">
+                Find Ride
+            </button>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 flex justify-around items-center px-4 py-2 bg-surface shadow-[0_-4px_12px_rgba(0,0,0,0.1)] h-[80px]">
+<!-- Home (Active) -->
+<a aria-current="page" class="flex flex-col items-center justify-center text-primary font-bold w-[64px] h-[64px] group opacity-80 hover:opacity-100 transition-all duration-100 scale-95" href="#">
+<span class="material-symbols-outlined text-2xl mb-1 group-hover:scale-110 transition-transform" style="font-variation-settings: 'FILL' 1;">home</span>
+<span class="text-label-md font-label-md">Home</span>
+</a>
+<!-- Rides (Inactive) -->
+<a class="flex flex-col items-center justify-center text-secondary w-[64px] h-[64px] group hover:bg-surface-container-low rounded-xl transition-colors" href="#">
+<span class="material-symbols-outlined text-2xl mb-1 group-hover:scale-110 transition-transform">history</span>
+<span class="text-label-md font-label-md">Rides</span>
+</a>
+<!-- Alerts (Inactive) -->
+<a class="flex flex-col items-center justify-center text-secondary w-[64px] h-[64px] group hover:bg-surface-container-low rounded-xl transition-colors" href="#">
+<span class="material-symbols-outlined text-2xl mb-1 group-hover:scale-110 transition-transform">notifications</span>
+<span class="text-label-md font-label-md">Alerts</span>
+</a>
+<!-- Account (Inactive) -->
+<a class="flex flex-col items-center justify-center text-secondary w-[64px] h-[64px] group hover:bg-surface-container-low rounded-xl transition-colors" href="#">
+<span class="material-symbols-outlined text-2xl mb-1 group-hover:scale-110 transition-transform">person</span>
+<span class="text-label-md font-label-md">Account</span>
+</a>
+</nav>
+</body></html>

@@ -1,0 +1,49 @@
+{
+  "expo": {
+    "scheme": "futoride",
+    "name": "Futo Ride",
+    "slug": "futo-ride",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/adaptive-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#fff445"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/chopi.png",
+        "backgroundColor": "#fff445"
+      },
+      "edgeToEdgeEnabled": true
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-font",
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "The app needs access to your photos to attach receipts.",
+          "cameraPermission": "The app needs access to your camera to take receipt photos."
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Grant permission to save photos to your gallery.",
+          "savePhotosPermission": "Grant permission to save photos to your gallery."
+        }
+      ]
+    ]
+  }
+}

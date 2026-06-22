@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Futo Ride</title>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-family: 'Material Symbols Outlined';
+            font-weight: normal;
+            font-style: normal;
+            font-size: 24px;
+            line-height: 1;
+            letter-spacing: normal;
+            text-transform: none;
+            display: inline-block;
+            white-space: nowrap;
+            word-wrap: normal;
+            direction: ltr;
+            -webkit-font-feature-settings: 'liga';
+            -webkit-font-smoothing: antialiased;
+        }
+    </style>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+                "outline": "#757687",
+                "background": "#f8f9ff",
+                "on-tertiary": "#ffffff",
+                "inverse-surface": "#213145",
+                "primary-container": "#1d35d1",
+                "surface-bright": "#f8f9ff",
+                "secondary-container": "#dfe2eb",
+                "surface-container": "#e5eeff",
+                "outline-variant": "#c5c5d8",
+                "secondary-fixed": "#dfe2eb",
+                "error-container": "#ffdad6",
+                "on-secondary-fixed-variant": "#43474e",
+                "on-tertiary-fixed": "#181b24",
+                "surface-container-low": "#eff4ff",
+                "tertiary-fixed-dim": "#c3c6d2",
+                "on-error-container": "#93000a",
+                "on-secondary-fixed": "#181c22",
+                "on-error": "#ffffff",
+                "primary-fixed": "#dfe0ff",
+                "surface-tint": "#354be2",
+                "on-tertiary-container": "#bbbeca",
+                "on-secondary": "#ffffff",
+                "on-surface-variant": "#444655",
+                "on-surface": "#0b1c30",
+                "inverse-primary": "#bcc2ff",
+                "surface": "#f8f9ff",
+                "error": "#ba1a1a",
+                "primary-fixed-dim": "#bcc2ff",
+                "tertiary-container": "#4a4d57",
+                "on-primary-fixed": "#000c61",
+                "on-secondary-container": "#61646c",
+                "surface-container-high": "#dce9ff",
+                "surface-dim": "#cbdbf5",
+                "primary": "#001caa",
+                "surface-container-lowest": "#ffffff",
+                "on-background": "#0b1c30",
+                "on-primary-container": "#b1b9ff",
+                "on-primary-fixed-variant": "#112ccb",
+                "secondary-fixed-dim": "#c3c6cf",
+                "secondary": "#5b5e66",
+                "on-primary": "#ffffff",
+                "tertiary": "#333640",
+                "surface-variant": "#d3e4fe",
+                "on-tertiary-fixed-variant": "#434751",
+                "surface-container-highest": "#d3e4fe",
+                "inverse-on-surface": "#eaf1ff",
+                "tertiary-fixed": "#e0e2ef"
+        },
+        "borderRadius": {
+                "DEFAULT": "0.25rem",
+                "lg": "0.5rem",
+                "xl": "0.75rem",
+                "full": "9999px"
+        },
+        "spacing": {
+                "xl": "32px",
+                "lg": "24px",
+                "unit": "4px",
+                "gutter": "16px",
+                "margin-mobile": "20px",
+                "margin-desktop": "40px",
+                "xs": "4px",
+                "sm": "8px",
+                "md": "16px"
+        },
+        "fontFamily": {
+                "body-md": [
+                        "Plus Jakarta Sans"
+                ],
+                "body-lg": [
+                        "Plus Jakarta Sans"
+                ],
+                "body-sm": [
+                        "Plus Jakarta Sans"
+                ],
+                "headline-md": [
+                        "Plus Jakarta Sans"
+                ],
+                "label-sm": [
+                        "Plus Jakarta Sans"
+                ],
+                "headline-lg-mobile": [
+                        "Plus Jakarta Sans"
+                ],
+                "headline-lg": [
+                        "Plus Jakarta Sans"
+                ],
+                "label-md": [
+                        "Plus Jakarta Sans"
+                ],
+                "headline-xl": [
+                        "Plus Jakarta Sans"
+                ]
+        },
+        "fontSize": {
+                "body-md": [
+                        "16px",
+                        {
+                                "lineHeight": "24px",
+                                "fontWeight": "400"
+                        }
+                ],
+                "body-lg": [
+                        "18px",
+                        {
+                                "lineHeight": "28px",
+                                "fontWeight": "400"
+                        }
+                ],
+                "body-sm": [
+                        "14px",
+                        {
+                                "lineHeight": "20px",
+                                "fontWeight": "400"
+                        }
+                ],
+                "headline-md": [
+                        "24px",
+                        {
+                                "lineHeight": "32px",
+                                "fontWeight": "600"
+                        }
+                ],
+                "label-sm": [
+                        "12px",
+                        {
+                                "lineHeight": "16px",
+                                "fontWeight": "500"
+                        }
+                ],
+                "headline-lg-mobile": [
+                        "28px",
+                        {
+                                "lineHeight": "36px",
+                                "fontWeight": "700"
+                        }
+                ],
+                "headline-lg": [
+                        "32px",
+                        {
+                                "lineHeight": "40px",
+                                "letterSpacing": "-0.02em",
+                                "fontWeight": "700"
+                        }
+                ],
+                "label-md": [
+                        "14px",
+                        {
+                                "lineHeight": "20px",
+                                "fontWeight": "600"
+                        }
+                ],
+                "headline-xl": [
+                        "40px",
+                        {
+                                "lineHeight": "48px",
+                                "letterSpacing": "-0.02em",
+                                "fontWeight": "700"
+                        }
+                ]
+        }
+},
+    },
+  }
+</script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-surface-container-lowest text-on-surface h-screen w-screen overflow-hidden flex flex-col relative antialiased selection:bg-primary-container selection:text-on-primary-container">
+<!-- Main Splah Content -->
+<main class="flex-grow flex flex-col items-center justify-center p-margin-mobile z-10">
+<!-- App Logo & Branding -->
+<div class="flex flex-col items-center text-center space-y-lg translate-y-[-5%]">
+<!-- Minimalist Logo Container -->
+<div class="relative w-32 h-32 md:w-40 md:h-40 rounded-[2rem] bg-surface shadow-xl shadow-[rgba(0,0,0,0.05)] border border-outline-variant flex items-center justify-center overflow-hidden">
+<img alt="Futo Ride Logo" class="w-full h-full object-cover" data-alt="A clean, minimalist application icon design for a university campus transit system. The logo features an abstract, geometric representation of a stylized 'J' intertwined with a subtle shuttle or road motif. The primary color is a vibrant, bold 'Campus Green' (#006e2a) set against a pristine white background. The aesthetic is modern, high-contrast, and highly legible, conveying speed, safety, and efficiency." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB9CyhyywKx8di_u_g3bV4Dr8trjVvKajiPhv2HlBhyWQFc-yJi9jDDBO778ZSQg_NtAI96nLfHwaDA7pUpRdE8PpJ-K05IvxNhowMRzhRyXhQv3NTdlbvc7x_nH7V4VATSZ9jGeJEP7-RES6PN2F3WFa5_CUsQTQhRmCdak-As3adXShTYNelc48d8dpuujcJpe5AO17vLS5QE2h7K5WtukgjFlyHKfKr_tRfek91eAIf07ddIymuVAZIW1RqkHEdO2R7sBk5xc1Bq"/>
+</div>
+<!-- Typography -->
+<div class="flex flex-col space-y-sm">
+<h1 class="text-headline-lg-mobile font-headline-lg-mobile md:text-headline-lg md:font-headline-lg text-on-surface tracking-tight">
+                    Futo <br class="md:hidden"/>
+<span class="text-primary">Ride</span>
+</h1>
+<p class="text-body-md font-body-md text-secondary max-w-xs mx-auto">
+                    Fast, safe, and reliable rides across FUTO campus.
+                </p>
+</div>
+</div>
+</main>
+<!-- Bottom Loading Indicator -->
+<div class="absolute bottom-12 left-0 w-full flex justify-center items-center pb-safe">
+<!-- Thick-stroke Primary spinner (32px diameter) -->
+<svg class="animate-spin h-[32px] w-[32px] text-primary" fill="none" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<circle class="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+<path class="opacity-100" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" fill="currentColor"></path>
+</svg>
+</div>
+<style>
+        /* Safe area padding for mobile devices */
+        .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+    </style>
+</body></html>

@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SOS - Futo Ride</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary-container": "#1d35d1",
+                        "on-background": "#0b1c30",
+                        "secondary-fixed-dim": "#c3c6cf",
+                        "on-error": "#ffffff",
+                        "tertiary": "#333640",
+                        "outline-variant": "#c5c5d8",
+                        "tertiary-fixed": "#e0e2ef",
+                        "on-primary-container": "#b1b9ff",
+                        "surface-container": "#e5eeff",
+                        "on-error-container": "#93000a",
+                        "on-secondary-fixed": "#181c22",
+                        "surface": "#f8f9ff",
+                        "outline": "#757687",
+                        "on-primary": "#ffffff",
+                        "background": "#f8f9ff",
+                        "primary-fixed": "#dfe0ff",
+                        "on-secondary": "#ffffff",
+                        "secondary-container": "#dfe2eb",
+                        "on-tertiary-fixed-variant": "#434751",
+                        "surface-dim": "#cbdbf5",
+                        "surface-container-lowest": "#ffffff",
+                        "on-surface-variant": "#444655",
+                        "on-tertiary-container": "#bbbeca",
+                        "tertiary-fixed-dim": "#c3c6d2",
+                        "on-secondary-fixed-variant": "#43474e",
+                        "tertiary-container": "#4a4d57",
+                        "surface-variant": "#d3e4fe",
+                        "error": "#ba1a1a",
+                        "surface-tint": "#354be2",
+                        "on-primary-fixed": "#000c61",
+                        "on-surface": "#0b1c30",
+                        "on-primary-fixed-variant": "#112ccb",
+                        "on-tertiary": "#ffffff",
+                        "on-secondary-container": "#61646c",
+                        "inverse-primary": "#bcc2ff",
+                        "secondary-fixed": "#dfe2eb",
+                        "surface-container-highest": "#d3e4fe",
+                        "on-tertiary-fixed": "#181b24",
+                        "secondary": "#5b5e66",
+                        "surface-container-high": "#dce9ff",
+                        "primary": "#001caa",
+                        "surface-bright": "#f8f9ff",
+                        "error-container": "#ffdad6",
+                        "inverse-surface": "#213145",
+                        "surface-container-low": "#eff4ff",
+                        "primary-fixed-dim": "#bcc2ff",
+                        "inverse-on-surface": "#eaf1ff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "sm": "8px",
+                        "gutter": "16px",
+                        "xs": "4px",
+                        "lg": "24px",
+                        "xl": "32px",
+                        "md": "16px",
+                        "margin-mobile": "20px",
+                        "unit": "4px",
+                        "margin-desktop": "40px"
+                    },
+                    "fontFamily": {
+                        "label-md": ["Plus Jakarta Sans"],
+                        "headline-lg-mobile": ["Plus Jakarta Sans"],
+                        "body-md": ["Plus Jakarta Sans"],
+                        "headline-lg": ["Plus Jakarta Sans"],
+                        "headline-md": ["Plus Jakarta Sans"],
+                        "label-sm": ["Plus Jakarta Sans"],
+                        "headline-xl": ["Plus Jakarta Sans"],
+                        "body-sm": ["Plus Jakarta Sans"],
+                        "body-lg": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "label-md": ["14px", { "lineHeight": "20px", "fontWeight": "600" }],
+                        "headline-lg-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "700" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
+                        "headline-xl": ["40px", { "lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-sm": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .pulse-ring {
+            animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+        }
+        @keyframes pulse-ring {
+            0% { transform: scale(0.8); box-shadow: 0 0 0 0 rgba(186, 26, 26, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 20px rgba(186, 26, 26, 0); }
+            100% { transform: scale(0.8); box-shadow: 0 0 0 0 rgba(186, 26, 26, 0); }
+        }
+        .sos-button {
+            animation: pulse-button 1.5s infinite;
+        }
+        @keyframes pulse-button {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(186, 26, 26, 0.4); }
+            50% { transform: scale(1.05); box-shadow: 0 0 0 15px rgba(186, 26, 26, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(186, 26, 26, 0); }
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-inverse-surface min-h-screen flex flex-col font-body-md text-on-background m-0 p-0 overflow-hidden">
+<!-- Emergency Overlay Container -->
+<div class="fixed inset-0 z-50 flex flex-col items-center justify-between py-10 px-margin-mobile bg-inverse-surface bg-opacity-95 backdrop-blur-md">
+<!-- Top Section -->
+<div class="w-full flex justify-center mb-xl">
+<div class="flex items-center gap-2 bg-on-background bg-opacity-50 text-error px-4 py-2 rounded-full border border-error border-opacity-30">
+<span class="relative flex h-3 w-3">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-error opacity-75"></span>
+<span class="relative inline-flex rounded-full h-3 w-3 bg-error"></span>
+</span>
+<span class="font-label-sm text-label-sm tracking-widest text-on-error">GPS ACTIVE</span>
+</div>
+</div>
+<!-- Center Action -->
+<div class="flex flex-col items-center flex-1 justify-center w-full max-w-sm gap-xl">
+<!-- Warning Text -->
+<div class="text-center flex flex-col items-center gap-sm">
+<span class="material-symbols-outlined text-error text-4xl mb-2" style="font-variation-settings: 'FILL' 1;">warning</span>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile text-on-error mb-2">Emergency Alert</h1>
+<p class="font-body-sm text-body-sm text-on-surface-variant max-w-xs">
+                    This alerts campus security with your live location. Use only in genuine emergencies.
+                </p>
+</div>
+<!-- SOS Button -->
+<button class="sos-button w-48 h-48 rounded-full bg-error flex flex-col items-center justify-center shadow-2xl border-4 border-error-container border-opacity-20 active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-on-error text-6xl mb-2" style="font-variation-settings: 'FILL' 1;">medical_services</span>
+<span class="font-headline-md text-headline-md text-on-error tracking-wider">SEND SOS</span>
+</button>
+<!-- Location Card -->
+<div class="w-full bg-surface-container-highest rounded-xl border border-outline-variant overflow-hidden shadow-lg mt-4">
+<!-- Map Area Placeholder -->
+<div class="relative h-32 w-full bg-surface-variant overflow-hidden flex items-center justify-center" data-alt="A dark mode satellite view map of a university campus. The map should highlight a specific coordinate with a glowing red marker. The overall tone is urgent, technical, and precise, utilizing deep navy blues, dark greys, and stark red accents for the location. It should look like a high-tech tracking interface." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAP-YY12q4fIeKFG_wzPcoIcBRPLtpUTLf-VuKfLWRRYbsp8wgOMHvXe9nosnoRXv9Z5e3FVYNUOtnSElahC0xoiqUZC3FOgCw111OvV5wFMdke19nnodcTXN0YOklZ86MX7j-IAZOOOBTolg8IQpX3j4BRIMpc9kaA3Aij7udi4mpFssXmbFfKJgR3xvhmZ2qSnlrKUJ9HlYHrgdZmn2PsNg1sB43Y3BsSUm9jnnl3lnf60y9amt2p6SDmFgyObabyrj-NOhdrKgEz')">
+<!-- Red Pulse Marker -->
+<div class="absolute inset-0 flex items-center justify-center">
+<div class="w-4 h-4 bg-error rounded-full pulse-ring relative z-10 border-2 border-white"></div>
+</div>
+</div>
+<!-- Coordinates Area -->
+<div class="p-md flex justify-between items-center bg-surface">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-outline mb-1">CURRENT COORDINATES</span>
+<span class="font-body-md text-body-md text-on-surface font-mono">5°23'14"N 6°59'35"E</span>
+</div>
+<div class="flex items-center justify-center w-10 h-10 rounded-full bg-surface-container-low text-primary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">signal_cellular_alt</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Bottom Section -->
+<div class="w-full max-w-sm mt-xl">
+<button class="w-full py-4 rounded-lg border border-outline-variant text-on-error font-label-md text-label-md bg-transparent hover:bg-surface-variant hover:bg-opacity-10 active:bg-opacity-20 transition-colors">
+                Cancel
+            </button>
+</div>
+</div>
+</body></html>

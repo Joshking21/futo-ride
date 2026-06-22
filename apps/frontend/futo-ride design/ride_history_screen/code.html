@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Futo Ride - Ride History</title>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-family: 'Material Symbols Outlined';
+            font-weight: normal;
+            font-style: normal;
+            font-size: 24px;
+            line-height: 1;
+            letter-spacing: normal;
+            text-transform: none;
+            display: inline-block;
+            white-space: nowrap;
+            word-wrap: normal;
+            direction: ltr;
+            font-feature-settings: 'liga';
+            -webkit-font-smoothing: antialiased;
+        }
+    </style>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+                "outline": "#757687",
+                "background": "#f8f9ff",
+                "on-tertiary": "#ffffff",
+                "inverse-surface": "#213145",
+                "primary-container": "#1d35d1",
+                "surface-bright": "#f8f9ff",
+                "secondary-container": "#dfe2eb",
+                "surface-container": "#e5eeff",
+                "outline-variant": "#c5c5d8",
+                "secondary-fixed": "#dfe2eb",
+                "error-container": "#ffdad6",
+                "on-secondary-fixed-variant": "#43474e",
+                "on-tertiary-fixed": "#181b24",
+                "surface-container-low": "#eff4ff",
+                "tertiary-fixed-dim": "#c3c6d2",
+                "on-error-container": "#93000a",
+                "on-secondary-fixed": "#181c22",
+                "on-error": "#ffffff",
+                "primary-fixed": "#dfe0ff",
+                "surface-tint": "#354be2",
+                "on-tertiary-container": "#bbbeca",
+                "on-secondary": "#ffffff",
+                "on-surface-variant": "#444655",
+                "on-surface": "#0b1c30",
+                "inverse-primary": "#bcc2ff",
+                "surface": "#f8f9ff",
+                "error": "#ba1a1a",
+                "primary-fixed-dim": "#bcc2ff",
+                "tertiary-container": "#4a4d57",
+                "on-primary-fixed": "#000c61",
+                "on-secondary-container": "#61646c",
+                "surface-container-high": "#dce9ff",
+                "surface-dim": "#cbdbf5",
+                "primary": "#001caa",
+                "surface-container-lowest": "#ffffff",
+                "on-background": "#0b1c30",
+                "on-primary-container": "#b1b9ff",
+                "on-primary-fixed-variant": "#112ccb",
+                "secondary-fixed-dim": "#c3c6cf",
+                "secondary": "#5b5e66",
+                "on-primary": "#ffffff",
+                "tertiary": "#333640",
+                "surface-variant": "#d3e4fe",
+                "on-tertiary-fixed-variant": "#434751",
+                "surface-container-highest": "#d3e4fe",
+                "inverse-on-surface": "#eaf1ff",
+                "tertiary-fixed": "#e0e2ef"
+        },
+        "borderRadius": {
+                "DEFAULT": "0.25rem",
+                "lg": "0.5rem",
+                "xl": "0.75rem",
+                "full": "9999px"
+        },
+        "spacing": {
+                "xl": "32px",
+                "lg": "24px",
+                "unit": "4px",
+                "gutter": "16px",
+                "margin-mobile": "20px",
+                "margin-desktop": "40px",
+                "xs": "4px",
+                "sm": "8px",
+                "md": "16px",
+                "stack-lg": "24px",
+                "stack-sm": "8px",
+                "stack-md": "16px",
+                "container-margin": "20px",
+                "touch-target": "48px"
+        },
+        "fontFamily": {
+                "body-md": [
+                        "Plus Jakarta Sans"
+                ],
+                "body-lg": [
+                        "Plus Jakarta Sans"
+                ],
+                "body-sm": [
+                        "Plus Jakarta Sans"
+                ],
+                "headline-md": [
+                        "Plus Jakarta Sans"
+                ],
+                "label-sm": [
+                        "Plus Jakarta Sans"
+                ],
+                "headline-lg-mobile": [
+                        "Plus Jakarta Sans"
+                ],
+                "headline-lg": [
+                        "Plus Jakarta Sans"
+                ],
+                "label-md": [
+                        "Plus Jakarta Sans"
+                ],
+                "headline-xl": [
+                        "Plus Jakarta Sans"
+                ],
+                "headline-sm": ["Plus Jakarta Sans"],
+                "action-lg": ["Plus Jakarta Sans"]
+        },
+        "fontSize": {
+                "body-md": [
+                        "16px",
+                        {
+                                "lineHeight": "24px",
+                                "fontWeight": "400"
+                        }
+                ],
+                "body-lg": [
+                        "18px",
+                        {
+                                "lineHeight": "28px",
+                                "fontWeight": "400"
+                        }
+                ],
+                "body-sm": [
+                        "14px",
+                        {
+                                "lineHeight": "20px",
+                                "fontWeight": "400"
+                        }
+                ],
+                "headline-md": [
+                        "24px",
+                        {
+                                "lineHeight": "32px",
+                                "fontWeight": "600"
+                        }
+                ],
+                "label-sm": [
+                        "12px",
+                        {
+                                "lineHeight": "16px",
+                                "fontWeight": "500"
+                        }
+                ],
+                "headline-lg-mobile": [
+                        "28px",
+                        {
+                                "lineHeight": "36px",
+                                "fontWeight": "700"
+                        }
+                ],
+                "headline-lg": [
+                        "32px",
+                        {
+                                "lineHeight": "40px",
+                                "letterSpacing": "-0.02em",
+                                "fontWeight": "700"
+                        }
+                ],
+                "label-md": [
+                        "14px",
+                        {
+                                "lineHeight": "20px",
+                                "fontWeight": "600"
+                        }
+                ],
+                "headline-xl": [
+                        "40px",
+                        {
+                                "lineHeight": "48px",
+                                "letterSpacing": "-0.02em",
+                                "fontWeight": "700"
+                        }
+                ],
+                "headline-sm": ["20px", { "lineHeight": "26px", "fontWeight": "600" }],
+                "action-lg": ["16px", { "lineHeight": "24px", "fontWeight": "600" }]
+        }
+},
+    },
+  }
+</script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-background text-on-background font-body-md antialiased min-h-screen flex flex-col">
+<!-- TopAppBar -->
+<header class="bg-surface fixed top-0 w-full z-50 flex justify-between items-center px-container-margin h-touch-target border-b border-outline-variant">
+<button aria-label="Go back" class="text-primary p-2 -ml-2 rounded-full hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined" data-icon="arrow_back">arrow_back</span>
+</button>
+<h1 class="text-headline-md font-headline-md font-bold text-primary">Futo Ride</h1>
+<button aria-label="Wallet" class="text-primary p-2 -mr-2 rounded-full hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined" data-icon="account_balance_wallet">account_balance_wallet</span>
+</button>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-grow pt-[calc(48px+24px)] pb-[calc(72px+24px)] px-container-margin md:px-0 md:max-w-3xl md:mx-auto md:w-full">
+<div class="mb-stack-lg flex items-center justify-between">
+<h2 class="text-headline-lg-mobile font-headline-lg-mobile text-on-surface">Ride History</h2>
+<button class="flex items-center gap-1 text-primary text-label-md font-label-md bg-primary-container/20 px-3 py-1.5 rounded-full hover:bg-primary-container/40 transition-colors">
+<span class="material-symbols-outlined text-[16px]" data-icon="filter_list">filter_list</span>
+                Filter
+            </button>
+</div>
+<!-- Trips List (Bento-style Stack) -->
+<div class="flex flex-col gap-stack-md">
+<!-- Trip Card 1: Completed -->
+<article class="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 shadow-sm hover:shadow-md transition-all cursor-pointer relative overflow-hidden group">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-primary group-hover:w-2 transition-all duration-300"></div>
+<!-- Header: Date & Status -->
+<div class="flex justify-between items-center mb-4">
+<span class="text-body-sm font-body-sm text-secondary">Today • 10:45 AM</span>
+<span class="bg-primary-container text-on-primary-container text-label-md font-label-md px-2.5 py-1 rounded-full inline-flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]" data-icon="check_circle">check_circle</span>
+                        Completed
+                    </span>
+</div>
+<!-- Route Setup -->
+<div class="flex items-start gap-3 mb-4">
+<!-- Timeline Visual -->
+<div class="flex flex-col items-center mt-1">
+<div class="w-2.5 h-2.5 rounded-full bg-outline border-2 border-surface-container-lowest outline outline-1 outline-outline relative z-10"></div>
+<div class="w-px h-8 bg-outline-variant my-0.5"></div>
+<span class="material-symbols-outlined text-primary text-[18px] relative z-10 bg-surface-container-lowest" data-icon="location_on" style="font-variation-settings: 'FILL' 1;">location_on</span>
+</div>
+<!-- Locations -->
+<div class="flex flex-col gap-3 flex-grow">
+<div>
+<p class="text-body-sm font-body-sm text-secondary leading-none mb-1">Pickup</p>
+<p class="text-action-lg font-action-lg text-on-surface leading-none">FUTO Senate Building</p>
+</div>
+<div>
+<p class="text-body-sm font-body-sm text-secondary leading-none mb-1">Dropoff</p>
+<p class="text-action-lg font-action-lg text-on-surface leading-none">Eziobodo Hostel Annex</p>
+</div>
+</div>
+</div>
+<!-- Divider -->
+<hr class="border-t border-outline-variant mb-4"/>
+<!-- Footer: Driver & Price -->
+<div class="flex justify-between items-end">
+<div class="flex items-center gap-2">
+<div class="w-10 h-10 rounded-full overflow-hidden bg-surface-variant border border-outline-variant flex-shrink-0">
+<img class="w-full h-full object-cover" data-alt="A close-up portrait of a friendly Nigerian university shuttle driver. Bright, high-contrast lighting emphasizing a modern, clean light-mode aesthetic. The background is slightly blurred but suggests a vibrant, sunlit campus environment. Professional and trustworthy appearance." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCgChKZHasGdwnuecPCL5z4HRuvaLDkZUUckKM2ebyUe-ApB7cqZNIf9KWH2hLaYdst3EJ8KR_YYbiniXwZzWaKB_rKE6pSeYerY_7Cd6vz7PNIy1Q2cOIbHlEv02fO09UxEgO5KDwOcEjWXpheWissKDutWf3fFXLQAU9HgWACkJXcH4j2ZG1cXbmXPDnS1lduq7v5oMhoB06PA3uiy_32gd8rJloh7RfepU4yvZcOT_HUcc8sKqhd4adG61gyTy-UDkUeEinj8iSG"/>
+</div>
+<div>
+<p class="text-body-sm font-body-sm text-secondary leading-tight">Driver</p>
+<p class="text-action-lg font-action-lg text-on-surface leading-tight">Chukwudi N.</p>
+</div>
+</div>
+<div class="text-right">
+<p class="text-body-sm font-body-sm text-secondary leading-tight">Fare</p>
+<p class="text-headline-sm font-headline-sm text-primary font-bold leading-tight tracking-tight">₦ 450</p>
+</div>
+</div>
+</article>
+<!-- Trip Card 2: Cancelled -->
+<article class="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 shadow-sm hover:shadow-md transition-all cursor-pointer relative overflow-hidden group opacity-80 hover:opacity-100">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-error group-hover:w-2 transition-all duration-300"></div>
+<div class="flex justify-between items-center mb-4">
+<span class="text-body-sm font-body-sm text-secondary">Yesterday • 4:20 PM</span>
+<span class="bg-error-container text-on-error-container text-label-md font-label-md px-2.5 py-1 rounded-full inline-flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]" data-icon="cancel">cancel</span>
+                        Cancelled
+                    </span>
+</div>
+<div class="flex items-start gap-3 mb-4">
+<div class="flex flex-col items-center mt-1">
+<div class="w-2.5 h-2.5 rounded-full bg-outline border-2 border-surface-container-lowest outline outline-1 outline-outline relative z-10"></div>
+<div class="w-px h-8 bg-outline-variant my-0.5"></div>
+<span class="material-symbols-outlined text-error text-[18px] relative z-10 bg-surface-container-lowest" data-icon="location_on" style="font-variation-settings: 'FILL' 1;">location_on</span>
+</div>
+<div class="flex flex-col gap-3 flex-grow">
+<div>
+<p class="text-action-lg font-action-lg text-on-surface line-through decoration-error/50">ICT Centre</p>
+</div>
+<div>
+<p class="text-action-lg font-action-lg text-on-surface line-through decoration-error/50">Ihiagwa Market</p>
+</div>
+</div>
+</div>
+<hr class="border-t border-outline-variant mb-4"/>
+<div class="flex justify-between items-end">
+<div class="flex items-center gap-2 opacity-50">
+<div class="w-10 h-10 rounded-full bg-surface-variant flex items-center justify-center border border-outline-variant text-secondary">
+<span class="material-symbols-outlined" data-icon="person_off">person_off</span>
+</div>
+<div>
+<p class="text-action-lg font-action-lg text-on-surface leading-tight">Unassigned</p>
+</div>
+</div>
+<div class="text-right">
+<p class="text-headline-sm font-headline-sm text-secondary font-bold leading-tight tracking-tight">₦ 0</p>
+</div>
+</div>
+</article>
+<!-- Trip Card 3: Completed -->
+<article class="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 shadow-sm hover:shadow-md transition-all cursor-pointer relative overflow-hidden group">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-primary group-hover:w-2 transition-all duration-300"></div>
+<div class="flex justify-between items-center mb-4">
+<span class="text-body-sm font-body-sm text-secondary">Oct 12, 2023 • 8:15 AM</span>
+<span class="bg-primary-container text-on-primary-container text-label-md font-label-md px-2.5 py-1 rounded-full inline-flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]" data-icon="check_circle">check_circle</span>
+                        Completed
+                    </span>
+</div>
+<div class="flex items-start gap-3 mb-4">
+<div class="flex flex-col items-center mt-1">
+<div class="w-2.5 h-2.5 rounded-full bg-outline border-2 border-surface-container-lowest outline outline-1 outline-outline relative z-10"></div>
+<div class="w-px h-8 bg-outline-variant my-0.5"></div>
+<span class="material-symbols-outlined text-primary text-[18px] relative z-10 bg-surface-container-lowest" data-icon="location_on" style="font-variation-settings: 'FILL' 1;">location_on</span>
+</div>
+<div class="flex flex-col gap-3 flex-grow">
+<div>
+<p class="text-body-sm font-body-sm text-secondary leading-none mb-1">Pickup</p>
+<p class="text-action-lg font-action-lg text-on-surface leading-none">SEET Headbridge</p>
+</div>
+<div>
+<p class="text-body-sm font-body-sm text-secondary leading-none mb-1">Dropoff</p>
+<p class="text-action-lg font-action-lg text-on-surface leading-none">Library Junction</p>
+</div>
+</div>
+</div>
+<hr class="border-t border-outline-variant mb-4"/>
+<div class="flex justify-between items-end">
+<div class="flex items-center gap-2">
+<div class="w-10 h-10 rounded-full overflow-hidden bg-surface-variant border border-outline-variant flex-shrink-0">
+<img class="w-full h-full object-cover" data-alt="A portrait of a cheerful university transit driver wearing a minimal green polo shirt. The setting is bright and airy, representing a clean, high-contrast modern app aesthetic. Subtle soft shadows and crisp focus." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC4jCUSCxURr-3tX2g2om-rPb3FtwbRt2o3cpTCtiw1HHB5gSdh_s_lnw_aEKSazcZe-1HCp3PLsYep4BGSuXQ56ThgWBIRxslL_zEJpXK15H0ad6MHzuFEumcLpBrowHdiKsw0z0Gl6TiuVaL7vEP-DEpb_XChoy9BH8P_XWS-sS9hEjKgtnOC-iDHBofXns1CpO0-qPMnO3zIBHv2dREdKYMXCd9JC-Lbb8JN1u8jXcCVeEkyk7T6AMfknuKj_OdqfD-T8fL0EHSf"/>
+</div>
+<div>
+<p class="text-body-sm font-body-sm text-secondary leading-tight">Driver</p>
+<p class="text-action-lg font-action-lg text-on-surface leading-tight">Obinna K.</p>
+</div>
+</div>
+<div class="text-right">
+<p class="text-body-sm font-body-sm text-secondary leading-tight">Fare</p>
+<p class="text-headline-sm font-headline-sm text-primary font-bold leading-tight tracking-tight">₦ 200</p>
+</div>
+</div>
+</article>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="bg-surface shadow-[0_-4px_12px_rgba(0,0,0,0.1)] fixed bottom-0 w-full z-50 flex justify-around items-center px-4 py-2 md:hidden">
+<a aria-label="Home" class="flex flex-col items-center justify-center text-secondary hover:bg-surface-container-low p-2 rounded-xl transition-colors min-w-[64px]" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="home">home</span>
+<span class="text-label-md font-label-md">Home</span>
+</a>
+<a aria-label="Rides" class="flex flex-col items-center justify-center text-primary font-bold scale-95 p-2 rounded-xl transition-all duration-200 min-w-[64px]" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="history" style="font-variation-settings: 'FILL' 1;">history</span>
+<span class="text-label-md font-label-md">Rides</span>
+</a>
+<a aria-label="Alerts" class="flex flex-col items-center justify-center text-secondary hover:bg-surface-container-low p-2 rounded-xl transition-colors min-w-[64px]" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="notifications">notifications</span>
+<span class="text-label-md font-label-md">Alerts</span>
+</a>
+<a aria-label="Account" class="flex flex-col items-center justify-center text-secondary hover:bg-surface-container-low p-2 rounded-xl transition-colors min-w-[64px]" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="person">person</span>
+<span class="text-label-md font-label-md">Account</span>
+</a>
+</nav>
+</body></html>
