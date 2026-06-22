@@ -1,13 +1,13 @@
 {
   "name": "futo-ride",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "FUTO campus keke & bus app — full-stack Next.js + Firebase",
+  "private": true,
+  "packageManager": "pnpm@10.34.4",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "packageManager": "pnpm@10.34.4"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  }
 }
