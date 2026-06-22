@@ -1,12 +1,28 @@
-/**
- * Request auth — verifyRequest() checks the Firebase ID token.
- *
- * Reads `Authorization: Bearer <idToken>`, verifies via Admin SDK
- * (`verifyIdToken`), and returns the trusted identity. The verified uid is the
- * source of identity — never trust a userId from the body (CONVENTIONS §7).
- *
- * TODO: implement verifyRequest(req). Verify verifyIdToken signature against the
- * installed `firebase-admin` version before use (AGENTS §4).
- */
+import { adminAuth } from "@/lib/firebase-admin";
+import { HttpError } from "@/lib/http";
 
-export {};
+/** The trusted identity resolved from a verified Firebase ID token. */
+export type AuthUser = {
+  uid: string;
+  email?: string;
+};
+
+/**
+ * Verifies the request's Firebase ID token and returns the trusted identity.
+ * Reads `Authorization: Bearer <idToken>` and verifies it with the Admin SDK.
+ * The returned uid is the source of identity — never trust an id from the body.
+ *
+ * @throws HttpError 401 when the token is missing, malformed, or invalid.
+ */
+export async function verifyRequest(req: Request): Promise<AuthUser> {
+  const header = req.headers.get("authorization");
+  const token = header?.startsWith("Bearer ") ? header.slice(7) : null;
+  if (!token) throw new HttpError("Missing authentication token", 401);
+
+  try {
+    const decoded = await adminAuth().verifyIdToken(token);
+    return { uid: decoded.uid, email: decoded.email };
+  } catch {
+    throw new HttpError("Invalid or expired token", 401);
+  }
+}
