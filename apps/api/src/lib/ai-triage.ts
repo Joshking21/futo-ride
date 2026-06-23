@@ -29,7 +29,7 @@ export async function triageIncident(input: TriageInput): Promise<TriageResult> 
   if (!apiKey) throw new Error("Missing LLM_API_KEY");
 
   const ai = new GoogleGenAI({ apiKey });
-  const model = process.env.LLM_MODEL ?? "gemini-2.5-flash";
+  const model = process.env.LLM_MODEL ?? "gemini-3.5-flash";
 
   const userPrompt = [
     `Type: ${input.type}`,
