@@ -1,10 +1,8 @@
 import { ZodError } from "zod";
 
-export type ApiResponse<T> =
-  | { ok: true; data: T }
-  | { ok: false; error: string };
+export type ApiSuccess<T> = { ok: true; data: T };
+export type ApiError = { ok: false; error: string };
 
-/** Error carrying an HTTP status, thrown by handlers and mapped by `fail`. */
 export class HttpError extends Error {
   constructor(
     message: string,
@@ -16,36 +14,23 @@ export class HttpError extends Error {
 }
 
 /** Standard success envelope. */
-export function ok<T>(data: T, status = 200): Response {
-  return Response.json({ ok: true, data } satisfies ApiResponse<T>, { status });
+export function ok<T>(data: T): ApiSuccess<T> {
+  return { ok: true, data };
 }
 
-/**
- * Standard failure envelope. Maps known errors to clean client messages and
- * never leaks a stack trace, secret, or raw third-party error. Unknown errors
- * are logged server-side and returned as a generic 500.
- */
-export function fail(err: unknown, status = 400): Response {
+/** Maps errors to status + clean message. Used by the global error handler. */
+export function mapError(err: unknown): { status: number; body: ApiError } {
   if (err instanceof HttpError) {
-    return Response.json(
-      { ok: false, error: err.message } satisfies ApiResponse<never>,
-      { status: err.status },
-    );
+    return { status: err.status, body: { ok: false, error: err.message } };
   }
 
   if (err instanceof ZodError) {
     const first = err.issues[0];
     const path = first.path.join(".");
     const message = path ? `${path}: ${first.message}` : first.message;
-    return Response.json(
-      { ok: false, error: message } satisfies ApiResponse<never>,
-      { status: 400 },
-    );
+    return { status: 400, body: { ok: false, error: message } };
   }
 
   console.error("Unhandled error:", err);
-  return Response.json(
-    { ok: false, error: "Something went wrong" } satisfies ApiResponse<never>,
-    { status: status === 400 ? 500 : status },
-  );
+  return { status: 500, body: { ok: false, error: "Something went wrong" } };
 }

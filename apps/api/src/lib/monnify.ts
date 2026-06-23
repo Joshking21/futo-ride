@@ -1,10 +1,88 @@
-/**
- * Monnify (Moniepoint) client — naira payments + driver disbursement.
- * Backend only; reads MONNIFY_* secrets.
- *
- * ⚠️ HIGH staleness risk (AGENTS §5). Verify auth flow, init-transaction, and
- * disbursement endpoints against current Monnify developer docs BEFORE coding.
- * Sandbox: sandbox.monnify.com / MK_TEST_ keys.
- */
+/** Monnify (Moniepoint) — naira payments + driver disbursement. */
 
-export {};
+let cachedToken: { token: string; expiresAt: number } | null = null;
+
+function getConfig() {
+  const apiKey = process.env.MONNIFY_API_KEY;
+  const secretKey = process.env.MONNIFY_SECRET_KEY;
+  const contractCode = process.env.MONNIFY_CONTRACT_CODE;
+  const baseUrl = process.env.MONNIFY_BASE_URL ?? "https://sandbox.monnify.com";
+  if (!apiKey || !secretKey || !contractCode) {
+    throw new Error("Missing Monnify credentials");
+  }
+  return { apiKey, secretKey, contractCode, baseUrl };
+}
+
+/** Authenticates with Monnify; caches the bearer token until expiry. */
+export async function getAccessToken(): Promise<string> {
+  if (cachedToken && Date.now() < cachedToken.expiresAt) {
+    return cachedToken.token;
+  }
+
+  const { apiKey, secretKey, baseUrl } = getConfig();
+  const credentials = Buffer.from(`${apiKey}:${secretKey}`).toString("base64");
+
+  const res = await fetch(`${baseUrl}/api/v1/auth/login`, {
+    method: "POST",
+    headers: { Authorization: `Basic ${credentials}` },
+  });
+  if (!res.ok) throw new Error(`Monnify auth failed: ${res.status}`);
+
+  const json = (await res.json()) as {
+    responseBody: { accessToken: string; expiresIn: number };
+  };
+  const { accessToken, expiresIn } = json.responseBody;
+  cachedToken = { token: accessToken, expiresAt: Date.now() + (expiresIn - 60) * 1000 };
+  return accessToken;
+}
+
+/** Init a payment — returns checkout URL and transaction ref. */
+export async function initTransaction(params: {
+  amount: number;
+  customerEmail: string;
+  customerName: string;
+  paymentDescription: string;
+  redirectUrl: string;
+}): Promise<{ checkoutUrl: string; transactionReference: string }> {
+  const { baseUrl, contractCode } = getConfig();
+  const token = await getAccessToken();
+
+  const res = await fetch(`${baseUrl}/api/v1/merchant/transactions/init-transaction`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      ...params,
+      contractCode,
+      currencyCode: "NGN",
+      paymentMethods: ["CARD", "ACCOUNT_TRANSFER"],
+    }),
+  });
+  if (!res.ok) throw new Error(`Monnify init-transaction failed: ${res.status}`);
+
+  const json = (await res.json()) as {
+    responseBody: { checkoutUrl: string; transactionReference: string };
+  };
+  return json.responseBody;
+}
+
+/** Verify a transaction's payment status. */
+export async function verifyTransaction(
+  transactionReference: string,
+): Promise<{ paymentStatus: string; amountPaid: number }> {
+  const { baseUrl } = getConfig();
+  const token = await getAccessToken();
+
+  const res = await fetch(
+    `${baseUrl}/api/v2/transactions/${encodeURIComponent(transactionReference)}`,
+    { headers: { Authorization: `Bearer ${token}` } },
+  );
+  if (!res.ok) throw new Error(`Monnify verify failed: ${res.status}`);
+
+  const json = (await res.json()) as {
+    responseBody: { paymentStatus: string; amountPaid: number };
+  };
+  return json.responseBody;
+}
