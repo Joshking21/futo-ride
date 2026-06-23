@@ -1,172 +1,171 @@
 # AGENTS.md — Operating Manual for AI Coding Agents
 
-> **Audience:** any AI coding agent (Claude Code, Cursor, etc.). Copy or symlink this to `CLAUDE.md` / `.cursorrules` if your tool needs a specific filename.
-> **Scope:** the whole monorepo — **frontend** (Next.js App Router UI) and **backend** (Route Handlers / Server Actions). Conventions split by area: backend → `CONVENTIONS.md`, frontend → `FRONTEND_CONVENTIONS.md`. Still build only the slice the human asks for.
-> **Golden principle:** this file describes *intent and contracts*, which are stable. It does **not** describe exact current library APIs, which change. **When this file and reality disagree, reality wins — verify, then tell the human.**
+> **Repo:** `futo-ride` — a **monorepo**: `apps/api` (our **Fastify** backend) + `apps/mobile` (the **Expo / React Native** app, owned by the frontend dev, with its own setup and conventions).
+> **Your domain is the backend (`apps/api`)** unless explicitly told otherwise. Do **not** restructure `apps/mobile` or impose conventions on it — it's the frontend dev's app.
+> **Golden principle:** this file describes *intent and contracts* (stable). It does **not** describe exact current library APIs (those change). **When this file and reality disagree, reality wins — verify, then tell the human.**
 
 ---
 
-## 0. STOP — do these three things before writing any code
+## 0. STOP — before writing any code
 
-1. **Ask what to work on.** Do not start coding unprompted. At the start of a session, ask the human *which feature / endpoint / module* they want to tackle, present the options (see the build phases in `docs/PROJECT_PLAN.md`), and **confirm scope** before touching code.
-2. **Verify, don't assume.** Before using any library or external service, confirm its *current* API (see §4–5). Never code against remembered signatures.
-3. **Plan to document.** You will update docs *after* coding (see §6). Keep notes as you go.
-
----
-
-## 1. What this project is (summary)
-
-A campus transport app for FUTO students: **hail a keke** (tricycle) building-to-building, **track the town bus** (fixed routes), pay in naira, with a **safety/incident-comms layer**. Two prize targets drive priorities: **Best Alerta Integration** (incident-comms) and **Best AI Project** (AI incident triage). 
-
-**Full detail lives in `docs/PROJECT_PLAN.md`.** Read the relevant section of that plan before implementing a feature. If anything here conflicts with the plan, ask the human which is current.
+1. **Ask what to work on.** Don't start unprompted. Confirm the feature/endpoint and its scope (see phases in `docs/PROJECT_PLAN.md`).
+2. **Verify, don't assume.** Confirm any library/SDK/endpoint against its *installed version* and *official docs* (§5).
+3. **Plan to document.** You update docs *after* coding (§7).
 
 ---
 
-## 2. Architecture boundaries (never blur these)
+## 1. What this project is
 
-- **Frontend** handles UI, logs in via **Firebase Auth directly**, and reads **realtime data straight from Firebase** (live positions, ride/bus status, notifications).
-- **Backend = Next.js Route Handlers / Server Actions.** It owns: all **secret keys**, **Firebase ID-token verification**, **business logic** (matching, fare, surge), **external calls** (Monnify, Alerta, LLM), and **authoritative writes** via the Firebase **Admin SDK**.
-- **Rule of thumb:** touches a secret or a trust decision → backend. Just shows the user live data → frontend reads Firebase directly (guarded by Security Rules).
-- **Do not** put business logic, secrets, or Admin-SDK calls in client code. **Do not** issue your own auth tokens — Firebase issues identity; the backend only *verifies* it.
-
-### Frontend specifics (full detail in `FRONTEND_CONVENTIONS.md`)
-
-- **Match the human's approved designs.** UI comes from the generated/approved screens — don't invent layouts, colors, or flows. If a screen's design is missing, ask for it.
-- **Realtime *reads* → Firebase client SDK** (live map, ride/bus status, notifications), inside client components/hooks.
-- **Backend calls (writes/actions) → the typed `/lib/api.ts` client**, never scattered raw `fetch`. The shared `/types` are the contract.
-- **Client vs Server Components:** default to Server Components; add `"use client"` only for interactivity, state, browser APIs, or Firebase subscriptions.
-- **Mobile-first, portrait.** Every data screen handles **loading / empty / error** states.
-- **No secrets, no business logic on the client.** Only `NEXT_PUBLIC_*` is allowed.
+A campus transport app for FUTO students: **hail a keke** building-to-building, **track the town bus** (fixed routes), pay in naira, with a **safety/incident-comms layer**. Prize targets: **Best Alerta Integration** + **Best AI Project**. Full detail in `docs/PROJECT_PLAN.md` — read the relevant section before building.
 
 ---
 
-## 3. The Golden Rules
+## 2. Repo layout & ownership
 
-1. **Ask first, then scope tightly.** One feature at a time. Confirm the boundary of the task before coding. Don't refactor or touch unrelated files without asking.
-2. **Verify, never assume (anti-staleness).** Library versions, SDK method names, and third-party endpoints change. Always confirm against the *installed version* and *official docs* before use. If you can't verify, say so and ask — do not guess.
-3. **No invented anything.** Never fabricate API endpoints, request/response shapes, env-var names, config keys, or function signatures. Unknown → look it up or ask.
-4. **Secrets are server-side only.** Never hardcode keys, never commit `.env`, never expose a secret to the client. Only `NEXT_PUBLIC_*` (Firebase web config) is allowed client-side.
-5. **Validate + type everything.** Every endpoint validates its input (Zod) and returns the shared response shape. Types live in `/types`.
-6. **Document after coding (the human values this).** After implementing: update `docs/API.md`, add JSDoc to exported functions, and leave a one-line summary of what changed. See §6.
-7. **Stay in phase.** Priorities are Alerta + AI first. **Escrow is cut.** Solana/cNGN is optional and cut-first. Don't gold-plate or scope-creep.
+```
+futo-ride/
+├── apps/
+│   ├── api/                ← OUR backend (Fastify, TypeScript). YOUR workspace.
+│   │   └── src/
+│   │       ├── lib/        http.ts · firebase-admin.ts · auth.ts   (Layer 0)
+│   │       ├── types/      shared data models
+│   │       ├── routes/     Fastify route modules
+│   │       └── server.ts   Fastify bootstrap
+│   └── mobile/             ← frontend dev's Expo + NativeWind app. NOT your domain.
+├── docs/
+│   ├── PROJECT_PLAN.md            the what & why
+│   ├── BACKEND_INTEGRATION.md     how mobile calls the backend (the contract)
+│   ├── FRONTEND_SCREENS.md        screen requirements
+│   ├── UI_PROMPTS.md              design generation aid
+│   └── API.md                     live endpoint registry (you maintain)
+├── AGENTS.md                this file
+├── CONVENTIONS.md           backend coding conventions
+├── .env.example            env var names (no values)
+└── package.json            workspace root
+```
+
+**Ownership rules:**
+- Backend work (`apps/api`) → follow `CONVENTIONS.md`.
+- **Never edit `apps/mobile`** unless explicitly asked — it has its own tooling (Expo, NativeWind, expo-router) and its own conventions. We don't govern it; we just expose a clean API to it.
+- The only thing the mobile app needs from us is the **contract**: `docs/BACKEND_INTEGRATION.md` + `docs/API.md`. Keep those accurate.
 
 ---
 
-## 4. Verification checklist — run this before coding a feature
+## 3. Architecture boundaries
+
+- **Mobile ↔ backend over HTTP.** The mobile app attaches the user's **Firebase ID token**; the backend **verifies** it (Admin SDK) and runs the logic.
+- **Backend owns:** secret keys, token verification, business logic (matching, fare, surge), external calls (Monnify, Alerta, LLM), and authoritative **writes** via the Firebase Admin SDK.
+- **Mobile owns:** all UI, login (Firebase Auth), and **realtime reads** straight from Firebase (live positions, ride/bus status). That's the frontend dev's concern — not ours.
+- **Never** put secrets or business logic where the client can reach them. The backend **verifies** tokens; it never **issues** them.
+
+---
+
+## 4. The Golden Rules
+
+1. **Ask first, scope tightly.** One feature at a time; confirm boundaries; don't touch unrelated files (and never `apps/mobile`).
+2. **Verify, never assume.** Versions and third-party endpoints drift — confirm before use (§5). Can't verify → ask, don't guess.
+3. **No invented anything.** Never fabricate endpoints, request/response shapes, env names, or signatures.
+4. **Secrets server-side only.** Never hardcode keys, never commit `.env`.
+5. **Validate + type everything.** Every route validates input (Zod) and returns the shared envelope. Types live in `apps/api/src/types`.
+6. **Document after coding** (§7) — update `docs/API.md` **and** `docs/BACKEND_INTEGRATION.md` when an endpoint changes, since the mobile dev reads the latter.
+7. **Stay in phase.** Alerta + AI first. Escrow is cut. Solana/cNGN is optional/cut-first.
+
+---
+
+## 5. Verification checklist (before coding a feature)
 
 - [ ] Read the matching section of `docs/PROJECT_PLAN.md`.
-- [ ] Check `package.json` for the **installed version** of every library you'll use.
-- [ ] Check `.env.example` for the env vars the feature needs (add any missing as *names only*).
-- [ ] Check `/types` for the data shapes you'll touch.
-- [ ] For any **external service**, open its **official docs** and confirm the current endpoint / SDK method / auth header. (See §5.)
-- [ ] If this doc or the plan disagrees with the installed library or official docs → **the library/docs win.** Flag the discrepancy to the human.
+- [ ] Check `apps/api/package.json` for the **installed version** of each library.
+- [ ] Check `.env.example` for required vars (add missing ones as *names only*).
+- [ ] Check `apps/api/src/types` for the shapes you'll touch.
+- [ ] For each external service, open its **official docs** and confirm the current endpoint/SDK/auth (table below).
+- [ ] If this doc or the plan conflicts with the installed library → **the library wins.** Flag it.
 
----
+### External services — verify before integrating
 
-## 5. External services — what we believe vs. where to verify
-
-> The "believed" column is grounded but **may be stale**. Always confirm the **WHERE TO VERIFY** column before integrating. Treat the ⚠️ HIGH-risk rows as untrusted until checked.
-
-| Service | What we believe (verify anyway) | Where to verify | Staleness risk |
+| Service | What we believe (verify anyway) | Where to verify | Risk |
 |---|---|---|---|
-| **Firebase (Admin + client)** | Admin SDK for backend writes/token-verify; client SDK for reads/auth | Official Firebase docs; installed `firebase` / `firebase-admin` version | Medium |
-| **Monnify (Moniepoint)** | Sandbox `sandbox.monnify.com`, live `api.monnify.com`; test keys `MK_TEST_…`, live `MK_PROD_…` | Monnify developer docs (confirm auth flow, init-transaction + disbursement endpoints) | ⚠️ HIGH |
-| **Alerta (Encrisoft)** | Base `https://api.alerta.encrisoft.com/v2`; headers `x-api-key` + `x-api-secret`; send via `POST /v2/telegram/send`; channels limited to Slack/Discord/Teams/Telegram (no WhatsApp/native push) | `docs.encrisoft.com` (Alerta API reference) | ⚠️ HIGH |
-| **Privy** (only if Solana in scope) | Embedded Solana wallet + login; point RPC at devnet | Official Privy docs; installed SDK version | ⚠️ HIGH |
-| **LLM API (AI triage)** | One call: input incident context → output severity + summary + action | The chosen provider's current SDK/docs | Medium |
-| **Google Maps** | JS SDK for the map; billing account must be attached even for free tier | Google Maps Platform docs | Low |
-| **Solana / cNGN** (optional) | Devnet only; mint a **mock** cNGN SPL token for the demo; free devnet SOL from the faucet | Solana + SPL-token docs; do not use a mainnet token | ⚠️ HIGH |
+| **Fastify** | route registration, hooks/preHandler for auth, lifecycle | Fastify docs + installed version | Medium |
+| **Firebase Admin** | `verifyIdToken`, Firestore writes (Layer 0 already wires this) | Firebase Admin docs + installed `firebase-admin` | Medium |
+| **Monnify** | sandbox `sandbox.monnify.com`, keys `MK_TEST_…`; confirm auth + init/disbursement endpoints | Monnify developer docs | ⚠️ HIGH |
+| **Alerta** | `https://api.alerta.encrisoft.com/v2`, headers `x-api-key`+`x-api-secret`, `POST /v2/telegram/send` | `docs.encrisoft.com` | ⚠️ HIGH |
+| **LLM (AI triage)** | one call: incident context → severity + summary + action | provider's current SDK/docs | Medium |
 
-If a service isn't connected or you can't reach its docs, **stop and ask** — do not stub it with invented endpoints.
+> Mobile-side services (`@react-native-firebase`, `react-native-maps`, Privy) are the **frontend dev's** domain — don't wire them from the backend side.
 
 ---
 
 ## 6. Interaction protocol (every session)
 
-- **Start:** ask which part to work on → confirm scope → run the §4 checklist.
-- **During:** verify before using any library; if uncertain, ask rather than guess; keep the change small and within scope.
+- **Start:** ask which part → confirm scope → run the §5 checklist.
+- **During:** verify before using any library; ask when unsure; keep the change small and inside `apps/api`.
 - **After coding, always:**
-  1. Update **`docs/API.md`** — one entry per endpoint touched (see format below).
-  2. Add/refresh **JSDoc** on every exported function (purpose, params, returns, throws).
-  3. Give the human a **2–4 line summary**: what changed, which files, what to test, anything you had to verify or that surprised you.
-- **When blocked or unsure:** state what you tried, what's ambiguous, and ask. Never paper over uncertainty with a plausible-looking guess.
+  1. Update **`docs/API.md`** (entry per endpoint — format below).
+  2. Update **`docs/BACKEND_INTEGRATION.md`** if the mobile-facing contract changed.
+  3. Add/refresh **JSDoc** on exported functions.
+  4. Give the human a **2–4 line summary**: what changed, files, what to test, anything verified/surprising.
+- **Blocked/unsure:** say what you tried and ask. Never paper over uncertainty with a guess.
 
-**`docs/API.md` entry format (keep human-readable, no Swagger needed — see §7):**
+**`docs/API.md` entry format:**
 ```
-### POST /api/rides
+### POST /rides
 Auth: required (Firebase ID token)
 Body:  { fromStop: string, toStop: string, payMethod: "naira" | "cngn", priorityFee?: number }
 200:   { ok: true, data: { rideId, driverId, etaMin, fare } }
 4xx:   { ok: false, error: string }
-Notes: validates from ≠ to; assigns nearest keke (FCFS); surge fee only if active.
+Notes: from ≠ to; assigns nearest keke (FCFS); surge fee only if active.
 ```
 
 ---
 
-## 7. Documentation strategy — no Swagger (for now)
+## 7. Documentation strategy — no Swagger
 
-We deliberately **do not** add Swagger/OpenAPI tooling yet, because:
-- It's extra setup that doesn't pay off at hackathon scale.
-- **Zod schemas already are the contract** (validation + inferred types), and a human-readable **`docs/API.md`** (maintained by you after each task) covers the rest.
-- If interactive API docs are ever wanted, OpenAPI can be **generated from the existing Zod schemas later** (e.g. a zod-to-openapi step) with minimal effort — so keep schemas clean and colocated to make that easy.
+We don't add Swagger/OpenAPI tooling. The mobile dev gets the contract from three things that can't drift out of a working backend:
+1. **`docs/BACKEND_INTEGRATION.md`** — base URL, auth, response envelope, how to call each endpoint (the human-readable guide for the frontend dev).
+2. **`docs/API.md`** — the live endpoint registry you maintain.
+3. **Zod schemas + the `types`** — the actual validated shapes.
 
-So: **Zod = contract, `docs/API.md` = the human doc, JSDoc = inline.** That's the documentation bar for every task.
-
-### How the frontend knows what to wire (without Swagger)
-
-This is a **monorepo**, so the contract is shared code, not a separate spec — which is stronger than Swagger because the compiler enforces it and it can't drift:
-
-1. **Shared types are the contract.** The frontend imports the **same `/types` (and Zod-inferred types)** the backend uses. Wire a request/response wrong → it **won't compile**.
-2. **`docs/API.md` is the index** — every endpoint's path, auth, body, responses, notes. Read it to see what exists.
-3. **Typed API client (`/lib/api.ts`)** — thin typed `fetch` wrappers both sides import, so the frontend calls e.g. `api.bookRide(input)` with full autocomplete, never hand-writing URLs or guessing payloads.
-
-**Frontend wiring path:** read `API.md` → import the shared types → call the typed client. When you add or change an endpoint, you **must** keep `/types`, `docs/API.md`, and `/lib/api.ts` in sync — that trio *is* the frontend's contract.
-
-> Swagger only earns its place if the frontend becomes a separate repo / team / language, or there are external API consumers. Not our case — so don't add it.
+If interactive docs are ever wanted, OpenAPI can be generated from the Zod schemas later. Keep schemas clean and colocated to make that easy.
 
 ---
 
 ## 8. Environment variables (proposed names — confirm against the real `.env.example`)
 
-Names only. Never write real values here or in any committed file.
+Server-side, read only in `apps/api`. Never commit values.
 ```
-# Firebase (client — safe to expose)
-NEXT_PUBLIC_FIREBASE_API_KEY=
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=
-NEXT_PUBLIC_FIREBASE_...=
-# Firebase Admin (server — SECRET)
+# Firebase Admin (SECRET)
 FIREBASE_ADMIN_PROJECT_ID=
 FIREBASE_ADMIN_CLIENT_EMAIL=
 FIREBASE_ADMIN_PRIVATE_KEY=
-# Monnify (server — SECRET)
+# Monnify (SECRET)
 MONNIFY_API_KEY=
 MONNIFY_SECRET_KEY=
 MONNIFY_CONTRACT_CODE=
-MONNIFY_BASE_URL=        # sandbox vs live
-# Alerta (server — SECRET)
+MONNIFY_BASE_URL=
+# Alerta (SECRET)
 ALERTA_API_KEY=
 ALERTA_API_SECRET=
-ALERTA_TELEGRAM_TARGET=  # security group identifier
-# LLM (server — SECRET)
+ALERTA_TELEGRAM_TARGET=
+# LLM (SECRET)
 LLM_API_KEY=
-# Google Maps (client)
-NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=
+# Server
+PORT=
 ```
-Confirm the actual variable names with the human / the real `.env.example` before relying on them. If a needed var is missing, add it to `.env.example` (name + comment, no value) and tell the human.
+Layer 0 already reads `FIREBASE_ADMIN_*`. Confirm names against the actual `.env.example` before relying on them; add missing ones (name + comment, no value) and tell the human.
 
 ---
 
 ## 9. Definition of Done (every backend task)
 
-- [ ] Input validated with Zod; bad input returns the standard error shape.
-- [ ] Protected routes verify the Firebase ID token before doing anything.
-- [ ] No secret ever reaches the client; no key hardcoded.
-- [ ] Types updated in `/types`; no `any` without a written reason.
-- [ ] Errors caught; nothing leaks stack traces or secrets to the client.
-- [ ] External-service calls were **verified against current docs** before writing.
-- [ ] `docs/API.md` + JSDoc updated; summary given to the human.
-- [ ] Change stayed inside the agreed scope.
+- [ ] Input validated with Zod; bad input → standard error envelope.
+- [ ] Protected routes run `verifyRequest` before any logic.
+- [ ] No secret reaches the client; nothing hardcoded.
+- [ ] Types updated in `apps/api/src/types`; no `any` without a written reason.
+- [ ] Errors caught; no stack traces or secrets leaked.
+- [ ] External calls **verified against current docs** before writing.
+- [ ] `docs/API.md` (and `BACKEND_INTEGRATION.md` if mobile-facing) + JSDoc updated; summary given.
+- [ ] Change stayed inside `apps/api` and inside the agreed scope.
 
 ---
 
-*This manual is intentionally light on version-specific detail so it doesn't go stale. The contracts and boundaries are the stable part; everything version-specific must be verified live.*
+*Light on version-specific detail by design. Contracts and boundaries are the stable part; everything version-specific must be verified live.*

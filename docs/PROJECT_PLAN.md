@@ -4,7 +4,7 @@
 > **Primary target:** 🏆 Best Alerta Integration (₦150,000, Encrisoft) — *incident-comms.*
 > **Stacked target:** 🤖 Best AI Project (₦150,000) — AI incident triage (same body of work as Alerta).
 > **Light Solana touch (optional):** pay fare in cNGN on devnet — only to satisfy "how you use the chain" in the main-prize judging. **Escrow is cut.**
-> **Architecture:** **Monorepo, full-stack Next.js (TypeScript) + Firebase.** No separate backend service, no Python.
+> **Architecture:** **Monorepo: Fastify backend (TypeScript) + Expo / React Native mobile + Firebase.**
 > **Status:** Plan locked. Backend/data doc + coding next.
 
 ---
@@ -38,40 +38,46 @@ FUTO's SUG just introduced campus **kekes (tricycles)** — live next semester �
 
 | Layer | Choice | Notes |
 |---|---|---|
-| **Repo** | **Monorepo** | One Next.js app: frontend + backend together. |
-| **Frontend + Backend** | **Next.js (App Router, TypeScript)** | UI + Route Handlers/Server Actions. One language. |
-| **Auth** | **Firebase Auth** | Email/password + Google. Frontend talks to it directly. |
-| **Realtime location** | **Firebase Realtime Database** | Live keke/bus GPS. |
+| **Repo** | **Monorepo (`futo-ride`)** | `apps/mobile` (Expo app) + `apps/api` (Fastify backend). |
+| **Mobile app** | **React Native (Expo) + NativeWind** | The frontend dev's app, own conventions. Talks to the backend over HTTP. |
+| **Backend** | **Fastify (TypeScript), standalone** in `apps/api` | Secrets, token verify, logic, external calls, Admin-SDK writes. |
+| **Auth** | **Firebase Auth** | Email/password + Google. Mobile talks to it directly via `@react-native-firebase/auth`. |
+| **Realtime location** | **Firebase Realtime Database** | Live keke/bus GPS (mobile reads directly). |
 | **App data** | **Firebase Firestore** | Rides, users, ratings, incidents, history. |
-| **In-app push** | **FCM** | Native notifications. |
+| **In-app push** | **FCM** | Native notifications via `@react-native-firebase/messaging`. |
 | **Incident + social push** | **Alerta → Telegram** | SOS/incidents to SUG security; opt-in rider alerts. |
 | **Naira payments** | **Monnify (Moniepoint)** | Primary. Sandbox to build (`MK_TEST_`, `sandbox.monnify.com`). |
 | **Solana (optional)** | **cNGN direct transfer on devnet** + **Privy** wallet | Light touch only. No escrow. Cut freely. |
 | **AI triage** | **LLM API** (eg Claude) | Severity + summary + false-alarm filtering (§11). |
 | **Geo math** | **Turf.js** | Distance, nearest, geofence. Free, no infra. |
-| **Map UI** | **Google Maps SDK** | Familiar + data-rich. ⚠️ Needs a billing account attached even for free-tier usage. |
+| **Maps** | **`react-native-maps`** | Mobile-side (frontend dev's domain). |
 | **Scale later** | Redis GEO (Upstash) | `// TODO` — not needed at campus scale. |
 
 ---
 
 ## 5. Architecture (how it fits)
 
-**Monorepo layout (sketch):**
+**Monorepo layout:**
 ```
-/app
-  /(rider)        rider screens
-  /(driver)       driver screens
-  /api            Route Handlers  ← the "backend"
-/lib              firebaseClient, firebaseAdmin, turf utils, campusStops,
-                  routes (bus), alertaClient, monnifyClient, aiTriage
-/types            shared TS types (data models)
+futo-ride/
+├── apps/
+│   ├── mobile/          Expo + NativeWind app (frontend dev's domain)
+│   └── api/             Fastify backend (ours)
+│       └── src/
+│           ├── server.ts
+│           ├── lib/     http.ts · firebase-admin.ts · auth.ts (Layer 0) · monnify · alerta · ai-triage · geo · campus-stops
+│           ├── types/   shared data models
+│           └── routes/  Fastify route modules
+├── docs/                PROJECT_PLAN · BACKEND_INTEGRATION · FRONTEND_SCREENS · UI_PROMPTS · API.md
+├── AGENTS.md · CONVENTIONS.md · .env.example
 ```
 
 **Division of labour:**
-- **Frontend** — all UI; login via Firebase Auth directly; **realtime *reads*** (map, ride/bus status, notifications) straight from Firebase.
-- **Backend (Route Handlers)** — holds all secret keys; **verifies the Firebase ID token** (`firebase-admin verifyIdToken`); business logic (matching, fare, surge); external calls (Monnify, Alerta, LLM); authoritative writes via Admin SDK.
+- **Mobile app (Expo)** — all UI; login via Firebase Auth (`@react-native-firebase/auth`); **realtime *reads*** (map, ride/bus status, notifications) straight from Firebase. Calls our backend over HTTP for actions.
+- **Backend (Fastify)** — holds all secret keys; **verifies the Firebase ID token** (`verifyIdToken`); business logic (matching, fare, surge); external calls (Monnify, Alerta, LLM); authoritative writes via Admin SDK.
+- **The contract between them:** `docs/BACKEND_INTEGRATION.md` + `docs/API.md`.
 
-**Login flow:** frontend → Firebase Auth (gets ID token) → sends token to our Route Handlers → backend verifies token → trusts request. *Firebase issues identity; our backend only verifies, never issues.*
+**Login flow:** mobile → Firebase Auth (gets ID token) → sends token to our Fastify API → backend verifies token → trusts request. *Firebase issues identity; our backend only verifies, never issues.*
 
 **Safety of direct reads:** **Firebase Security Rules** restrict what each logged-in user can read/write (eg a rider reads only their own rides). Sensitive writes go through the backend Admin SDK.
 
@@ -291,7 +297,7 @@ Privy wallet on payment screen + optional cNGN direct transfer on devnet. Leave 
 
 | Decision | Locked value |
 |---|---|
-| Repo / stack | Monorepo, full-stack Next.js + Firebase |
+| Repo / stack | Monorepo: Fastify backend + Expo/RN mobile + Firebase |
 | Backend language | TypeScript (no Python/FastAPI) |
 | Escrow | **Cut** (not even a stretch for now) |
 | Priority fee | **Split with driver, 50/50** (tunable) |
@@ -321,7 +327,7 @@ Privy wallet on payment screen + optional cNGN direct transfer on devnet. Leave 
 ## 19. Next Steps
 
 1. Confirm the §17 "still to confirm" items.
-2. **Backend + data doc:** Route Handlers per screen, Firestore collections as TS types, Security Rules, and the Alerta/Monnify/AI client modules.
+2. **Backend + data doc:** Fastify route modules per resource, Firestore collections as TS types, Security Rules, and the Alerta/Monnify/AI client modules.
 3. Then scaffold the monorepo and build Phase 1.
 
 *End of v4 — consolidated, all decisions locked.*

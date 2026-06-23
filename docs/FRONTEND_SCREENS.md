@@ -2,7 +2,7 @@
 
 > **Purpose:** what each screen must *contain and do* — elements, data, actions, states — **not** colors, fonts, or visual styling (you'll design those).
 > **Use:** design each screen → feed designs to Gemini to replicate → hand data/actions to Claude for the backend (each screen's *data* and *actions* map to API endpoints later).
-> **Frontend:** Next.js. **Auth:** Firebase Auth (email/password + Google).
+> **Frontend:** React Native (Expo) + NativeWind. **Auth:** Firebase Auth (email/password + Google).
 > **MVP** = build first. **Optional** = after the core + Alerta + AI are done.
 
 ---
@@ -77,7 +77,7 @@ DRIVER MODE
 - **States:** no kekes available, surge banner on/off, recalculating fare.
 
 ### 7. Payment — *MVP (Naira) · cNGN optional*
-- **Purpose:** pay so the fare is locked (escrow).
+- **Purpose:** pay so the fare is collected.
 - **Elements:** amount summary (fare + priority fee); **Naira:** Monnify checkout (card / bank transfer / virtual account); **cNGN (optional):** wallet balance + pay button (Privy loads here only); pay action.
 - **Actions:** pay → on success, fare locked → Live Tracking.
 - **States:** processing, success, failure + retry.
@@ -86,13 +86,13 @@ DRIVER MODE
 - **Purpose:** watch the keke approach and ride.
 - **Elements:** map with keke moving toward pickup; **driver card** (name, plate, vehicle, rating); **ETA countdown**; **trip status** (assigned → arriving → arrived → started); **Cancel ride**; **persistent SOS**.
 - **Data shown:** live driver position, status, ETA (realtime).
-- **Actions:** cancel (refunds escrow), trigger SOS; at dropoff → Scan QR.
+- **Actions:** cancel ride, trigger SOS; at dropoff → Scan QR.
 - **States:** searching/assigning, arriving, in-trip, cancelled.
 
 ### 9. Scan QR to Complete — *MVP (core)*
-- **Purpose:** confirm trip end and release escrow.
+- **Purpose:** confirm trip end and trigger driver payout.
 - **Elements:** camera scanner; instruction ("scan the code on your driver's phone"); manual code-entry fallback.
-- **Actions:** scan valid code → release escrow → Trip Complete.
+- **Actions:** scan valid code → confirm → Trip Complete.
 - **States:** scanning, success, invalid code, camera-permission denied.
 
 ### 10. Trip Complete / Receipt — *MVP*
@@ -157,7 +157,7 @@ DRIVER MODE
 - Location permission + notification permission primers (shown before the map first loads).
 
 ### 20. Admin / SUG Security Dashboard (web) — *Optional*
-- **Note:** most incident response happens in the **Telegram/Discord** channels via Alerta, so a dashboard is optional.
+- **Note:** most incident response happens in the **Telegram** channels via Alerta, so a dashboard is optional.
 - **If built:** live incident feed (mirrors Telegram), fleet map, surge toggle, driver-supply view.
 
 ---

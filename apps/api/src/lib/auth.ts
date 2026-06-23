@@ -1,5 +1,5 @@
-import { adminAuth } from "@/lib/firebase-admin";
-import { HttpError } from "@/lib/http";
+import { adminAuth } from "./firebase-admin";
+import { HttpError } from "./http";
 
 /** The trusted identity resolved from a verified Firebase ID token. */
 export type AuthUser = {

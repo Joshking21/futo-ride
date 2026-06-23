@@ -1,15 +1,10 @@
 {
   "name": "futo-ride",
   "version": "1.0.0",
-  "description": "FUTO campus keke & bus app — full-stack Next.js + Firebase",
+  "description": "FUTO campus keke & bus app — Fastify backend + Expo mobile + Firebase",
   "private": true,
   "packageManager": "pnpm@10.34.4",
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
-  },
+  "scripts": {},
   "dependencies": {
     "firebase-admin": "^14.0.0",
     "zod": "^4.4.3"
@@ -19,3 +14,4 @@
     "typescript": "^6.0.3"
   }
 }
+

@@ -1,68 +1,65 @@
 # CONVENTIONS.md — Backend Coding Conventions
 
-> Backend = **Next.js (App Router, TypeScript)** Route Handlers / Server Actions in a **monorepo**.
-> These are *conventions* (stable). Anything version-specific (exact Next.js / SDK APIs) must be **verified against the installed version** — see `AGENTS.md` §4–5. Don't trust remembered signatures.
+> Backend = **Fastify (TypeScript)**, a standalone API server living in **`apps/api`** of the `futo-ride` monorepo.
+> These are *conventions* (stable). Anything version-specific (exact Fastify / Firebase / SDK APIs) must be **verified against the installed version** — see `AGENTS.md` §4–5. Don't trust remembered signatures.
+> This governs `apps/api` only. `apps/mobile` is the frontend dev's app — out of scope.
 
 ---
 
 ## 1. Language & runtime
 
-- **TypeScript only.** `strict` mode on. No `any` without a one-line `// reason:` comment.
-- Route Handlers that use the Firebase **Admin SDK** or other Node-only libs must run on the **Node runtime** (not Edge). Set the runtime explicitly per the current Next.js docs — **verify the directive for your installed version** rather than assuming.
-- `async/await` everywhere; never leave a floating promise.
+- **TypeScript only**, `strict` on. No `any` without a one-line `// reason:`.
+- **Fastify** server, bootstrapped in `apps/api/src/server.ts`.
+- `async/await`; no floating promises.
 
 ---
 
-## 2. Folder structure (mirror the plan)
+## 2. Folder structure
 
 ```
-/app
-  /(rider)            rider UI (later)
-  /(driver)           driver UI (later)
-  /api
-    /<resource>/route.ts      e.g. /api/rides/route.ts
-/lib
-  firebaseClient.ts   client SDK init (reads/auth)
-  firebaseAdmin.ts    admin SDK init (server writes/verify)
-  auth.ts             verifyRequest() — checks the Firebase ID token
-  http.ts             ok() / fail() response helpers
-  api.ts              typed client the frontend imports (the wiring layer)
-  monnify.ts          Monnify client (verify endpoints first)
-  alerta.ts           Alerta client (verify endpoints first)
-  aiTriage.ts         LLM incident triage
-  geo.ts              Turf helpers (distance, nearest, ETA)
-  campusStops.ts      hardcoded building coords
-  routes.ts           bus routes (ordered stop ids)
-/types
-  index.ts            shared data types
-/docs
-  PROJECT_PLAN.md
-  API.md              endpoint registry (you maintain this)
+apps/api/src/
+  server.ts          Fastify bootstrap + plugin/route registration
+  lib/
+    http.ts          ok() / fail() envelope + HttpError   (Layer 0)
+    firebase-admin.ts Admin SDK singleton, adminAuth()     (Layer 0)
+    auth.ts          verifyRequest() — verifies the ID token (Layer 0)
+    monnify.ts       Monnify client (verify endpoints first)
+    alerta.ts        Alerta client (verify endpoints first)
+    ai-triage.ts     LLM incident triage
+    geo.ts           Turf helpers (distance, nearest, ETA)
+    campus-stops.ts  hardcoded building coords
+    routes-data.ts   bus routes (ordered stop ids)
+  types/
+    index.ts         shared data models (User, Driver, Ride, …)
+  routes/
+    <resource>.ts    one module per resource (rides, drivers, incidents, …)
+  schemas/
+    <resource>.ts    Zod schemas (colocated or here if shared)
 ```
 
-One concern per file. Shared logic goes in `/lib`, never duplicated across routes.
+One concern per file. Shared logic in `lib/`, never duplicated across routes.
 
 ---
 
 ## 3. Naming
 
-- **Files:** kebab-case (`ride-options.ts`). Route folders match the resource (`/api/rides`).
-- **Types / interfaces:** PascalCase (`Ride`, `Incident`).
-- **Functions / variables:** camelCase. Booleans read as questions (`isOnline`, `hasPaid`).
+- **Files:** kebab-case (`ride-options.ts`).
+- **Types/interfaces:** PascalCase (`Ride`, `Incident`).
+- **Functions/variables:** camelCase; booleans read as questions (`isOnline`, `hasPaid`).
 - **Env vars:** SCREAMING_SNAKE_CASE.
-- **Constants:** SCREAMING_SNAKE for true constants; otherwise camelCase.
 
 ---
 
-## 4. API route pattern
+## 4. Route pattern
 
-Every protected handler follows the same shape: **verify auth → validate input → do work → return the standard envelope**. (Treat this as the *pattern*; confirm Next.js specifics for your version.)
+Every protected route follows: **verify auth → validate input → do work → return the envelope.** Treat the code below as the *pattern* — confirm Fastify's current route/hook API against the installed version.
 
 ```ts
-// /app/api/rides/route.ts  (illustrative pattern, not version-pinned)
+// apps/api/src/routes/rides.ts  (illustrative — verify Fastify specifics)
+import type { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { verifyRequest } from "@/lib/auth";
-import { ok, fail } from "@/lib/http";
+import { verifyRequest } from "../lib/auth";
+import { ok, fail, HttpError } from "../lib/http";
 
 const BookRide = z.object({
   fromStop: z.string(),
@@ -71,100 +68,99 @@ const BookRide = z.object({
   priorityFee: z.number().nonnegative().optional(),
 });
 
-export async function POST(req: Request) {
-  try {
-    const user = await verifyRequest(req);          // throws if token invalid
-    const body = BookRide.parse(await req.json());   // throws on bad input
-    if (body.fromStop === body.toStop) return fail("from and to must differ", 400);
+export default async function rideRoutes(app: FastifyInstance) {
+  app.post("/rides", async (req, reply) => {
+    try {
+      const user = await verifyRequest(req);          // throws if token invalid
+      const body = BookRide.parse(req.body);           // throws on bad input
+      if (body.fromStop === body.toStop) throw new HttpError(400, "from and to must differ");
 
-    // ...business logic (match nearest keke, fare, surge)...
+      // ...business logic (match nearest keke, fare, surge)...
 
-    return ok({ rideId, driverId, etaMin, fare });
-  } catch (e) {
-    return fail(e);   // never leak stack/secret; log server-side
-  }
+      return ok({ rideId, driverId, etaMin, fare });
+    } catch (e) {
+      return fail(e);   // maps ZodError + HttpError to clean messages; never leaks internals
+    }
+  });
 }
 ```
+
+Register route modules in `server.ts`. Prefer one module per resource.
 
 ---
 
 ## 5. Validation — Zod
 
-- **Every** request body / query / param is parsed with a Zod schema. No unvalidated input reaches logic.
-- Infer types from schemas where practical (`z.infer<typeof BookRide>`) so the contract has one source of truth.
-- Keep schemas colocated with their route (or in `/lib` if shared) so OpenAPI could be generated from them later if ever needed.
+- **Every** body/query/param is parsed with a Zod schema. No unvalidated input reaches logic.
+- Infer types from schemas where practical (`z.infer<typeof BookRide>`).
+- Keep schemas colocated with their route (or in `schemas/` if shared) so OpenAPI could be generated later if ever needed.
 
 ---
 
-## 6. Response shape (one envelope everywhere)
+## 6. Response shape (one envelope — Layer 0 already provides this)
 
 ```ts
-// success
-{ ok: true,  data: T }
-// failure
-{ ok: false, error: string }
+{ ok: true,  data: T }      // success
+{ ok: false, error: string } // failure
 ```
 
-Helpers in `/lib/http.ts`: `ok(data, status=200)` and `fail(err, status=400)`. `fail` maps known errors to clean messages and **never** returns a stack trace, secret, or raw third-party error to the client.
+Use `ok(data)` / `fail(err)` from `lib/http.ts`. `fail` maps `ZodError` and `HttpError` to clean messages and **never** returns a stack trace, secret, or raw third-party error to the client.
 
-Status codes: `200` success · `400` bad input · `401` missing/invalid token · `403` not allowed · `404` not found · `409` conflict · `500` unexpected.
+Status codes: `200` ok · `400` bad input · `401` missing/invalid token · `403` not allowed · `404` not found · `409` conflict · `500` unexpected.
 
 ---
 
-## 7. Auth
+## 7. Auth (Layer 0 already wires this)
 
-- Protected routes call `verifyRequest(req)` first. It reads the `Authorization: Bearer <idToken>` header and verifies it with the Firebase **Admin SDK** (`verifyIdToken`) — **verify the exact method name/signature against the installed `firebase-admin` version.**
-- The verified `uid` is the source of identity. Never trust a `userId` sent in the body.
+- Protected routes call `verifyRequest(req)` first — it reads `Authorization: Bearer <idToken>` and verifies it via the Admin SDK, returning the trusted identity.
+- The verified `uid` is the source of identity. **Never** trust a `userId` from the body.
 - The backend **verifies** tokens; it never **issues** them.
 
 ---
 
-## 8. Firebase usage rules
+## 8. Firebase usage
 
-- **Client SDK** (`/lib/firebaseClient.ts`) → reads + realtime subscriptions + auth, used by the **frontend only**.
-- **Admin SDK** (`/lib/firebaseAdmin.ts`) → privileged writes + token verification, used by the **backend only**.
-- Never mix them. Never write authoritative data from the client; route it through a Route Handler.
-- Firestore is **schemaless** — enforce shape with Zod + `/types`. No JOINs: denormalise instead.
+- Use the **Admin SDK** (`lib/firebase-admin.ts`) for privileged writes + token verification.
+- The mobile app reads realtime data **directly** from Firebase — that's not our code. Don't build read endpoints for data the client can subscribe to itself, unless there's a real reason (logic, secrets).
+- Firestore is **schemaless** — enforce shape with Zod + `types/`. No JOINs: denormalise.
 
 ---
 
 ## 9. Error handling & logging
 
-- Wrap handler bodies in `try/catch`; convert to the standard `fail` envelope.
-- Log full errors **server-side** (console or a logger); send only a safe message to the client.
-- Validate external-service responses too — don't assume Monnify/Alerta/LLM returned what you expect; handle their failure paths.
+- Wrap route bodies in `try/catch` → `fail()`.
+- Log full errors **server-side**; send only safe messages out.
+- Validate external-service responses (Monnify/Alerta/LLM) — handle their failure paths; don't assume success.
 
 ---
 
 ## 10. Secrets & env
 
-- All secrets via `process.env`, read **only** in server code. Client may read `NEXT_PUBLIC_*` only.
-- Never hardcode keys; never commit `.env`. Keep `.env.example` updated with **names + comments, no values**.
+- All secrets via `process.env`, read only in `apps/api`. Never hardcode; never commit `.env`.
+- Keep `.env.example` updated with **names + comments, no values**.
 
 ---
 
-## 11. Documentation (the human cares about this)
+## 11. Documentation & comments
 
-- **JSDoc** on every exported function: what it does, params, returns, throws.
-- **Comments explain *why*, not *what*** — skip narrating obvious code; document decisions, gotchas, and any verified-API quirks.
-- **Comments are short and rare.** No decorative banners or separator lines (`// ======`, ASCII art, section dividers). No multi-line essays — if a comment is creeping toward ~5 lines, you're writing a novel: cut it, or simplify the code so it doesn't need explaining. One concise line where the code genuinely can't speak for itself. JSDoc on exports is the exception (it's structured, kept tight).
-- After each task, update **`docs/API.md`** (per `AGENTS.md` §6 format).
-- **No Swagger** for now (see `AGENTS.md` §7) — Zod + `API.md` + JSDoc is the bar.
+- **JSDoc** on exported functions (purpose, params, returns, throws) — kept tight.
+- **Comments are short and rare.** No decorative banners or separator lines, no multi-line essays — if a comment nears ~5 lines, simplify the code instead. One concise line where the code can't speak for itself.
+- Comments explain *why*, not *what*.
+- After each task update `docs/API.md` (and `docs/BACKEND_INTEGRATION.md` if mobile-facing). **No Swagger** (see `AGENTS.md` §7).
 
 ---
 
 ## 12. Versions & freshness
 
-- Pin nothing from memory. Before using a library feature, check its **installed version** and **current docs**.
-- If installed behaviour differs from these conventions or the plan, **the installed library wins** — adapt and tell the human.
-- Prefer the smallest dependency set that does the job; ask before adding a new dependency.
+- Pin nothing from memory. Verify Fastify, Firebase, Zod, and any client lib against the **installed version** before use.
+- If installed behaviour differs from these conventions, **the installed library wins** — adapt and tell the human.
+- Ask before adding a dependency; prefer the smallest set.
 
 ---
 
-## 13. Commits (light, but clean)
+## 13. Commits
 
-- Conventional-commit style: `feat:`, `fix:`, `docs:`, `refactor:`, `chore:`.
-- Small, scoped commits — one logical change each. Don't bundle unrelated edits.
+- Conventional-commit style: `feat:`, `fix:`, `docs:`, `refactor:`, `chore:`. Small, scoped commits.
 
 ---
 
