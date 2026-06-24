@@ -1,278 +1,259 @@
 <!DOCTYPE html>
 
-<html lang="en"><head>
+<html class="light" lang="en"><head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Profile Account</title>
+<title>Profile Settings - Futo Ride</title>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
 <script id="tailwind-config">
-  tailwind.config = {
-    darkMode: "class",
-    theme: {
-      extend: {
-        "colors": {
-                "outline": "#757687",
-                "background": "#f8f9ff",
-                "on-tertiary": "#ffffff",
-                "inverse-surface": "#213145",
-                "primary-container": "#1d35d1",
-                "surface-bright": "#f8f9ff",
-                "secondary-container": "#dfe2eb",
-                "surface-container": "#e5eeff",
-                "outline-variant": "#c5c5d8",
-                "secondary-fixed": "#dfe2eb",
-                "error-container": "#ffdad6",
-                "on-secondary-fixed-variant": "#43474e",
-                "on-tertiary-fixed": "#181b24",
-                "surface-container-low": "#eff4ff",
-                "tertiary-fixed-dim": "#c3c6d2",
-                "on-error-container": "#93000a",
-                "on-secondary-fixed": "#181c22",
-                "on-error": "#ffffff",
-                "primary-fixed": "#dfe0ff",
-                "surface-tint": "#354be2",
-                "on-tertiary-container": "#bbbeca",
-                "on-secondary": "#ffffff",
-                "on-surface-variant": "#444655",
-                "on-surface": "#0b1c30",
-                "inverse-primary": "#bcc2ff",
-                "surface": "#f8f9ff",
-                "error": "#ba1a1a",
-                "primary-fixed-dim": "#bcc2ff",
-                "tertiary-container": "#4a4d57",
-                "on-primary-fixed": "#000c61",
-                "on-secondary-container": "#61646c",
-                "surface-container-high": "#dce9ff",
-                "surface-dim": "#cbdbf5",
-                "primary": "#001caa",
-                "surface-container-lowest": "#ffffff",
-                "on-background": "#0b1c30",
-                "on-primary-container": "#b1b9ff",
-                "on-primary-fixed-variant": "#112ccb",
-                "secondary-fixed-dim": "#c3c6cf",
-                "secondary": "#5b5e66",
-                "on-primary": "#ffffff",
-                "tertiary": "#333640",
-                "surface-variant": "#d3e4fe",
-                "on-tertiary-fixed-variant": "#434751",
-                "surface-container-highest": "#d3e4fe",
-                "inverse-on-surface": "#eaf1ff",
-                "tertiary-fixed": "#e0e2ef"
-        },
-        "borderRadius": {
-                "DEFAULT": "0.25rem",
-                "lg": "0.5rem",
-                "xl": "0.75rem",
-                "full": "9999px"
-        },
-        "spacing": {
-                "xl": "32px",
-                "lg": "24px",
-                "unit": "4px",
-                "gutter": "16px",
-                "margin-mobile": "20px",
-                "margin-desktop": "40px",
-                "xs": "4px",
-                "sm": "8px",
-                "md": "16px"
-        },
-        "fontFamily": {
-                "body-md": [
-                        "Plus Jakarta Sans"
-                ],
-                "body-lg": [
-                        "Plus Jakarta Sans"
-                ],
-                "body-sm": [
-                        "Plus Jakarta Sans"
-                ],
-                "headline-md": [
-                        "Plus Jakarta Sans"
-                ],
-                "label-sm": [
-                        "Plus Jakarta Sans"
-                ],
-                "headline-lg-mobile": [
-                        "Plus Jakarta Sans"
-                ],
-                "headline-lg": [
-                        "Plus Jakarta Sans"
-                ],
-                "label-md": [
-                        "Plus Jakarta Sans"
-                ],
-                "headline-xl": [
-                        "Plus Jakarta Sans"
-                ]
-        },
-        "fontSize": {
-                "body-md": [
-                        "16px",
-                        {
-                                "lineHeight": "24px",
-                                "fontWeight": "400"
-                        }
-                ],
-                "body-lg": [
-                        "18px",
-                        {
-                                "lineHeight": "28px",
-                                "fontWeight": "400"
-                        }
-                ],
-                "body-sm": [
-                        "14px",
-                        {
-                                "lineHeight": "20px",
-                                "fontWeight": "400"
-                        }
-                ],
-                "headline-md": [
-                        "24px",
-                        {
-                                "lineHeight": "32px",
-                                "fontWeight": "600"
-                        }
-                ],
-                "label-sm": [
-                        "12px",
-                        {
-                                "lineHeight": "16px",
-                                "fontWeight": "500"
-                        }
-                ],
-                "headline-lg-mobile": [
-                        "28px",
-                        {
-                                "lineHeight": "36px",
-                                "fontWeight": "700"
-                        }
-                ],
-                "headline-lg": [
-                        "32px",
-                        {
-                                "lineHeight": "40px",
-                                "letterSpacing": "-0.02em",
-                                "fontWeight": "700"
-                        }
-                ],
-                "label-md": [
-                        "14px",
-                        {
-                                "lineHeight": "20px",
-                                "fontWeight": "600"
-                        }
-                ],
-                "headline-xl": [
-                        "40px",
-                        {
-                                "lineHeight": "48px",
-                                "letterSpacing": "-0.02em",
-                                "fontWeight": "700"
-                        }
-                ]
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary": "#333640",
+                        "on-secondary": "#ffffff",
+                        "on-surface-variant": "#444655",
+                        "on-error": "#ffffff",
+                        "background": "#f8f9ff",
+                        "on-primary-fixed-variant": "#112ccb",
+                        "inverse-on-surface": "#eaf1ff",
+                        "surface-container-highest": "#d3e4fe",
+                        "surface-container-low": "#eff4ff",
+                        "on-secondary-fixed": "#181c22",
+                        "primary-fixed": "#dfe0ff",
+                        "surface": "#f8f9ff",
+                        "surface-variant": "#d3e4fe",
+                        "surface-container": "#e5eeff",
+                        "surface-container-lowest": "#ffffff",
+                        "tertiary-fixed": "#e0e2ef",
+                        "on-tertiary-fixed": "#181b24",
+                        "on-surface": "#0b1c30",
+                        "outline-variant": "#c5c5d8",
+                        "outline": "#757687",
+                        "on-error-container": "#93000a",
+                        "secondary-fixed": "#dfe2eb",
+                        "on-secondary-container": "#61646c",
+                        "tertiary-fixed-dim": "#c3c6d2",
+                        "primary-container": "#1d35d1",
+                        "on-tertiary": "#ffffff",
+                        "inverse-primary": "#bcc2ff",
+                        "primary": "#001caa",
+                        "on-tertiary-container": "#bbbeca",
+                        "on-primary": "#ffffff",
+                        "surface-tint": "#354be2",
+                        "on-secondary-fixed-variant": "#43474e",
+                        "error": "#ba1a1a",
+                        "secondary-container": "#dfe2eb",
+                        "on-primary-fixed": "#000c61",
+                        "inverse-surface": "#213145",
+                        "secondary-fixed-dim": "#c3c6cf",
+                        "surface-dim": "#cbdbf5",
+                        "secondary": "#5b5e66",
+                        "primary-fixed-dim": "#bcc2ff",
+                        "on-background": "#0b1c30",
+                        "tertiary-container": "#4a4d57",
+                        "on-tertiary-fixed-variant": "#434751",
+                        "error-container": "#ffdad6",
+                        "surface-bright": "#f8f9ff",
+                        "on-primary-container": "#b1b9ff",
+                        "surface-container-high": "#dce9ff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "xs": "4px",
+                        "margin-desktop": "40px",
+                        "unit": "4px",
+                        "sm": "8px",
+                        "gutter": "16px",
+                        "xl": "32px",
+                        "md": "16px",
+                        "lg": "24px",
+                        "margin-mobile": "20px"
+                    },
+                    "fontFamily": {
+                        "label-sm": ["Plus Jakarta Sans"],
+                        "headline-lg-mobile": ["Plus Jakarta Sans"],
+                        "headline-lg": ["Plus Jakarta Sans"],
+                        "label-md": ["Plus Jakarta Sans"],
+                        "headline-md": ["Plus Jakarta Sans"],
+                        "body-sm": ["Plus Jakarta Sans"],
+                        "headline-xl": ["Plus Jakarta Sans"],
+                        "body-lg": ["Plus Jakarta Sans"],
+                        "body-md": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "label-sm": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
+                        "headline-lg-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "700" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "label-md": ["14px", { "lineHeight": "20px", "fontWeight": "600" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "body-sm": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "headline-xl": ["40px", { "lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }]
+                    }
+                }
+            }
         }
-},
-    },
-  }
-</script>
+    </script>
 <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #f8f9ff;
+            color: #0b1c30;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.filled {
+            font-variation-settings: 'FILL' 1;
+        }
+        
+        /* Utility to push content below fixed header and above fixed bottom nav */
+        .content-padding {
+            padding-top: 64px; /* approx header height */
+            padding-bottom: 80px; /* approx bottom nav height */
+        }
     </style>
 <style>
     body {
       min-height: max(884px, 100dvh);
     }
   </style>
-</head>
-<body class="bg-background text-on-background min-h-screen flex flex-col font-body-md text-body-md">
-<!-- TopAppBar from JSON -->
-<header class="fixed top-0 w-full z-50 flex justify-between items-center px-margin-mobile h-[48px] bg-surface border-b border-outline-variant">
-<button aria-label="Go Back" class="h-[48px] w-[48px] flex items-center justify-start text-primary hover:bg-surface-container-high transition-colors rounded-full">
+  </head>
+<body class="bg-background antialiased flex flex-col min-h-screen">
+<!-- TopAppBar JSON Anchor -->
+<header class="fixed top-0 w-full z-50 flex justify-between items-center px-margin-mobile md:px-margin-desktop h-16 bg-surface border-b border-outline-variant flat no shadows text-primary">
+<button aria-label="Go back" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container-high transition-colors text-secondary">
 <span class="material-symbols-outlined">arrow_back</span>
 </button>
-<h1 class="text-headline-md font-headline-md text-primary">Futo Ride</h1>
-<button aria-label="Wallet" class="h-[48px] w-[48px] flex items-center justify-end text-primary hover:bg-surface-container-high transition-colors rounded-full">
+<h1 class="text-headline-md font-headline-md font-bold text-primary">JayBobo Transit</h1>
+<button aria-label="Wallet" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container-high transition-colors text-secondary">
 <span class="material-symbols-outlined">account_balance_wallet</span>
 </button>
 </header>
-<!-- Main Canvas -->
-<main class="flex-grow pt-[80px] pb-[100px] px-margin-mobile w-full max-w-md mx-auto flex flex-col gap-lg relative z-10">
-<!-- Profile Header -->
-<section class="flex flex-col items-center text-center mt-md">
-<div class="relative w-24 h-24 rounded-full overflow-hidden mb-sm border-4 border-surface-container-lowest shadow-sm">
-<img class="w-full h-full object-cover" data-alt="A high-quality, professional headshot of a young university student in a bright, modern setting. The lighting is crisp and natural, highlighting a friendly, confident expression. The color palette features subtle campus green accents against a clean white and light gray background, matching a modern, minimalist high-contrast app design." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCKv18St18L7X2vZAAMPrAWpe_RTK8EptXVp0FFMqsUDuP_GgeffQiG2BXUbeBK5fAppU3V1r1xiIbGeVUoaoTLduIBmWdC2WEHiVaf2hilbRU54kKuZ7O6ukr9iC-soO0wPXucYYRHL1OQTZr0q7bDRr1TZqfKpkpL290p2tVDrufDqbY7kxXIdHRNxOex755J1_4AtLe8z7qbpg1umUVPxW4tt5r_i6df9PbNJdOf5PFxcsnG6bDlUgGoGZnLt0vZSzW4H3KHhOMD"/>
+<!-- Main Content Area -->
+<main class="flex-grow content-padding px-margin-mobile md:px-margin-desktop max-w-3xl mx-auto w-full">
+<!-- Profile Header Section -->
+<section class="flex flex-col items-center mt-xl mb-xl">
+<div class="relative w-24 h-24 mb-md">
+<img alt="Alex Johnson Profile Picture" class="w-full h-full object-cover rounded-full shadow-lg border-4 border-surface" data-alt="A professional, modern headshot of a young adult male named Alex Johnson. He is smiling warmly, set against a clean, light mode corporate background with subtle blue geometric shapes. The lighting is soft and flattering, emphasizing approachability and trust, fitting for a reliable mobility app profile picture." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA0ZoKdyw0_GQ4tw5_rHR6dwxdOPkjSEMbmdDPOZbPz1ttIGFcCsgQafeu2GPXaoCt3CBQrVPtRY_mwCr8e6-fJWXFbbUQb87bJygcXqFXG_bn4L3cQnU3UOoN0RBlk5_RQ-E5mJKOGlgkJAdwG6Og5ybluKP6R1wByrBXKAjjJpW720bk8DGRes0mY_YV0Kb19frXjPCZMgDocUGVMUpboTBReMkfawA4TKHRVgvuMPgHRedW58QJSZ9ZvRUxqssrrkCUNgexgmAr-"/>
+<button aria-label="Edit Profile" class="absolute bottom-0 right-0 bg-primary text-on-primary w-8 h-8 rounded-full flex items-center justify-center shadow-md hover:bg-surface-tint transition-colors">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
 </div>
-<h2 class="text-headline-md font-headline-md text-on-surface">Alex Johnson</h2>
-<p class="text-body-md font-body-md text-secondary mt-1">alex.johnson@futo.edu.ng</p>
+<h2 class="text-headline-lg-mobile md:text-headline-lg font-headline-lg-mobile md:font-headline-lg text-on-surface">Alex Johnson</h2>
+<p class="text-body-md font-body-md text-secondary">alex.johnson@example.com</p>
+<div class="mt-sm bg-surface-container-low px-4 py-1 rounded-full border border-outline-variant inline-flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[16px] filled">verified</span>
+<span class="text-label-sm font-label-sm text-primary">Verified Rider</span>
+</div>
 </section>
-<!-- Settings List -->
-<section class="bg-surface-container-lowest rounded-xl border border-surface-variant overflow-hidden shadow-sm">
-<ul class="flex flex-col divide-y divide-surface-variant">
-<li>
-<button class="w-full flex items-center justify-between px-gutter py-4 hover:bg-surface-container-low transition-colors group">
-<div class="flex items-center gap-4">
-<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant group-hover:text-primary transition-colors">
-<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">payments</span>
+<!-- Settings Options List (Glassmorphism inspired container) -->
+<section class="bg-surface-container rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.05)] border border-outline-variant overflow-hidden mb-xl">
+<ul class="flex flex-col">
+<!-- Payment Methods -->
+<li class="border-b border-outline-variant last:border-b-0">
+<button class="w-full flex items-center justify-between p-md hover:bg-surface-container-high transition-colors group">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 rounded-lg bg-surface flex items-center justify-center text-primary group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined">payments</span>
 </div>
-<span class="text-body-lg font-body-lg text-on-surface">Payment Methods</span>
+<div class="text-left">
+<h3 class="text-label-md font-label-md text-on-surface">Payment Methods</h3>
+<p class="text-body-sm font-body-sm text-secondary">Manage cards &amp; wallets</p>
 </div>
-<span class="material-symbols-outlined text-secondary">chevron_right</span>
+</div>
+<span class="material-symbols-outlined text-outline">chevron_right</span>
 </button>
 </li>
-<li>
-<button class="w-full flex items-center justify-between px-gutter py-4 hover:bg-surface-container-low transition-colors group">
-<div class="flex items-center gap-4">
-<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant group-hover:text-primary transition-colors">
-<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">send</span>
+<!-- Telegram Connection -->
+<li class="border-b border-outline-variant last:border-b-0">
+<button class="w-full flex items-center justify-between p-md hover:bg-surface-container-high transition-colors group">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 rounded-lg bg-surface flex items-center justify-center text-[#229ED9] group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined">send</span> <!-- Using send as a proxy for Telegram icon if custom isn't available -->
 </div>
-<span class="text-body-lg font-body-lg text-on-surface">Telegram Connection</span>
+<div class="text-left">
+<h3 class="text-label-md font-label-md text-on-surface">Telegram Connection</h3>
+<p class="text-body-sm font-body-sm text-secondary">Connected as @alex_j</p>
 </div>
-<span class="material-symbols-outlined text-secondary">chevron_right</span>
+</div>
+<span class="text-label-sm font-label-sm text-primary bg-primary-fixed px-2 py-1 rounded-full">Active</span>
 </button>
 </li>
-<li>
-<button class="w-full flex items-center justify-between px-gutter py-4 hover:bg-surface-container-low transition-colors group">
-<div class="flex items-center gap-4">
-<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant group-hover:text-primary transition-colors">
-<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">notifications</span>
+<!-- Notification Prefs -->
+<li class="border-b border-outline-variant last:border-b-0">
+<button class="w-full flex items-center justify-between p-md hover:bg-surface-container-high transition-colors group">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 rounded-lg bg-surface flex items-center justify-center text-primary group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined">notifications_active</span>
 </div>
-<span class="text-body-lg font-body-lg text-on-surface">Notification Prefs</span>
+<div class="text-left">
+<h3 class="text-label-md font-label-md text-on-surface">Notification Preferences</h3>
+<p class="text-body-sm font-body-sm text-secondary">Push, SMS, Email</p>
 </div>
-<span class="material-symbols-outlined text-secondary">chevron_right</span>
+</div>
+<span class="material-symbols-outlined text-outline">chevron_right</span>
+</button>
+</li>
+<!-- Support / Help -->
+<li class="border-b border-outline-variant last:border-b-0">
+<button class="w-full flex items-center justify-between p-md hover:bg-surface-container-high transition-colors group">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 rounded-lg bg-surface flex items-center justify-center text-secondary group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined">help</span>
+</div>
+<div class="text-left">
+<h3 class="text-label-md font-label-md text-on-surface">Help &amp; Support</h3>
+<p class="text-body-sm font-body-sm text-secondary">FAQs, Contact us</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline">chevron_right</span>
 </button>
 </li>
 </ul>
 </section>
-<!-- Action Area -->
-<section class="mt-auto pt-md pb-lg">
-<button class="w-full h-[56px] bg-error text-on-error rounded-lg flex items-center justify-center gap-2 text-label-md font-label-md hover:opacity-90 transition-opacity shadow-sm">
-<span class="material-symbols-outlined">logout</span>
+<!-- Danger Zone / Log Out -->
+<section class="mt-auto pb-xl w-full">
+<button class="w-full py-3 px-6 rounded-lg bg-error-container text-error text-label-md font-label-md hover:bg-[#ffc2bc] transition-colors flex items-center justify-center gap-2 border border-[#ffb4ab]">
+<span class="material-symbols-outlined text-[20px]">logout</span>
                 Log Out
             </button>
 </section>
 </main>
-<!-- BottomNavBar from JSON -->
-<!-- Active Tab corresponds to 'Account' Intent -->
-<nav class="fixed bottom-0 w-full z-50 flex justify-around items-center px-4 py-2 bg-surface shadow-[0_-4px_12px_rgba(0,0,0,0.1)]">
-<button class="flex flex-col items-center justify-center text-secondary hover:bg-surface-container-low transition-colors px-4 py-2 rounded-lg min-w-[64px]">
+<!-- BottomNavBar JSON Anchor (Visible on mobile, theoretically hidden on wide desktop if side nav existed, but standard per instructions) -->
+<nav class="md:hidden fixed bottom-0 w-full z-50 flex justify-around items-center px-4 py-2 bg-surface shadow-[0_-4px_12px_rgba(0,0,0,0.1)]">
+<!-- Home (Inactive) -->
+<a class="flex flex-col items-center justify-center text-secondary hover:bg-surface-container-low transition-colors p-2 rounded-lg w-16" href="#">
 <span class="material-symbols-outlined mb-1">home</span>
-<span class="text-label-md font-label-md">Home</span>
-</button>
-<button class="flex flex-col items-center justify-center text-secondary hover:bg-surface-container-low transition-colors px-4 py-2 rounded-lg min-w-[64px]">
+<span class="text-label-sm font-label-sm">Home</span>
+</a>
+<!-- Rides (Inactive) -->
+<a class="flex flex-col items-center justify-center text-secondary hover:bg-surface-container-low transition-colors p-2 rounded-lg w-16" href="#">
 <span class="material-symbols-outlined mb-1">history</span>
-<span class="text-label-md font-label-md">Rides</span>
-</button>
-<button class="flex flex-col items-center justify-center text-secondary hover:bg-surface-container-low transition-colors px-4 py-2 rounded-lg min-w-[64px]">
+<span class="text-label-sm font-label-sm">Rides</span>
+</a>
+<!-- Alerts (Inactive) -->
+<a class="flex flex-col items-center justify-center text-secondary hover:bg-surface-container-low transition-colors p-2 rounded-lg w-16" href="#">
 <span class="material-symbols-outlined mb-1">notifications</span>
-<span class="text-label-md font-label-md">Alerts</span>
-</button>
-<!-- Active Tab -->
-<button class="flex flex-col items-center justify-center text-primary font-bold hover:bg-surface-container-low transition-colors px-4 py-2 rounded-lg min-w-[64px] scale-95 transition-transform duration-200">
-<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">person</span>
-<span class="text-label-md font-label-md">Account</span>
-</button>
+<span class="text-label-sm font-label-sm">Alerts</span>
+</a>
+<!-- Account (Active) -->
+<a class="flex flex-col items-center justify-center text-primary font-bold opacity-80 scale-95 transition-transform duration-200 p-2 rounded-lg w-16" href="#">
+<div class="bg-primary-container text-on-primary-container px-4 py-1 rounded-full mb-1">
+<span class="material-symbols-outlined filled">person</span>
+</div>
+<span class="text-label-sm font-label-sm text-primary">Account</span>
+</a>
 </nav>
 </body></html>

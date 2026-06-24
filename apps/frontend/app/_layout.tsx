@@ -21,9 +21,10 @@ function RootLayoutNav() {
         >
           <Stack.Screen name="index" />
           <Stack.Screen name="login" />
-          <Stack.Screen name="signup" />
+          <Stack.Screen name="sign" />
           <Stack.Screen name="(rider)" />
           <Stack.Screen name="(driver)" />
+          <Stack.Screen name="sos" />
         </Stack>
       </GluestackUIProvider>
     </AppProvider>

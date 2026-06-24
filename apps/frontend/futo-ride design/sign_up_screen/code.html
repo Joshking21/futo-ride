@@ -1,297 +1,224 @@
 <!DOCTYPE html>
 
-<html class="light" lang="en"><head>
+<html lang="en"><head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>Create Account - Futo Ride</title>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Google Fonts: Plus Jakarta Sans -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Configuration -->
 <script id="tailwind-config">
-  tailwind.config = {
-    darkMode: "class",
-    theme: {
-      extend: {
-        "colors": {
-                "outline": "#757687",
-                "background": "#f8f9ff",
-                "on-tertiary": "#ffffff",
-                "inverse-surface": "#213145",
-                "primary-container": "#1d35d1",
-                "surface-bright": "#f8f9ff",
-                "secondary-container": "#dfe2eb",
-                "surface-container": "#e5eeff",
-                "outline-variant": "#c5c5d8",
-                "secondary-fixed": "#dfe2eb",
-                "error-container": "#ffdad6",
-                "on-secondary-fixed-variant": "#43474e",
-                "on-tertiary-fixed": "#181b24",
-                "surface-container-low": "#eff4ff",
-                "tertiary-fixed-dim": "#c3c6d2",
-                "on-error-container": "#93000a",
-                "on-secondary-fixed": "#181c22",
-                "on-error": "#ffffff",
-                "primary-fixed": "#dfe0ff",
-                "surface-tint": "#354be2",
-                "on-tertiary-container": "#bbbeca",
-                "on-secondary": "#ffffff",
-                "on-surface-variant": "#444655",
-                "on-surface": "#0b1c30",
-                "inverse-primary": "#bcc2ff",
-                "surface": "#f8f9ff",
-                "error": "#ba1a1a",
-                "primary-fixed-dim": "#bcc2ff",
-                "tertiary-container": "#4a4d57",
-                "on-primary-fixed": "#000c61",
-                "on-secondary-container": "#61646c",
-                "surface-container-high": "#dce9ff",
-                "surface-dim": "#cbdbf5",
-                "primary": "#001caa",
-                "surface-container-lowest": "#ffffff",
-                "on-background": "#0b1c30",
-                "on-primary-container": "#b1b9ff",
-                "on-primary-fixed-variant": "#112ccb",
-                "secondary-fixed-dim": "#c3c6cf",
-                "secondary": "#5b5e66",
-                "on-primary": "#ffffff",
-                "tertiary": "#333640",
-                "surface-variant": "#d3e4fe",
-                "on-tertiary-fixed-variant": "#434751",
-                "surface-container-highest": "#d3e4fe",
-                "inverse-on-surface": "#eaf1ff",
-                "tertiary-fixed": "#e0e2ef"
-        },
-        "borderRadius": {
-                "DEFAULT": "0.25rem",
-                "lg": "0.5rem",
-                "xl": "0.75rem",
-                "full": "9999px"
-        },
-        "spacing": {
-                "xl": "32px",
-                "lg": "24px",
-                "unit": "4px",
-                "gutter": "16px",
-                "margin-mobile": "20px",
-                "margin-desktop": "40px",
-                "xs": "4px",
-                "sm": "8px",
-                "md": "16px",
-                "stack-lg": "24px",
-                "stack-sm": "8px",
-                "stack-md": "16px",
-                "container-margin": "20px",
-                "touch-target": "48px"
-        },
-        "fontFamily": {
-                "body-md": [
-                        "Plus Jakarta Sans"
-                ],
-                "body-lg": [
-                        "Plus Jakarta Sans"
-                ],
-                "body-sm": [
-                        "Plus Jakarta Sans"
-                ],
-                "headline-md": [
-                        "Plus Jakarta Sans"
-                ],
-                "label-sm": [
-                        "Plus Jakarta Sans"
-                ],
-                "headline-lg-mobile": [
-                        "Plus Jakarta Sans"
-                ],
-                "headline-lg": [
-                        "Plus Jakarta Sans"
-                ],
-                "label-md": [
-                        "Plus Jakarta Sans"
-                ],
-                "headline-xl": [
-                        "Plus Jakarta Sans"
-                ],
-                "action-lg": [
-                        "Plus Jakarta Sans"
-                ],
-                "headline-sm": [
-                        "Plus Jakarta Sans"
-                ]
-        },
-        "fontSize": {
-                "body-md": [
-                        "16px",
-                        {
-                                "lineHeight": "24px",
-                                "fontWeight": "400"
-                        }
-                ],
-                "body-lg": [
-                        "18px",
-                        {
-                                "lineHeight": "28px",
-                                "fontWeight": "400"
-                        }
-                ],
-                "body-sm": [
-                        "14px",
-                        {
-                                "lineHeight": "20px",
-                                "fontWeight": "400"
-                        }
-                ],
-                "headline-md": [
-                        "24px",
-                        {
-                                "lineHeight": "32px",
-                                "fontWeight": "600"
-                        }
-                ],
-                "label-sm": [
-                        "12px",
-                        {
-                                "lineHeight": "16px",
-                                "fontWeight": "500"
-                        }
-                ],
-                "headline-lg-mobile": [
-                        "28px",
-                        {
-                                "lineHeight": "36px",
-                                "fontWeight": "700"
-                        }
-                ],
-                "headline-lg": [
-                        "32px",
-                        {
-                                "lineHeight": "40px",
-                                "letterSpacing": "-0.02em",
-                                "fontWeight": "700"
-                        }
-                ],
-                "label-md": [
-                        "14px",
-                        {
-                                "lineHeight": "20px",
-                                "fontWeight": "600"
-                        }
-                ],
-                "headline-xl": [
-                        "40px",
-                        {
-                                "lineHeight": "48px",
-                                "letterSpacing": "-0.02em",
-                                "fontWeight": "700"
-                        }
-                ],
-                "action-lg": [
-                        "16px",
-                        {
-                                "lineHeight": "24px",
-                                "fontWeight": "600"
-                        }
-                ],
-                "headline-sm": [
-                        "20px",
-                        {
-                                "lineHeight": "26px",
-                                "fontWeight": "600"
-                        }
-                ]
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary": "#333640",
+                        "on-secondary": "#ffffff",
+                        "on-surface-variant": "#444655",
+                        "on-error": "#ffffff",
+                        "background": "#f8f9ff",
+                        "on-primary-fixed-variant": "#112ccb",
+                        "inverse-on-surface": "#eaf1ff",
+                        "surface-container-highest": "#d3e4fe",
+                        "surface-container-low": "#eff4ff",
+                        "on-secondary-fixed": "#181c22",
+                        "primary-fixed": "#dfe0ff",
+                        "surface": "#f8f9ff",
+                        "surface-variant": "#d3e4fe",
+                        "surface-container": "#e5eeff",
+                        "surface-container-lowest": "#ffffff",
+                        "tertiary-fixed": "#e0e2ef",
+                        "on-tertiary-fixed": "#181b24",
+                        "on-surface": "#0b1c30",
+                        "outline-variant": "#c5c5d8",
+                        "outline": "#757687",
+                        "on-error-container": "#93000a",
+                        "secondary-fixed": "#dfe2eb",
+                        "on-secondary-container": "#61646c",
+                        "tertiary-fixed-dim": "#c3c6d2",
+                        "primary-container": "#1d35d1",
+                        "on-tertiary": "#ffffff",
+                        "inverse-primary": "#bcc2ff",
+                        "primary": "#001caa",
+                        "on-tertiary-container": "#bbbeca",
+                        "on-primary": "#ffffff",
+                        "surface-tint": "#354be2",
+                        "on-secondary-fixed-variant": "#43474e",
+                        "error": "#ba1a1a",
+                        "secondary-container": "#dfe2eb",
+                        "on-primary-fixed": "#000c61",
+                        "inverse-surface": "#213145",
+                        "secondary-fixed-dim": "#c3c6cf",
+                        "surface-dim": "#cbdbf5",
+                        "secondary": "#5b5e66",
+                        "primary-fixed-dim": "#bcc2ff",
+                        "on-background": "#0b1c30",
+                        "tertiary-container": "#4a4d57",
+                        "on-tertiary-fixed-variant": "#434751",
+                        "error-container": "#ffdad6",
+                        "surface-bright": "#f8f9ff",
+                        "on-primary-container": "#b1b9ff",
+                        "surface-container-high": "#dce9ff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px",
+                        "2xl": "1rem",
+                        "3xl": "1.5rem"
+                    },
+                    "spacing": {
+                        "xs": "4px",
+                        "margin-desktop": "40px",
+                        "unit": "4px",
+                        "sm": "8px",
+                        "gutter": "16px",
+                        "xl": "32px",
+                        "md": "16px",
+                        "lg": "24px",
+                        "margin-mobile": "20px"
+                    },
+                    "fontFamily": {
+                        "label-sm": ["Plus Jakarta Sans"],
+                        "headline-lg-mobile": ["Plus Jakarta Sans"],
+                        "headline-lg": ["Plus Jakarta Sans"],
+                        "label-md": ["Plus Jakarta Sans"],
+                        "headline-md": ["Plus Jakarta Sans"],
+                        "body-sm": ["Plus Jakarta Sans"],
+                        "headline-xl": ["Plus Jakarta Sans"],
+                        "body-lg": ["Plus Jakarta Sans"],
+                        "body-md": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "label-sm": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
+                        "headline-lg-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "700" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "label-md": ["14px", { "lineHeight": "20px", "fontWeight": "600" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "body-sm": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "headline-xl": ["40px", { "lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }]
+                    }
+                }
+            }
         }
-},
-    },
-  }
-</script>
+    </script>
 <style>
-        body {
-            background-color: #ffffff; /* Level 0 base */
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
         }
+        .material-symbols-outlined.filled {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        
+        /* Subtle entrance animation */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.6s ease-out forwards;
+        }
+        .delay-100 { animation-delay: 100ms; }
+        .delay-200 { animation-delay: 200ms; }
+        .delay-300 { animation-delay: 300ms; }
     </style>
 <style>
     body {
       min-height: max(884px, 100dvh);
     }
   </style>
-</head>
-<body class="min-h-screen flex flex-col font-body-md text-on-surface antialiased selection:bg-primary-container selection:text-on-primary-container">
-<!-- Top App Bar (Modified for Transactional flow - no nav drawer or generic back if not needed, but keeping branding) -->
-<header class="fixed top-0 w-full z-50 flex justify-between items-center px-container-margin h-touch-target bg-surface border-b border-outline-variant flat no shadows">
-<div class="flex items-center gap-2">
-<button aria-label="Go back" class="h-touch-target w-touch-target flex items-center justify-center text-primary hover:bg-surface-container-high transition-colors rounded-full">
-<span class="material-symbols-outlined" data-icon="arrow_back" data-weight="regular">arrow_back</span>
+  </head>
+<body class="bg-surface text-on-surface font-body-md antialiased min-h-screen flex selection:bg-primary-container selection:text-on-primary-container">
+<!-- Split Screen Layout -->
+<div class="flex flex-col lg:flex-row w-full min-h-screen">
+<!-- Left Column: Form Section -->
+<main class="w-full lg:w-1/2 flex flex-col justify-center px-margin-mobile lg:px-margin-desktop py-xl relative z-10 bg-surface">
+<div class="max-w-md w-full mx-auto animate-fade-in opacity-0">
+<!-- Brand Header -->
+<div class="flex items-center gap-sm mb-xl">
+<div class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center shadow-lg">
+<span class="material-symbols-outlined filled text-on-primary text-[24px]">directions_bus</span>
+</div>
+<span class="text-headline-md font-headline-md text-primary tracking-tight">Futo Ride</span>
+</div>
+<!-- Title & Subtitle -->
+<div class="mb-xl">
+<h1 class="text-headline-lg-mobile lg:text-headline-lg font-headline-lg-mobile lg:font-headline-lg text-on-surface mb-sm">Create Account</h1>
+<p class="text-body-md font-body-md text-secondary">Join the campus transit network for seamless mobility.</p>
+</div>
+<!-- Registration Form -->
+<form action="#" class="space-y-gutter animate-fade-in delay-100 opacity-0" method="POST">
+<!-- Full Name -->
+<div>
+<label class="block text-label-md font-label-md text-on-surface mb-xs" for="fullName">Full Name</label>
+<div class="relative">
+<div class="absolute inset-y-0 left-0 pl-sm flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-outline text-[20px]">person</span>
+</div>
+<input class="block w-full pl-[40px] pr-md py-sm bg-surface-container-lowest border border-outline rounded-lg text-body-md font-body-md text-on-surface placeholder:text-outline-variant focus:border-primary focus:ring-1 focus:ring-primary transition-colors" id="fullName" name="fullName" placeholder="John Doe" required="" type="text"/>
+</div>
+</div>
+<!-- FUTO Email Address -->
+<div>
+<label class="block text-label-md font-label-md text-on-surface mb-xs" for="email">FUTO Email Address</label>
+<div class="relative">
+<div class="absolute inset-y-0 left-0 pl-sm flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-outline text-[20px]">mail</span>
+</div>
+<input class="block w-full pl-[40px] pr-md py-sm bg-surface-container-lowest border border-outline rounded-lg text-body-md font-body-md text-on-surface placeholder:text-outline-variant focus:border-primary focus:ring-1 focus:ring-primary transition-colors" id="email" name="email" placeholder="student@futo.edu.ng" required="" type="email"/>
+</div>
+</div>
+<!-- Password Group (Grid for desktop, stack for mobile) -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-gutter">
+<!-- Password -->
+<div>
+<label class="block text-label-md font-label-md text-on-surface mb-xs" for="password">Password</label>
+<div class="relative">
+<div class="absolute inset-y-0 left-0 pl-sm flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-outline text-[20px]">lock</span>
+</div>
+<input class="block w-full pl-[40px] pr-md py-sm bg-surface-container-lowest border border-outline rounded-lg text-body-md font-body-md text-on-surface placeholder:text-outline-variant focus:border-primary focus:ring-1 focus:ring-primary transition-colors" id="password" name="password" placeholder="••••••••" required="" type="password"/>
+</div>
+</div>
+<!-- Confirm Password -->
+<div>
+<label class="block text-label-md font-label-md text-on-surface mb-xs" for="confirmPassword">Confirm Password</label>
+<div class="relative">
+<div class="absolute inset-y-0 left-0 pl-sm flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-outline text-[20px]">lock_clock</span>
+</div>
+<input class="block w-full pl-[40px] pr-md py-sm bg-surface-container-lowest border border-outline rounded-lg text-body-md font-body-md text-on-surface placeholder:text-outline-variant focus:border-primary focus:ring-1 focus:ring-primary transition-colors" id="confirmPassword" name="confirmPassword" placeholder="••••••••" required="" type="password"/>
+</div>
+</div>
+</div>
+<!-- Submit Button -->
+<button class="w-full flex items-center justify-center gap-sm bg-primary text-on-primary text-label-md font-label-md py-[12px] px-lg rounded-full shadow-[0_4px_14px_rgba(0,28,170,0.2)] hover:bg-on-primary-fixed-variant hover:shadow-[0_6px_20px_rgba(0,28,170,0.3)] transition-all active:scale-[0.98] mt-xl" type="submit">
+<span>Sign Up</span>
+<span class="material-symbols-outlined text-[20px]">arrow_forward</span>
 </button>
-<span class="text-headline-md font-headline-md font-bold text-primary">Futo Ride</span>
-</div>
-</header>
-<!-- Main Content Canvas (Transactional Flow - Shell navigation suppressed) -->
-<main class="flex-grow flex items-center justify-center px-container-margin pt-[calc(var(--touch-target)+32px)] pb-stack-lg">
-<div class="w-full max-w-md bg-surface-container-lowest border border-[#E5E5E5] rounded-xl p-6 sm:p-8 relative overflow-hidden">
-<!-- Subtle Decorative Element -->
-<div class="absolute top-0 right-0 -mt-10 -mr-10 w-32 h-32 bg-primary-container rounded-full opacity-10 blur-2xl pointer-events-none"></div>
-<div class="mb-stack-lg relative z-10">
-<h1 class="text-headline-lg-mobile font-headline-lg-mobile md:text-headline-lg md:font-headline-lg text-on-surface mb-stack-sm">Create Account</h1>
-<p class="text-body-md font-body-md text-secondary">Join the FUTO transit network for faster, safer rides across campus.</p>
-</div>
-<form action="#" class="space-y-stack-md relative z-10" method="POST">
-<!-- Input: Full Name -->
-<div>
-<label class="block text-body-sm font-body-sm text-on-surface-variant mb-1" for="fullName">Full Name</label>
-<div class="relative">
-<span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-secondary">
-<span class="material-symbols-outlined text-[20px]" data-icon="person">person</span>
-</span>
-<input class="w-full pl-10 pr-3 py-3 bg-surface-container-lowest border border-[#E5E5E5] rounded-DEFAULT text-body-md font-body-md text-on-surface placeholder:text-secondary-fixed-dim focus:outline-none focus:border-inverse-surface focus:ring-1 focus:ring-inverse-surface transition-colors min-h-touch-target" id="fullName" name="fullName" placeholder="e.g. John Doe" required="" type="text"/>
-</div>
-</div>
-<!-- Input: Email -->
-<div>
-<label class="block text-body-sm font-body-sm text-on-surface-variant mb-1" for="email">FUTO Email Address</label>
-<div class="relative">
-<span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-secondary">
-<span class="material-symbols-outlined text-[20px]" data-icon="mail">mail</span>
-</span>
-<input class="w-full pl-10 pr-3 py-3 bg-surface-container-lowest border border-[#E5E5E5] rounded-DEFAULT text-body-md font-body-md text-on-surface placeholder:text-secondary-fixed-dim focus:outline-none focus:border-inverse-surface focus:ring-1 focus:ring-inverse-surface transition-colors min-h-touch-target" id="email" name="email" placeholder="student@futo.edu.ng" required="" type="email"/>
-</div>
-</div>
-<!-- Input: Password -->
-<div>
-<label class="block text-body-sm font-body-sm text-on-surface-variant mb-1" for="password">Password</label>
-<div class="relative">
-<span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-secondary">
-<span class="material-symbols-outlined text-[20px]" data-icon="lock">lock</span>
-</span>
-<input class="w-full pl-10 pr-10 py-3 bg-surface-container-lowest border border-[#E5E5E5] rounded-DEFAULT text-body-md font-body-md text-on-surface placeholder:text-secondary-fixed-dim focus:outline-none focus:border-inverse-surface focus:ring-1 focus:ring-inverse-surface transition-colors min-h-touch-target" id="password" name="password" placeholder="••••••••" required="" type="password"/>
-<button aria-label="Toggle password visibility" class="absolute inset-y-0 right-0 pr-3 flex items-center text-secondary hover:text-on-surface transition-colors focus:outline-none" type="button">
-<span class="material-symbols-outlined text-[20px]" data-icon="visibility">visibility</span>
-</button>
-</div>
-<p class="text-[12px] text-secondary mt-1">Must be at least 8 characters.</p>
-</div>
-<!-- Input: Confirm Password -->
-<div>
-<label class="block text-body-sm font-body-sm text-on-surface-variant mb-1" for="confirmPassword">Confirm Password</label>
-<div class="relative">
-<span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-secondary">
-<span class="material-symbols-outlined text-[20px]" data-icon="lock_reset">lock_reset</span>
-</span>
-<input class="w-full pl-10 pr-3 py-3 bg-surface-container-lowest border border-[#E5E5E5] rounded-DEFAULT text-body-md font-body-md text-on-surface placeholder:text-secondary-fixed-dim focus:outline-none focus:border-inverse-surface focus:ring-1 focus:ring-inverse-surface transition-colors min-h-touch-target" id="confirmPassword" name="confirmPassword" placeholder="••••••••" required="" type="password"/>
-</div>
-</div>
-<div class="pt-stack-sm space-y-stack-sm">
-<!-- Primary Button: Sign Up -->
-<button class="w-full bg-primary hover:bg-surface-tint text-on-primary text-action-lg font-action-lg rounded-DEFAULT flex items-center justify-center transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary min-h-[56px]" type="submit">
-                        Sign Up
-                    </button>
+</form>
 <!-- Divider -->
-<div class="flex items-center justify-center my-stack-md">
-<div class="border-t border-surface-container-high flex-grow"></div>
-<span class="px-3 text-body-sm font-body-sm text-secondary">or</span>
-<div class="border-t border-surface-container-high flex-grow"></div>
+<div class="flex items-center my-xl animate-fade-in delay-200 opacity-0">
+<div class="flex-grow border-t border-outline-variant"></div>
+<span class="px-md text-label-sm font-label-sm text-secondary uppercase tracking-wider">or</span>
+<div class="flex-grow border-t border-outline-variant"></div>
 </div>
-<!-- Secondary Button: Sign up with Google -->
-<button class="w-full bg-inverse-surface hover:bg-on-surface text-on-primary text-action-lg font-action-lg rounded-DEFAULT flex items-center justify-center gap-2 transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-inverse-surface min-h-[56px]" type="button">
-<svg class="w-5 h-5 bg-white rounded-full p-0.5" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<!-- Social Login -->
+<div class="animate-fade-in delay-200 opacity-0">
+<button class="w-full flex items-center justify-center gap-md bg-surface-container-lowest border border-outline-variant text-on-surface text-label-md font-label-md py-[12px] px-lg rounded-full hover:bg-surface-container-low transition-colors active:scale-[0.98]" type="button">
+<!-- Google SVG Icon -->
+<svg class="w-5 h-5" fill="none" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"></path>
 <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"></path>
 <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"></path>
@@ -300,15 +227,56 @@
                         Sign up with Google
                     </button>
 </div>
-</form>
-<!-- Login Link -->
-<div class="mt-stack-lg text-center relative z-10">
-<p class="text-body-sm font-body-sm text-secondary">
+<!-- Footer Link -->
+<p class="text-center text-body-sm font-body-sm text-secondary mt-xl animate-fade-in delay-300 opacity-0">
                     Already have an account? 
-                    <a class="text-primary font-semibold hover:underline focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-primary rounded-sm inline-block p-1 -m-1" href="#">Log in</a>
+                    <a class="text-primary font-label-md hover:underline hover:text-on-primary-fixed-variant transition-colors focus:outline-none focus:ring-2 focus:ring-primary rounded" href="#">Log in</a>
 </p>
 </div>
-</div>
 </main>
-<!-- BottomNavBar Suppressed: Transactional screen context -->
+<!-- Right Column: Visual Showcase (Hidden on Mobile) -->
+<aside class="hidden lg:block lg:w-1/2 relative bg-surface-container overflow-hidden">
+<!-- Decorative Background Element -->
+<div class="absolute inset-0 bg-gradient-to-br from-primary/10 to-surface-variant z-0"></div>
+<!-- Main Image Wrapper with glassmorphism treatment -->
+<div class="absolute inset-xl rounded-[2rem] overflow-hidden shadow-2xl z-10 border border-surface-container-lowest/50 group">
+<div class="absolute inset-0 bg-primary/20 mix-blend-overlay z-10 transition-opacity group-hover:opacity-0 duration-700"></div>
+<div class="w-full h-full bg-cover bg-center bg-no-repeat transition-transform duration-1000 group-hover:scale-105" data-alt="A vibrant, high-contrast, professional photographic shot of a modern, eco-friendly transit shuttle driving through a lush, sunny university campus. The scene is bright and optimistic, embodying a clean light-mode aesthetic with deep blue accents on the vehicle. Students are happily boarding the shuttle. The lighting is crisp and natural, highlighting the reliability and movement of the transit service against a backdrop of modern campus architecture." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAswOGqSYoRfYZJhk0qurpyX9d4Pav_3_sGnDqLMGhX57g98Utr73UpRYr1vYZoHOfacWj3jt0_lKeVluMElOnqpvp0GwYtUJ9l3aCeayTJjZH7_qdtEDf8_Wwn4BI-3Dcduv7LSLEWRcgYWYRXvIZzUreNsGYZqOrqqUEr2xkWZyJRF5FXQ6pVGWUAkias3TOi-2qMuyntx6Aap2SGzPRRoA88p86nmLeuvblUllrEhBUJ1gOURUXrGhzZCNJP4cXvsWhLzaQbTe5A')">
+</div>
+<!-- Floating Info Card -->
+<div class="absolute bottom-lg left-lg right-lg bg-surface-container-lowest/80 backdrop-blur-md border border-surface-container-lowest p-lg rounded-2xl z-20 shadow-[0_8px_32px_rgba(0,0,0,0.1)]">
+<div class="flex items-center gap-md">
+<div class="w-12 h-12 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[24px]">verified_user</span>
+</div>
+<div>
+<h3 class="text-label-md font-label-md text-on-surface">Secure Student Access</h3>
+<p class="text-body-sm font-body-sm text-secondary mt-xs">Use your official FUTO email to verify your status and unlock exclusive transit routes.</p>
+</div>
+</div>
+</div>
+</div>
+</aside>
+</div>
+<script>
+        // Simple script to handle input focus states for icons
+        document.querySelectorAll('input').forEach(input => {
+            input.addEventListener('focus', function() {
+                const icon = this.parentElement.querySelector('.material-symbols-outlined');
+                if(icon) {
+                    icon.classList.remove('text-outline');
+                    icon.classList.add('text-primary');
+                    icon.classList.add('filled');
+                }
+            });
+            input.addEventListener('blur', function() {
+                const icon = this.parentElement.querySelector('.material-symbols-outlined');
+                if(icon) {
+                    icon.classList.add('text-outline');
+                    icon.classList.remove('text-primary');
+                    icon.classList.remove('filled');
+                }
+            });
+        });
+    </script>
 </body></html>

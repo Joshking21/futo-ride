@@ -3,322 +3,246 @@
 <html class="light" lang="en"><head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Payment - Futo Ride</title>
+<title>Payment Summary - JayBobo Transit</title>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary": "#333640",
+                        "on-secondary": "#ffffff",
+                        "on-surface-variant": "#444655",
+                        "on-error": "#ffffff",
+                        "background": "#f8f9ff",
+                        "on-primary-fixed-variant": "#112ccb",
+                        "inverse-on-surface": "#eaf1ff",
+                        "surface-container-highest": "#d3e4fe",
+                        "surface-container-low": "#eff4ff",
+                        "on-secondary-fixed": "#181c22",
+                        "primary-fixed": "#dfe0ff",
+                        "surface": "#f8f9ff",
+                        "surface-variant": "#d3e4fe",
+                        "surface-container": "#e5eeff",
+                        "surface-container-lowest": "#ffffff",
+                        "tertiary-fixed": "#e0e2ef",
+                        "on-tertiary-fixed": "#181b24",
+                        "on-surface": "#0b1c30",
+                        "outline-variant": "#c5c5d8",
+                        "outline": "#757687",
+                        "on-error-container": "#93000a",
+                        "secondary-fixed": "#dfe2eb",
+                        "on-secondary-container": "#61646c",
+                        "tertiary-fixed-dim": "#c3c6d2",
+                        "primary-container": "#1d35d1",
+                        "on-tertiary": "#ffffff",
+                        "inverse-primary": "#bcc2ff",
+                        "primary": "#001caa",
+                        "on-tertiary-container": "#bbbeca",
+                        "on-primary": "#ffffff",
+                        "surface-tint": "#354be2",
+                        "on-secondary-fixed-variant": "#43474e",
+                        "error": "#ba1a1a",
+                        "secondary-container": "#dfe2eb",
+                        "on-primary-fixed": "#000c61",
+                        "inverse-surface": "#213145",
+                        "secondary-fixed-dim": "#c3c6cf",
+                        "surface-dim": "#cbdbf5",
+                        "secondary": "#5b5e66",
+                        "primary-fixed-dim": "#bcc2ff",
+                        "on-background": "#0b1c30",
+                        "tertiary-container": "#4a4d57",
+                        "on-tertiary-fixed-variant": "#434751",
+                        "error-container": "#ffdad6",
+                        "surface-bright": "#f8f9ff",
+                        "on-primary-container": "#b1b9ff",
+                        "surface-container-high": "#dce9ff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "xs": "4px",
+                        "margin-desktop": "40px",
+                        "unit": "4px",
+                        "sm": "8px",
+                        "gutter": "16px",
+                        "xl": "32px",
+                        "md": "16px",
+                        "lg": "24px",
+                        "margin-mobile": "20px"
+                    },
+                    "fontFamily": {
+                        "label-sm": ["Plus Jakarta Sans"],
+                        "headline-lg-mobile": ["Plus Jakarta Sans"],
+                        "headline-lg": ["Plus Jakarta Sans"],
+                        "label-md": ["Plus Jakarta Sans"],
+                        "headline-md": ["Plus Jakarta Sans"],
+                        "body-sm": ["Plus Jakarta Sans"],
+                        "headline-xl": ["Plus Jakarta Sans"],
+                        "body-lg": ["Plus Jakarta Sans"],
+                        "body-md": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "label-sm": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
+                        "headline-lg-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "700" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "label-md": ["14px", { "lineHeight": "20px", "fontWeight": "600" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "body-sm": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "headline-xl": ["40px", { "lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
 <style>
         .material-symbols-outlined {
             font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
         }
-        .material-symbols-outlined.fill-icon {
-            font-variation-settings: 'FILL' 1;
+        .material-symbols-outlined.fill {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
         }
     </style>
-<script id="tailwind-config">
-  tailwind.config = {
-    darkMode: "class",
-    theme: {
-      extend: {
-        "colors": {
-                "outline": "#757687",
-                "background": "#f8f9ff",
-                "on-tertiary": "#ffffff",
-                "inverse-surface": "#213145",
-                "primary-container": "#1d35d1",
-                "surface-bright": "#f8f9ff",
-                "secondary-container": "#dfe2eb",
-                "surface-container": "#e5eeff",
-                "outline-variant": "#c5c5d8",
-                "secondary-fixed": "#dfe2eb",
-                "error-container": "#ffdad6",
-                "on-secondary-fixed-variant": "#43474e",
-                "on-tertiary-fixed": "#181b24",
-                "surface-container-low": "#eff4ff",
-                "tertiary-fixed-dim": "#c3c6d2",
-                "on-error-container": "#93000a",
-                "on-secondary-fixed": "#181c22",
-                "on-error": "#ffffff",
-                "primary-fixed": "#dfe0ff",
-                "surface-tint": "#354be2",
-                "on-tertiary-container": "#bbbeca",
-                "on-secondary": "#ffffff",
-                "on-surface-variant": "#444655",
-                "on-surface": "#0b1c30",
-                "inverse-primary": "#bcc2ff",
-                "surface": "#f8f9ff",
-                "error": "#ba1a1a",
-                "primary-fixed-dim": "#bcc2ff",
-                "tertiary-container": "#4a4d57",
-                "on-primary-fixed": "#000c61",
-                "on-secondary-container": "#61646c",
-                "surface-container-high": "#dce9ff",
-                "surface-dim": "#cbdbf5",
-                "primary": "#001caa",
-                "surface-container-lowest": "#ffffff",
-                "on-background": "#0b1c30",
-                "on-primary-container": "#b1b9ff",
-                "on-primary-fixed-variant": "#112ccb",
-                "secondary-fixed-dim": "#c3c6cf",
-                "secondary": "#5b5e66",
-                "on-primary": "#ffffff",
-                "tertiary": "#333640",
-                "surface-variant": "#d3e4fe",
-                "on-tertiary-fixed-variant": "#434751",
-                "surface-container-highest": "#d3e4fe",
-                "inverse-on-surface": "#eaf1ff",
-                "tertiary-fixed": "#e0e2ef"
-        },
-        "borderRadius": {
-                "DEFAULT": "0.25rem",
-                "lg": "0.5rem",
-                "xl": "0.75rem",
-                "2xl": "1rem",
-                "full": "9999px"
-        },
-        "spacing": {
-                "xl": "32px",
-                "lg": "24px",
-                "unit": "4px",
-                "gutter": "16px",
-                "margin-mobile": "20px",
-                "margin-desktop": "40px",
-                "xs": "4px",
-                "sm": "8px",
-                "md": "16px",
-                "stack-lg": "24px",
-                "stack-sm": "8px",
-                "stack-md": "16px",
-                "container-margin": "20px",
-                "touch-target": "48px"
-        },
-        "fontFamily": {
-                "body-md": [
-                        "Plus Jakarta Sans"
-                ],
-                "body-lg": [
-                        "Plus Jakarta Sans"
-                ],
-                "body-sm": [
-                        "Plus Jakarta Sans"
-                ],
-                "headline-md": [
-                        "Plus Jakarta Sans"
-                ],
-                "label-sm": [
-                        "Plus Jakarta Sans"
-                ],
-                "headline-lg-mobile": [
-                        "Plus Jakarta Sans"
-                ],
-                "headline-lg": [
-                        "Plus Jakarta Sans"
-                ],
-                "label-md": [
-                        "Plus Jakarta Sans"
-                ],
-                "headline-xl": [
-                        "Plus Jakarta Sans"
-                ],
-                "headline-sm": [
-                        "Plus Jakarta Sans"
-                ],
-                "action-lg": [
-                        "Plus Jakarta Sans"
-                ]
-        },
-        "fontSize": {
-                "body-md": [
-                        "16px",
-                        {
-                                "lineHeight": "24px",
-                                "fontWeight": "400"
-                        }
-                ],
-                "body-lg": [
-                        "18px",
-                        {
-                                "lineHeight": "28px",
-                                "fontWeight": "400"
-                        }
-                ],
-                "body-sm": [
-                        "14px",
-                        {
-                                "lineHeight": "20px",
-                                "fontWeight": "400"
-                        }
-                ],
-                "headline-md": [
-                        "24px",
-                        {
-                                "lineHeight": "32px",
-                                "fontWeight": "600"
-                        }
-                ],
-                "headline-sm": [
-                        "20px", 
-                        {
-                                "lineHeight": "26px", 
-                                "fontWeight": "600"
-                        }
-                ],
-                "label-sm": [
-                        "12px",
-                        {
-                                "lineHeight": "16px",
-                                "fontWeight": "500"
-                        }
-                ],
-                "headline-lg-mobile": [
-                        "28px",
-                        {
-                                "lineHeight": "36px",
-                                "fontWeight": "700"
-                        }
-                ],
-                "headline-lg": [
-                        "32px",
-                        {
-                                "lineHeight": "40px",
-                                "letterSpacing": "-0.02em",
-                                "fontWeight": "700"
-                        }
-                ],
-                "label-md": [
-                        "14px",
-                        {
-                                "lineHeight": "20px",
-                                "fontWeight": "600"
-                        }
-                ],
-                "headline-xl": [
-                        "40px",
-                        {
-                                "lineHeight": "48px",
-                                "letterSpacing": "-0.02em",
-                                "fontWeight": "700"
-                        }
-                ],
-                "action-lg": [
-                        "16px", 
-                        {
-                                "lineHeight": "24px", 
-                                "fontWeight": "600"
-                        }
-                ]
-        }
-},
-    },
-  }
-</script>
 <style>
     body {
       min-height: max(884px, 100dvh);
     }
   </style>
-</head>
-<body class="bg-surface text-on-surface antialiased min-h-screen flex flex-col font-body-md selection:bg-primary-container selection:text-on-primary-container">
-<!-- TopAppBar (Transactional Mode - Hidden Nav/Wallet to focus on task) -->
-<header class="fixed top-0 w-full z-50 flex justify-between items-center px-container-margin h-touch-target border-b border-outline-variant bg-surface">
-<button aria-label="Go back" class="w-touch-target h-touch-target flex items-center justify-start text-primary hover:bg-surface-container-high transition-colors rounded-full -ml-2">
-<span class="material-symbols-outlined text-[24px]">arrow_back</span>
+  </head>
+<body class="bg-background text-on-background min-h-screen font-body-md flex flex-col md:flex-row pb-24 md:pb-0">
+<!-- TopAppBar (Always visible on mobile, potentially part of global shell on desktop but context here is transactional so we adapt it as a standard header per guidelines, but using JSON values for structure) -->
+<header class="fixed top-0 w-full z-50 flex justify-between items-center px-4 h-16 bg-surface border-b border-outline-variant flat no shadows md:hidden">
+<button class="p-2 text-primary hover:bg-surface-container-high transition-colors rounded-full flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">
+<span class="material-symbols-outlined">arrow_back</span>
 </button>
-<h1 class="text-headline-md font-headline-md font-bold text-primary">Checkout</h1>
-<div class="w-touch-target"></div> <!-- Spacer for centering -->
-</header>
-<!-- Main Content Canvas -->
-<main class="flex-1 pt-[80px] pb-[140px] px-container-margin max-w-md mx-auto w-full">
-<!-- Summary Card -->
-<section class="mb-stack-lg">
-<h2 class="text-headline-sm font-headline-sm text-on-surface mb-stack-sm">Ride Summary</h2>
-<div class="bg-surface-container-lowest border border-outline-variant rounded-2xl p-stack-md shadow-sm">
-<div class="flex justify-between items-center mb-stack-sm">
-<span class="text-body-md font-body-md text-secondary">Base Fare</span>
-<span class="text-body-md font-body-md text-on-surface font-medium">₦300</span>
-</div>
-<div class="flex justify-between items-center mb-stack-sm">
-<span class="text-body-md font-body-md text-secondary">Priority Fee</span>
-<span class="text-body-md font-body-md text-on-surface font-medium">₦100</span>
-</div>
-<div class="border-t border-outline-variant my-stack-sm pt-stack-sm flex justify-between items-end">
-<span class="text-body-lg font-body-lg text-on-surface font-semibold">Total</span>
-<span class="text-headline-lg-mobile font-headline-lg-mobile text-primary">₦400</span>
-</div>
-</div>
-</section>
-<!-- Payment Methods -->
-<section>
-<h2 class="text-headline-sm font-headline-sm text-on-surface mb-stack-md">Payment Method</h2>
-<div class="flex flex-col gap-stack-sm">
-<!-- Option 1: Monnify (Selected State) -->
-<label class="relative flex items-center p-stack-md bg-primary-container/10 border-2 border-primary rounded-2xl cursor-pointer hover:bg-primary-container/20 transition-colors">
-<input checked="" class="sr-only" name="payment_method" type="radio" value="monnify"/>
-<div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mr-stack-md text-primary">
-<span class="material-symbols-outlined">credit_card</span>
-</div>
-<div class="flex-1">
-<div class="text-body-lg font-body-lg text-on-surface font-semibold">Monnify</div>
-<div class="text-body-sm font-body-sm text-secondary">Card or Bank Transfer</div>
-</div>
-<div class="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-on-primary shadow-sm">
-<span class="material-symbols-outlined text-[16px] font-bold">check</span>
-</div>
-</label>
-<!-- Option 2: Privy (Unselected State) -->
-<label class="relative flex items-center p-stack-md bg-surface-container-lowest border border-outline-variant rounded-2xl cursor-pointer hover:bg-surface-container-low transition-colors">
-<input class="sr-only" name="payment_method" type="radio" value="privy"/>
-<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center mr-stack-md text-secondary">
+<h1 class="text-headline-md font-headline-md font-bold text-primary flex-1 text-center truncate px-2">JayBobo Transit</h1>
+<button class="p-2 text-primary hover:bg-surface-container-high transition-colors rounded-full flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">
 <span class="material-symbols-outlined">account_balance_wallet</span>
+</button>
+</header>
+<!-- Desktop Navigation (Hidden on mobile) -->
+<nav class="hidden md:flex flex-col w-64 h-screen fixed left-0 top-0 bg-surface border-r border-outline-variant shadow-lg z-40 px-gutter py-xl">
+<div class="flex items-center gap-sm mb-xl px-2">
+<h1 class="text-headline-lg font-headline-lg font-bold text-primary truncate">JayBobo Transit</h1>
 </div>
-<div class="flex-1">
-<div class="text-body-lg font-body-lg text-on-surface font-semibold">Privy</div>
-<div class="text-body-sm font-body-sm text-secondary">cNGN Wallet</div>
+<div class="flex flex-col gap-sm flex-1">
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-secondary hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="font-label-md text-label-md">Home</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-secondary hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined">history</span>
+<span class="font-label-md text-label-md">Rides</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-secondary hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined">notifications</span>
+<span class="font-label-md text-label-md">Alerts</span>
+</a>
+<!-- Active State: Since this is payment/checkout, it implies an ongoing ride or profile action, but "Account" is the closest structural fit for wallets/payments if viewed from global nav context, though typically a checkout page would suppress nav entirely. We include it here per prompt constraints implying a full page design but suppress global nav for transactional flow per instructions -->
 </div>
-<div class="w-6 h-6 rounded-full border-2 border-outline-variant flex items-center justify-center">
+<div class="mt-auto border-t border-outline-variant pt-md">
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-secondary hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="font-label-md text-label-md">Account</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Canvas (Transactional Page - Navigation shell should ideally be suppressed but we keep TopAppBar for mobile context as defined by JSON leading/trailing icons) -->
+<main class="flex-1 w-full max-w-[600px] mx-auto pt-20 md:pt-xl px-margin-mobile md:px-margin-desktop min-h-screen flex flex-col relative md:ml-64">
+<!-- Page Header (Desktop only since mobile has TopAppBar) -->
+<div class="hidden md:flex items-center gap-md mb-xl">
+<button class="p-2 text-primary bg-surface-container rounded-full hover:bg-surface-container-high transition-colors flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<h2 class="text-headline-lg font-headline-lg text-on-surface">Checkout</h2>
+</div>
+<div class="mobile-only-header md:hidden mb-lg">
+<h2 class="text-headline-lg-mobile font-headline-lg-mobile text-on-surface">Payment Summary</h2>
+</div>
+<!-- Bento Grid / Cards Layout -->
+<div class="grid grid-cols-1 gap-gutter mb-xl flex-1">
+<!-- Ride Detail Card -->
+<section class="bg-surface-container-lowest rounded-xl p-lg border border-outline-variant shadow-[0_8px_24px_rgba(0,0,0,0.05)] flex flex-col gap-md">
+<div class="flex items-center justify-between border-b border-surface-container pb-md">
+<div class="flex items-center gap-sm">
+<div class="w-10 h-10 bg-primary-container rounded-full flex items-center justify-center text-on-primary-container">
+<span class="material-symbols-outlined">directions_car</span>
+</div>
+<div>
+<p class="font-label-md text-label-md text-on-surface">Futo Ride - Standard</p>
+<p class="font-body-sm text-body-sm text-secondary">Campus Gate to Hostel C</p>
+</div>
+</div>
+</div>
+<!-- Breakdown -->
+<div class="flex flex-col gap-sm py-sm">
+<div class="flex justify-between items-center text-on-surface-variant font-body-md text-body-md">
+<span>Base Fare</span>
+<span class="font-medium">N400</span>
+</div>
+<div class="flex justify-between items-center text-on-surface-variant font-body-md text-body-md">
+<span>Priority Fee</span>
+<span class="font-medium">N100</span>
+</div>
+</div>
+<!-- Total -->
+<div class="flex justify-between items-center border-t border-surface-container pt-md">
+<span class="font-headline-md text-headline-md text-on-surface">Total</span>
+<span class="font-headline-md text-headline-md text-primary">N500</span>
+</div>
+</section>
+<!-- Payment Methods Glassmorphism Style Card -->
+<section class="bg-surface-container-lowest/80 backdrop-blur-md rounded-xl p-lg border border-outline-variant shadow-[0_4px_12px_rgba(0,0,0,0.02)] flex flex-col gap-md">
+<h3 class="font-label-md text-label-md text-secondary uppercase tracking-wider">Payment Method</h3>
+<div class="flex flex-col gap-sm">
+<!-- Method 1: Monnify -->
+<label class="flex items-center gap-md p-md rounded-lg border-2 border-primary bg-surface-container-low cursor-pointer hover:bg-surface-container transition-colors relative">
+<input checked="" class="w-5 h-5 text-primary border-outline focus:ring-primary focus:ring-offset-surface-container-low bg-surface" name="payment_method" type="radio"/>
+<div class="flex flex-1 items-center justify-between">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary fill">credit_card</span>
+<span class="font-body-md text-body-md text-on-surface font-medium">Card / Bank Transfer</span>
+</div>
+<span class="font-label-sm text-label-sm text-secondary bg-surface px-2 py-1 rounded-full border border-outline-variant">Monnify</span>
+</div>
+</label>
+<!-- Method 2: Privy -->
+<label class="flex items-center gap-md p-md rounded-lg border border-outline-variant bg-surface hover:bg-surface-container-low transition-colors cursor-pointer">
+<input class="w-5 h-5 text-primary border-outline focus:ring-primary focus:ring-offset-surface bg-surface" name="payment_method" type="radio"/>
+<div class="flex flex-1 items-center justify-between">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-secondary">account_balance_wallet</span>
+<span class="font-body-md text-body-md text-on-surface">cNGN Wallet</span>
+</div>
+<span class="font-label-sm text-label-sm text-secondary bg-surface-container px-2 py-1 rounded-full">Privy</span>
 </div>
 </label>
 </div>
 </section>
+</div>
+<!-- Sticky Footer Action -->
+<div class="fixed bottom-0 left-0 w-full bg-surface border-t border-outline-variant p-margin-mobile md:px-margin-desktop md:py-lg z-50 md:relative md:border-none md:bg-transparent md:p-0 md:mt-auto">
+<div class="flex flex-col gap-sm max-w-[600px] mx-auto md:ml-0 md:mr-auto w-full">
+<div class="flex items-center justify-center gap-xs text-secondary font-label-sm text-label-sm mb-sm">
+<span class="material-symbols-outlined text-[16px]">lock</span>
+<span>Secure encrypted processing</span>
+</div>
+<button class="w-full bg-primary text-on-primary font-label-md text-label-md py-4 rounded-xl flex items-center justify-center gap-sm shadow-[0_4px_12px_rgba(29,53,209,0.2)] hover:bg-surface-tint hover:shadow-[0_6px_16px_rgba(29,53,209,0.3)] transition-all active:scale-[0.98]">
+<span>Pay N500 Now</span>
+<span class="material-symbols-outlined">arrow_forward</span>
+</button>
+</div>
+</div>
 </main>
-<!-- Fixed Bottom Action Area -->
-<footer class="fixed bottom-0 left-0 w-full bg-surface border-t border-outline-variant px-container-margin py-stack-md z-40 pb-safe">
-<div class="max-w-md mx-auto w-full">
-<button class="w-full h-[56px] bg-primary text-on-primary rounded-xl flex items-center justify-center text-action-lg font-action-lg shadow-md active:scale-[0.98] transition-transform">
-                Pay Now
-            </button>
-<div class="flex items-center justify-center mt-stack-sm text-secondary text-label-md font-label-md gap-1">
-<span class="material-symbols-outlined text-[14px]">shield_lock</span>
-<span>Secure SSL Processing</span>
-</div>
-</div>
-</footer>
-<script>
-        // Simple JS to toggle active state visual styling for radio buttons
-        const paymentLabels = document.querySelectorAll('label[class*="relative"]');
-        const paymentInputs = document.querySelectorAll('input[name="payment_method"]');
-
-        function updateSelection() {
-            paymentInputs.forEach((input, index) => {
-                const label = paymentLabels[index];
-                const indicator = label.querySelector('.w-6.h-6');
-                const iconContainer = label.querySelector('.w-10.h-10');
-                
-                if (input.checked) {
-                    label.className = "relative flex items-center p-stack-md bg-primary-container/10 border-2 border-primary rounded-2xl cursor-pointer transition-colors";
-                    indicator.className = "w-6 h-6 rounded-full bg-primary flex items-center justify-center text-on-primary shadow-sm";
-                    indicator.innerHTML = '<span class="material-symbols-outlined text-[16px] font-bold">check</span>';
-                    iconContainer.className = "w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mr-stack-md text-primary";
-                } else {
-                    label.className = "relative flex items-center p-stack-md bg-surface-container-lowest border border-outline-variant rounded-2xl cursor-pointer hover:bg-surface-container-low transition-colors";
-                    indicator.className = "w-6 h-6 rounded-full border-2 border-outline-variant flex items-center justify-center";
-                    indicator.innerHTML = '';
-                    iconContainer.className = "w-10 h-10 rounded-full bg-surface-container flex items-center justify-center mr-stack-md text-secondary";
-                }
-            });
-        }
-
-        paymentInputs.forEach(input => {
-            input.addEventListener('change', updateSelection);
-        });
-    </script>
+<!-- BottomNavBar (Hidden on desktop, visible on mobile. Transactional intent implies suppressing global nav, but per strict rules on BottomNavBar rendering if requested, we render it but functionally it might conflict with the sticky checkout footer. Given the specific checkout instructions, the sticky "Pay Now" footer overlaps the BottomNavBar space. We follow the 'Suppression' rule: "Automatic Suppression: You MUST exclude the navigation shell if the page intent is Linear/Transactional: Login, Sign-up, Onboarding, Checkout". Therefore, BottomNavBar is INTENTIONALLY OMITTED here per the Semantic Shell Mandate.) -->
 </body></html>
