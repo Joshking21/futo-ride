@@ -1,9 +1,17 @@
-import React, { useState } from "react";
-import { View, Text, TextInput, Pressable, Keyboard, ActivityIndicator, ScrollView } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import { ArrowLeft, Key, Lock, Mail, User } from "lucide-react-native";
+import { useState } from "react";
+import {
+  ActivityIndicator,
+  Keyboard,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useApp } from "../context/AppContext";
-import { User, Mail, Lock, Key, ArrowLeft } from "lucide-react-native";
 
 export default function Signup() {
   const router = useRouter();
@@ -45,33 +53,45 @@ export default function Signup() {
     <SafeAreaView className="flex-1 bg-surface">
       {/* Top Header Bar */}
       <View className="flex-row items-center px-margin-mobile h-touch-target border-b border-outline-variant bg-surface-container-lowest">
-        <Pressable onPress={() => router.back()} className="p-2 -ml-2 rounded-full active:bg-surface-container">
+        <Pressable
+          onPress={() => router.back()}
+          className="p-2 -ml-2 rounded-full active:bg-surface-container"
+        >
           <ArrowLeft color="#001caa" size={24} />
         </Pressable>
-        <Text className="text-headline-md font-bold text-primary ml-2 font-jakarta">Futo Ride</Text>
+        <Text className="text-headline-md font-bold text-primary ml-2 font-jakarta">
+          Futo Ride
+        </Text>
       </View>
 
-      <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
-        <Pressable onPress={Keyboard.dismiss} className="flex-1 justify-center px-margin-mobile py-6">
+      <ScrollView
+        contentContainerStyle={{ flexGrow: 1 }}
+        keyboardShouldPersistTaps="handled"
+      >
+        <Pressable
+          onPress={Keyboard.dismiss}
+          className="flex-1 justify-center px-margin-mobile py-6"
+        >
           <View className="w-full max-w-md bg-surface-container-lowest border border-[#E5E5E5] rounded-2xl p-6 sm:p-8 shadow-sm">
-            
             {/* Header */}
             <View className="mb-stack-lg">
               <Text className="text-headline-lg-mobile font-bold text-on-surface">
                 Create Account
               </Text>
               <Text className="text-body-sm text-secondary mt-1">
-                Join the FUTO transit network for faster, safer rides across campus.
+                Join the FUTO transit network for faster, safer rides across
+                campus.
               </Text>
             </View>
 
             {error ? (
-              <Text className="text-error text-body-sm mb-4 font-semibold text-center">{error}</Text>
+              <Text className="text-error text-body-sm mb-4 font-semibold text-center">
+                {error}
+              </Text>
             ) : null}
 
             {/* Inputs Form */}
             <View className="gap-4">
-              
               {/* Full Name */}
               <View>
                 <Text className="text-body-sm text-on-surface-variant mb-1 font-semibold">
@@ -134,7 +154,9 @@ export default function Signup() {
                     className="flex-1 text-on-surface text-body-md py-1"
                   />
                 </View>
-                <Text className="text-[11px] text-secondary mt-1">Must be at least 8 characters.</Text>
+                <Text className="text-[11px] text-secondary mt-1">
+                  Must be at least 8 characters.
+                </Text>
               </View>
 
               {/* Confirm Password */}
@@ -168,10 +190,11 @@ export default function Signup() {
                 {isSubmitting ? (
                   <ActivityIndicator color="#ffffff" />
                 ) : (
-                  <Text className="text-on-primary text-action-lg font-bold">Sign Up</Text>
+                  <Text className="text-on-primary text-action-lg font-bold">
+                    Sign Up
+                  </Text>
                 )}
               </Pressable>
-
             </View>
 
             {/* Divider */}
@@ -183,19 +206,22 @@ export default function Signup() {
 
             {/* Google Signup Button */}
             <Pressable className="w-full bg-inverse-surface hover:bg-on-surface h-14 rounded-lg flex-row items-center justify-center gap-2 active:scale-[0.98] transition-all mb-4">
-              <Text className="text-on-primary text-action-lg font-bold">Sign up with Google</Text>
+              <Text className="text-on-primary text-action-lg font-bold">
+                Sign up with Google
+              </Text>
             </Pressable>
 
             {/* Already have account */}
             <View className="flex-row justify-center mt-2">
-              <Text className="text-body-sm text-secondary font-medium">Already have an account? </Text>
+              <Text className="text-body-sm text-secondary font-medium">
+                Already have an account?{" "}
+              </Text>
               <Pressable onPress={() => router.replace("/login")}>
                 <Text className="text-body-sm text-primary font-semibold hover:underline">
                   Log in
                 </Text>
               </Pressable>
             </View>
-
           </View>
         </Pressable>
       </ScrollView>

@@ -1,16 +1,38 @@
-import React, { useState } from "react";
-import { View, Text, Image, Pressable, ScrollView } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import {
+  Bell,
+  Clock,
+  MapPin,
+  Menu,
+  Navigation,
+  Radar,
+  Star,
+  WifiOff,
+} from "lucide-react-native";
+import React from "react";
+import {
+  Image,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useApp } from "../../context/AppContext";
-import { Wallet, Navigation, Radar, ShieldCheck, Compass, Sparkles, Star } from "lucide-react-native";
 
 export default function DriverHome() {
   const router = useRouter();
-  const { isOnline, setOnline, activeTrip, triggerMockIncomingRequest, confirmBooking } = useApp();
+  const {
+    isOnline,
+    setOnline,
+    activeTrip,
+    triggerMockIncomingRequest,
+    confirmBooking,
+  } = useApp();
 
-  const handleToggleOnline = (status: boolean) => {
-    setOnline(status);
+  const handleToggleOnline = () => {
+    setOnline(!isOnline);
   };
 
   const handleAcceptRequest = () => {
@@ -18,157 +40,621 @@ export default function DriverHome() {
     router.push("/(driver)/active");
   };
 
-  const isRequestPending = activeTrip.status === "searching" && activeTrip.pickup === "SOES Building";
+  const isRequestPending =
+    activeTrip.status === "searching" && activeTrip.pickup === "SOES Building";
 
   return (
-    <SafeAreaView className="flex-1 bg-surface relative" edges={["top"]}>
-      {/* Top Header */}
-      <View className="px-margin-mobile py-4 border-b border-outline-variant/30 bg-surface-container-lowest flex-row items-center justify-between z-30">
-        <Text className="text-headline-md font-bold text-primary font-jakarta">Driver Portal</Text>
-        <View className="bg-success/15 px-3 py-1 rounded-full">
-          <Text className="text-[11px] font-bold text-success uppercase">
+    <SafeAreaView style={styles.safeArea} edges={["top"]}>
+      {/* Top Header Overlay */}
+      <View style={styles.header}>
+        <Pressable style={styles.iconButton}>
+          <Menu color="#001caa" size={20} />
+        </Pressable>
+
+        {/* Online Status Pill */}
+        <Pressable
+          onPress={handleToggleOnline}
+          style={isOnline ? styles.pillOnline : styles.pillOffline}
+        >
+          <View style={styles.dotContainer}>
+            <View
+              style={isOnline ? styles.pingDotOnline : styles.pingDotOffline}
+            />
+            <View
+              style={
+                isOnline ? styles.statusDotOnline : styles.statusDotOffline
+              }
+            />
+          </View>
+          <Text style={isOnline ? styles.labelOnline : styles.labelOffline}>
             {isOnline ? "Online" : "Offline"}
           </Text>
-        </View>
+        </Pressable>
+
+        <Pressable style={styles.bellButton}>
+          <Bell color="#001caa" size={20} />
+          <View style={styles.bellBadge} />
+        </Pressable>
       </View>
 
-      {/* Main Content Canvas */}
-      <View className="flex-1 relative z-10 bg-surface-container-low">
-        {/* Map View */}
+      {/* Main Content Area */}
+      <View style={styles.mapContainer}>
+        {/* Interactive Map Background */}
         <Image
           source={{
-            uri: "https://lh3.googleusercontent.com/aida-public/AB6AXuBplF4lizcuWCAAxeQDrMFyXLlFRlAMZFM-ah_-AGh7YIZ8KDIpCKfPWuGbBdBfUR-WIZXFi_Cojg4zJ3020nXZrx0mvZbV0VaF_i0cZ6PdLAMgZQXYPanCo3Wbaw14likLaGkCJ9DHhA3Z6mkfcrMfiPnFdA8LY0cnbc3J4BAMIy0HMTB4KVZ4kUx4hCy4XTD3HnzDcjQrhudHRtkadCC3rJoQa3vjqYnQXFsBCWDTT7hxyIvB1HYLBNa59wsVRBatDzKiLAGUwQ1Z",
+            uri: "https://lh3.googleusercontent.com/aida-public/AB6AXuD0okzKR0KPq91lUrgoEl5fyfMy1B5eqVhArkpdos9nGZDnDI-ks7j4edISnFdnY4EKDclvfu-tXw48XWwCwLTHkiWgUdTJPzw0-Wbjb64syVe-qicEEPGdmkI1X7mJoq5k_B3J8K-Wlt3yAZ33Dzy6Q9HBEh9IjQITFz8IxurvIKiiZPmecWT2IRE_rFhmA4LK39TpJEwR6einizhW-wxyX5mP-M4C_rzF5V9nyd4VRIX-5fdOl05wnH6PWCU_MI8wXXgOBBcGS5kv",
           }}
-          className="w-full h-[320px] object-cover"
+          style={styles.mapImage}
         />
 
-        {/* Driver Status Switch Overlay */}
-        <View className="absolute top-4 left-margin-mobile right-margin-mobile z-20 flex-row justify-center">
-          <View className="bg-surface-container-lowest border border-outline-variant/30 rounded-full p-1 flex-row shadow-md">
-            <Pressable
-              onPress={() => handleToggleOnline(false)}
-              className={`px-6 py-2 rounded-full min-w-[100px] items-center ${
-                !isOnline ? "bg-inverse-surface" : "bg-transparent"
-              }`}
-            >
-              <Text className={`text-label-sm font-bold ${!isOnline ? "text-inverse-on-surface" : "text-secondary"}`}>
-                Offline
-              </Text>
-            </Pressable>
-            <Pressable
-              onPress={() => handleToggleOnline(true)}
-              className={`px-6 py-2 rounded-full min-w-[100px] items-center ${
-                isOnline ? "bg-primary" : "bg-transparent"
-              }`}
-            >
-              <Text className={`text-label-sm font-bold ${isOnline ? "text-white" : "text-secondary"}`}>
-                Online
-              </Text>
-            </Pressable>
-          </View>
+        {/* Floating location marker in map */}
+        <View style={styles.marker}>
+          <Text style={styles.markerText}>🛺</Text>
         </View>
 
-        {/* User Location marker indicator */}
-        <View className="absolute top-[160px] left-[50%] -mt-2 -ml-2 w-4 h-4 bg-primary rounded-full border-2 border-white shadow-md" />
+        {/* Bottom Sheet / Stats Container */}
+        <ScrollView style={styles.bottomSheet}>
+          <View style={styles.handleBar} />
 
-        {/* Bottom Sheet Card details */}
-        <ScrollView className="flex-1 bg-surface px-margin-mobile pt-4 rounded-t-2xl -mt-4 shadow-xl border-t border-outline-variant/40">
-          
-          {/* Today's Earnings Summary Card */}
-          <View className="bg-surface-container-low border border-outline-variant/40 rounded-xl p-4 flex flex-col gap-2 mb-6">
-            <View className="flex-row justify-between items-center">
-              <Text className="text-body-md text-on-surface font-bold">Today's Earnings</Text>
-              <Sparkles color="#001caa" size={18} />
+          {/* Today's Earnings Header */}
+          <View style={styles.earningsHeader}>
+            <View>
+              <Text style={styles.earningsLabel}>Today's Earnings</Text>
+              <Text style={styles.earningsValue}>₦12,500</Text>
             </View>
-            <Text className="text-headline-lg font-black text-primary">₦ 12,500.00</Text>
-            
-            <View className="h-[1px] bg-outline-variant/20 my-1 w-full" />
-            
-            <View className="flex-row justify-between pt-1">
-              <View>
-                <Text className="text-[10px] text-secondary uppercase font-bold">Trips</Text>
-                <Text className="text-body-md font-bold text-on-surface">14 completed</Text>
+            <Pressable
+              onPress={() => router.push("/(driver)/earnings")}
+              style={({ pressed }) => [{ opacity: pressed ? 0.75 : 1 }]}
+            >
+              <Text style={styles.detailsText}>Details ➔</Text>
+            </Pressable>
+          </View>
+
+          {/* Bento Stats Grid */}
+          <View style={styles.statsGrid}>
+            {/* Trips Card */}
+            <View style={styles.statsCard}>
+              <View style={styles.statsIconWrapper}>
+                <Navigation color="#001caa" size={20} />
               </View>
-              <View className="items-end">
-                <Text className="text-[10px] text-secondary uppercase font-bold">Online Time</Text>
-                <Text className="text-body-md font-bold text-on-surface">4h 20m</Text>
+              <View>
+                <Text style={styles.statsValue}>14</Text>
+                <Text style={styles.statsLabel}>Trips</Text>
+              </View>
+            </View>
+
+            {/* Online Time Card */}
+            <View style={styles.statsCard}>
+              <View style={styles.statsIconWrapper}>
+                <Clock color="#001caa" size={20} />
+              </View>
+              <View>
+                <Text style={styles.statsValue}>4h 20m</Text>
+                <Text style={styles.statsLabel}>Online</Text>
               </View>
             </View>
           </View>
 
-          {/* Finding Rides / Incoming Request Panel */}
-          <View className="pb-16">
+          {/* Incoming Request OR Search Panel */}
+          <View style={styles.requestPanel}>
             {!isOnline ? (
-              <View className="border border-outline-variant/30 bg-surface-container-lowest p-6 rounded-xl items-center text-center">
-                <Text className="text-body-lg font-bold text-on-surface">You are currently offline</Text>
-                <Text className="text-body-sm text-secondary text-center mt-1">
+              <View style={styles.offlinePanel}>
+                <WifiOff color="#ba1a1a" size={32} />
+                <Text style={styles.offlineTitle}>
+                  You are currently offline
+                </Text>
+                <Text style={styles.offlineSubtitle}>
                   Go online to start receiving ride requests across campus.
                 </Text>
               </View>
             ) : isRequestPending ? (
               /* Request Card Alert */
-              <View className="bg-surface-container-lowest border-2 border-primary rounded-xl p-4 shadow-lg flex flex-col gap-4 animate-bounce">
-                <View className="flex-row justify-between items-center">
-                  <Text className="text-headline-sm font-bold text-primary font-jakarta">Incoming Ride</Text>
-                  <Text className="text-label-sm font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">₦ 300</Text>
+              <View style={styles.requestCard}>
+                <View style={styles.requestCardHeader}>
+                  <Text style={styles.requestCardTitle}>Incoming Ride</Text>
+                  <View style={styles.priceBadge}>
+                    <Text style={styles.priceText}>₦300</Text>
+                  </View>
                 </View>
 
                 {/* Passenger Info */}
-                <View className="flex-row items-center gap-3">
+                <View style={styles.passengerInfo}>
                   <Image
                     source={{
                       uri: "https://lh3.googleusercontent.com/aida-public/AB6AXuCKv18St18L7X2vZAAMPrAWpe_RTK8EptXVp0FFMqsUDuP_GgeffQiG2BXUbeBK5fAppU3V1r1xiIbGeVUoaoTLduIBmWdC2WEHiVaf2hilbRU54kKuZ7O6ukr9iC-soO0wPXucYYRHL1OQTZr0q7bDRr1TZqfKpkpL290p2tVDrufDqbY7kxXIdHRNxOex755J1_4AtLe8z7qbpg1umUVPxW4tt5r_i6df9PbNJdOf5PFxcsnG6bDlUgGoGZnLt0vZSzW4H3KHhOMD",
                     }}
-                    className="w-12 h-12 rounded-full object-cover"
+                    style={styles.passengerImage}
                   />
                   <View>
-                    <Text className="text-body-md font-bold text-on-surface">Alex</Text>
-                    <View className="flex-row items-center gap-1">
+                    <Text style={styles.passengerName}>Alex</Text>
+                    <View style={styles.passengerRatingRow}>
                       <Star color="#eab308" fill="#eab308" size={13} />
-                      <Text className="text-body-sm text-secondary font-bold">4.9 • Student</Text>
+                      <Text style={styles.passengerSubtext}>4.9 • Student</Text>
                     </View>
                   </View>
                 </View>
 
-                {/* Route */}
-                <View className="bg-surface-container-low rounded-lg p-3">
-                  <Text className="text-body-sm text-on-surface"><Text className="font-bold text-primary">From:</Text> SOES Building</Text>
-                  <Text className="text-body-sm text-on-surface mt-1"><Text className="font-bold text-primary">To:</Text> Senate Building</Text>
+                {/* Route details */}
+                <View style={styles.routeDetails}>
+                  <View style={styles.routeRow}>
+                    <MapPin color="#001caa" size={14} />
+                    <Text style={styles.routeText}>
+                      <Text style={styles.routeLabel}>From:</Text> SOES Building
+                    </Text>
+                  </View>
+                  <View style={styles.routeRow}>
+                    <MapPin color="#ba1a1a" size={14} />
+                    <Text style={styles.routeText}>
+                      <Text style={styles.routeLabel}>To:</Text> Senate Building
+                    </Text>
+                  </View>
                 </View>
 
-                {/* Actions */}
+                {/* Accept Button */}
                 <Pressable
                   onPress={handleAcceptRequest}
-                  className="w-full bg-primary hover:bg-primary-container h-12 rounded-lg items-center justify-center shadow-md active:scale-95"
+                  style={styles.acceptButton}
                 >
-                  <Text className="text-on-primary text-action-lg font-bold">Accept Request</Text>
+                  <Text style={styles.acceptButtonText}>Accept Request</Text>
                 </Pressable>
               </View>
             ) : (
-              /* Radar Pulse Search Panel */
-              <View className="bg-surface-container-lowest border border-outline-variant/40 p-6 rounded-xl items-center">
-                <View className="relative w-16 h-16 bg-primary/10 rounded-full items-center justify-center mb-4">
+              /* Finding Rides Panel */
+              <View style={styles.findingCard}>
+                <View style={styles.findingIconWrapper}>
                   <Radar color="#001caa" size={32} />
                 </View>
-                <Text className="text-body-md font-bold text-on-surface">Finding rides...</Text>
-                <Text className="text-body-sm text-secondary text-center mt-1 max-w-[240px]">
-                  Stay in high-demand areas like SEET Head, Hall C or FUTO Gate.
+                <Text style={styles.findingTitle}>Finding rides...</Text>
+                <Text style={styles.findingSubtitle}>
+                  Stay near high-demand areas like SEET Head, Hall C or FUTO
+                  Gate.
                 </Text>
 
+                {/* Simulator Trigger */}
                 <Pressable
                   onPress={triggerMockIncomingRequest}
-                  className="mt-6 bg-surface-container border border-outline-variant/80 px-4 py-2 rounded-lg active:bg-surface-container-low"
+                  style={styles.triggerButton}
                 >
-                  <Text className="text-[11px] text-primary font-bold uppercase tracking-wider">
+                  <Text style={styles.triggerButtonText}>
                     Trigger Simulated Request
                   </Text>
                 </Pressable>
               </View>
             )}
           </View>
-
         </ScrollView>
       </View>
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#f8f9ff",
+  },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    height: 64,
+    backgroundColor: "#f8f9ff",
+    borderBottomWidth: 1,
+    borderBottomColor: "#c5c5d8",
+    zIndex: 20,
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  iconButton: {
+    width: 40,
+    height: 40,
+    backgroundColor: "#ffffff",
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#c5c5d8",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  bellButton: {
+    width: 40,
+    height: 40,
+    backgroundColor: "#ffffff",
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#c5c5d8",
+    alignItems: "center",
+    justifyContent: "center",
+    position: "relative",
+  },
+  bellBadge: {
+    position: "absolute",
+    top: 6,
+    right: 6,
+    width: 10,
+    height: 10,
+    backgroundColor: "#ba1a1a",
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: "#ffffff",
+  },
+  pillOnline: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: 9999,
+    borderWidth: 1,
+    borderColor: "#001caa",
+    backgroundColor: "rgba(29, 53, 209, 0.1)",
+  },
+  pillOffline: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: 9999,
+    borderWidth: 1,
+    borderColor: "#c5c5d8",
+    backgroundColor: "#e5eeff",
+  },
+  dotContainer: {
+    position: "relative",
+    width: 8,
+    height: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  pingDotOnline: {
+    position: "absolute",
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#22c55e",
+    opacity: 0.75,
+  },
+  pingDotOffline: {
+    position: "absolute",
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#5b5e66",
+    opacity: 0.75,
+  },
+  statusDotOnline: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#22c55e",
+  },
+  statusDotOffline: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#5b5e66",
+  },
+  labelOnline: {
+    fontSize: 12,
+    fontWeight: "700",
+    fontFamily: "Plus Jakarta Sans",
+    color: "#001caa",
+  },
+  labelOffline: {
+    fontSize: 12,
+    fontWeight: "700",
+    fontFamily: "Plus Jakarta Sans",
+    color: "#5b5e66",
+  },
+  mapContainer: {
+    flex: 1,
+    position: "relative",
+    zIndex: 0,
+  },
+  mapImage: {
+    width: "100%",
+    height: 280,
+    resizeMode: "cover",
+  },
+  marker: {
+    position: "absolute",
+    top: 120,
+    left: "50%",
+    marginTop: -16,
+    marginLeft: -16,
+    width: 32,
+    height: 32,
+    backgroundColor: "#001caa",
+    borderRadius: 16,
+    borderWidth: 4,
+    borderColor: "#ffffff",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  markerText: {
+    fontSize: 12,
+    color: "#ffffff",
+  },
+  bottomSheet: {
+    flex: 1,
+    backgroundColor: "#f8f9ff",
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderTopWidth: 1,
+    borderTopColor: "#c5c5d8",
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 6,
+    marginTop: -24,
+  },
+  handleBar: {
+    width: 48,
+    height: 4,
+    backgroundColor: "#c5c5d8",
+    borderRadius: 2,
+    alignSelf: "center",
+    marginBottom: 16,
+  },
+  earningsHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-end",
+    marginBottom: 16,
+  },
+  earningsLabel: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#5b5e66",
+    textTransform: "uppercase",
+    fontFamily: "Plus Jakarta Sans",
+  },
+  earningsValue: {
+    fontSize: 40,
+    fontWeight: "700",
+    color: "#0b1c30",
+    fontFamily: "Plus Jakarta Sans",
+  },
+  detailsText: {
+    color: "#001caa",
+    fontWeight: "700",
+    fontSize: 14,
+    fontFamily: "Plus Jakarta Sans",
+  },
+  statsGrid: {
+    flexDirection: "row",
+    gap: 12,
+    marginBottom: 24,
+  },
+  statsCard: {
+    flex: 1,
+    backgroundColor: "#e5eeff",
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#c5c5d8",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  statsIconWrapper: {
+    width: 40,
+    height: 40,
+    backgroundColor: "#ffffff",
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 1,
+    elevation: 1,
+  },
+  statsValue: {
+    fontSize: 24,
+    fontWeight: "600",
+    color: "#0b1c30",
+    fontFamily: "Plus Jakarta Sans",
+  },
+  statsLabel: {
+    fontSize: 12,
+    fontWeight: "500",
+    color: "#5b5e66",
+    fontFamily: "Plus Jakarta Sans",
+  },
+  requestPanel: {
+    paddingBottom: 64,
+  },
+  offlinePanel: {
+    borderWidth: 1,
+    borderColor: "#c5c5d8",
+    backgroundColor: "#ffffff",
+    padding: 24,
+    borderRadius: 12,
+    alignItems: "center",
+  },
+  offlineTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#0b1c30",
+    marginTop: 12,
+    fontFamily: "Plus Jakarta Sans",
+  },
+  offlineSubtitle: {
+    fontSize: 14,
+    fontWeight: "400",
+    color: "#5b5e66",
+    textAlign: "center",
+    marginTop: 4,
+    fontFamily: "Plus Jakarta Sans",
+  },
+  requestCard: {
+    backgroundColor: "#ffffff",
+    borderWidth: 2,
+    borderColor: "#001caa",
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 8,
+    gap: 16,
+  },
+  requestCardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  requestCardTitle: {
+    fontSize: 24,
+    fontWeight: "600",
+    color: "#001caa",
+    fontFamily: "Plus Jakarta Sans",
+  },
+  priceBadge: {
+    backgroundColor: "rgba(0, 28, 170, 0.1)",
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 9999,
+    borderWidth: 1,
+    borderColor: "rgba(0, 28, 170, 0.2)",
+  },
+  priceText: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#001caa",
+    fontFamily: "Plus Jakarta Sans",
+  },
+  passengerInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  passengerImage: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    resizeMode: "cover",
+  },
+  passengerName: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#0b1c30",
+    fontFamily: "Plus Jakarta Sans",
+  },
+  passengerRatingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  passengerSubtext: {
+    fontSize: 14,
+    color: "#5b5e66",
+    fontFamily: "Plus Jakarta Sans",
+  },
+  routeDetails: {
+    backgroundColor: "#eff4ff",
+    borderRadius: 8,
+    padding: 12,
+    gap: 8,
+  },
+  routeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  routeText: {
+    fontSize: 14,
+    color: "#0b1c30",
+    fontFamily: "Plus Jakarta Sans",
+  },
+  routeLabel: {
+    fontWeight: "700",
+    color: "#001caa",
+  },
+  acceptButton: {
+    width: "100%",
+    backgroundColor: "#001caa",
+    height: 48,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  acceptButtonText: {
+    color: "#ffffff",
+    fontSize: 16,
+    fontWeight: "700",
+    fontFamily: "Plus Jakarta Sans",
+  },
+  findingCard: {
+    backgroundColor: "#ffffff",
+    borderWidth: 1,
+    borderColor: "#c5c5d8",
+    padding: 24,
+    borderRadius: 12,
+    alignItems: "center",
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  findingIconWrapper: {
+    width: 64,
+    height: 64,
+    backgroundColor: "rgba(0, 28, 170, 0.1)",
+    borderRadius: 32,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 16,
+  },
+  findingTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#0b1c30",
+    fontFamily: "Plus Jakarta Sans",
+  },
+  findingSubtitle: {
+    fontSize: 14,
+    color: "#5b5e66",
+    textAlign: "center",
+    marginTop: 4,
+    maxWidth: 240,
+    fontFamily: "Plus Jakarta Sans",
+  },
+  triggerButton: {
+    marginTop: 24,
+    backgroundColor: "#f8f9ff",
+    borderWidth: 1,
+    borderColor: "#c5c5d8",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  triggerButtonText: {
+    fontSize: 11,
+    color: "#001caa",
+    fontWeight: "700",
+    textTransform: "uppercase",
+    letterSpacing: 1.1,
+    fontFamily: "Plus Jakarta Sans",
+  },
+});
