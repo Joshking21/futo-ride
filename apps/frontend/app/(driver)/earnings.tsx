@@ -65,7 +65,7 @@ export default function DriverEarnings() {
         >
           <ArrowLeft color="#001caa" size={24} />
         </Pressable>
-        <Text className="text-headline-md font-bold text-primary font-jakarta">
+        <Text className="text-lg font-bold text-primary font-jakarta">
           Earnings Summary
         </Text>
         <Pressable className="w-10 h-10 bg-surface-container-lowest rounded-full border border-outline-variant items-center justify-center">
@@ -104,16 +104,18 @@ export default function DriverEarnings() {
                   : "bg-white/50"
               }`}
             >
-              {isCashingOut ? (
-                <ActivityIndicator color="#001caa" size="small" />
-              ) : (
-                <>
-                  <Text className="text-primary text-label-md font-bold font-jakarta">
-                    Cashout Now
-                  </Text>
-                  <ArrowRight color="#001caa" size={16} />
-                </>
-              )}
+              <View className="flex-row flex justify-center items-center">
+                <Text className="text-primary text-label-md text-center flex justify-center items-center font-bold font-jakarta">
+                  Cashout Now
+                </Text>
+                {isCashingOut ? (
+                  <ActivityIndicator color="#001caa" size="small" />
+                ) : (
+                  <>
+                    <ArrowRight color="#001caa" size={16} />
+                  </>
+                )}
+              </View>
             </Pressable>
           </View>
         </View>
@@ -121,7 +123,7 @@ export default function DriverEarnings() {
         {/* Bento Stats Grid */}
         <View className="flex-row gap-4 mb-6">
           {/* Today's Trips Card */}
-          <View className="flex-1 bg-surface-container-lowest border border-outline-variant rounded-xl p-4 shadow-sm justify-between">
+          <View className="flex-1 bg-surface-container-lowest  rounded-2xl p-4 shadow-2xl justify-between">
             <View className="flex-row items-center gap-2 text-secondary mb-4">
               <View className="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center">
                 <Navigation color="#001caa" size={16} />
@@ -130,13 +132,13 @@ export default function DriverEarnings() {
                 Today's Trips
               </Text>
             </View>
-            <View className="flex-row justify-between items-baseline">
+            <View className="flex-row justify-between items-end">
               <Text className="text-headline-lg-mobile font-bold text-on-surface font-jakarta">
                 {earnings.tripsCount || 12}
               </Text>
               <View className="flex-row items-center gap-0.5">
                 <TrendingUp color="#354be2" size={12} />
-                <Text className="text-[10px] font-bold text-primary font-jakarta">
+                <Text className="text-4 font-bold text-primary font-jakarta">
                   +2
                 </Text>
               </View>
@@ -144,7 +146,7 @@ export default function DriverEarnings() {
           </View>
 
           {/* Weekly Total Card */}
-          <View className="flex-1 bg-surface-container-lowest border border-outline-variant rounded-xl p-4 shadow-sm justify-between">
+          <View className="flex-1 bg-surface-container-lowest  rounded-2xl p-4 shadow-2xl justify-between">
             <View className="flex-row items-center gap-2 text-secondary mb-4">
               <View className="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center">
                 <Calendar color="#001caa" size={16} />
@@ -161,7 +163,7 @@ export default function DriverEarnings() {
 
         {/* Recent Trips Section */}
         <View>
-          <View className="flex-row justify-between items-end mb-4 px-1">
+          <View className="flex-row justify-between items-center mb-4 px-1">
             <Text className="text-headline-md font-bold text-on-surface font-jakarta">
               Recent Trips
             </Text>
@@ -172,26 +174,26 @@ export default function DriverEarnings() {
             </Pressable>
           </View>
 
-          <View className="bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm">
+          <View className=" rounded-xl w-full ">
             {mockTrips.map((trip, idx) => (
               <View
                 key={idx}
-                className="p-4 flex-row justify-between items-center border-b border-surface-container last:border-b-0 active:bg-surface-container-low"
+                className="p-4 flex-row justify-between w-full items-center border-b border-secondary/10"
               >
-                <View className="flex-row items-center gap-3">
+                <View className="flex-row items-center  w-[60%] gap-3">
                   <View className="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center">
                     <MapPin color="#001caa" size={18} />
                   </View>
-                  <View>
+                  <View className=" flex ">
                     <Text className="text-label-md font-bold text-on-surface font-jakarta">
                       {trip.from} to {trip.to}
                     </Text>
-                    <Text className="text-body-sm text-secondary mt-0.5 font-jakarta">
+                    <Text className="text-body-sm text-secondary  mt-0.5 font-jakarta">
                       {trip.time}
                     </Text>
                   </View>
                 </View>
-                <View className="items-end">
+                <View className="items-end w-[40%] ">
                   <Text className="text-label-md font-bold text-on-surface font-jakarta">
                     ₦{trip.fare}
                   </Text>
