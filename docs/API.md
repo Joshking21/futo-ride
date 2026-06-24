@@ -1,13 +1,13 @@
 # API.md — Endpoint Registry
 
-> The frontend's index of what exists (AGENTS.md §6–7). One entry per endpoint
-> in `/app/api`. Keep this, `/types`, and `/lib/api.ts` in sync — that trio is
-> the frontend's contract. No Swagger; Zod schemas are the source of truth.
+> The frontend's index of what the backend exposes (AGENTS.md §6–7). One entry per
+> endpoint in `apps/api/src/routes`. Keep this and `apps/api/src/types` in sync —
+> they are the frontend's contract. No Swagger; Zod schemas are the source of truth.
 
 **Entry format:**
 
 ```
-### POST /api/<resource>
+### POST /<resource>
 Auth:  required (Firebase ID token) | none
 Body:  { ... }
 200:   { ok: true, data: { ... } }
