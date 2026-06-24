@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>JayBobo Transit - Ride History</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary": "#333640",
+                        "on-secondary": "#ffffff",
+                        "on-surface-variant": "#444655",
+                        "on-error": "#ffffff",
+                        "background": "#f8f9ff",
+                        "on-primary-fixed-variant": "#112ccb",
+                        "inverse-on-surface": "#eaf1ff",
+                        "surface-container-highest": "#d3e4fe",
+                        "surface-container-low": "#eff4ff",
+                        "on-secondary-fixed": "#181c22",
+                        "primary-fixed": "#dfe0ff",
+                        "surface": "#f8f9ff",
+                        "surface-variant": "#d3e4fe",
+                        "surface-container": "#e5eeff",
+                        "surface-container-lowest": "#ffffff",
+                        "tertiary-fixed": "#e0e2ef",
+                        "on-tertiary-fixed": "#181b24",
+                        "on-surface": "#0b1c30",
+                        "outline-variant": "#c5c5d8",
+                        "outline": "#757687",
+                        "on-error-container": "#93000a",
+                        "secondary-fixed": "#dfe2eb",
+                        "on-secondary-container": "#61646c",
+                        "tertiary-fixed-dim": "#c3c6d2",
+                        "primary-container": "#1d35d1",
+                        "on-tertiary": "#ffffff",
+                        "inverse-primary": "#bcc2ff",
+                        "primary": "#001caa",
+                        "on-tertiary-container": "#bbbeca",
+                        "on-primary": "#ffffff",
+                        "surface-tint": "#354be2",
+                        "on-secondary-fixed-variant": "#43474e",
+                        "error": "#ba1a1a",
+                        "secondary-container": "#dfe2eb",
+                        "on-primary-fixed": "#000c61",
+                        "inverse-surface": "#213145",
+                        "secondary-fixed-dim": "#c3c6cf",
+                        "surface-dim": "#cbdbf5",
+                        "secondary": "#5b5e66",
+                        "primary-fixed-dim": "#bcc2ff",
+                        "on-background": "#0b1c30",
+                        "tertiary-container": "#4a4d57",
+                        "on-tertiary-fixed-variant": "#434751",
+                        "error-container": "#ffdad6",
+                        "surface-bright": "#f8f9ff",
+                        "on-primary-container": "#b1b9ff",
+                        "surface-container-high": "#dce9ff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "xs": "4px",
+                        "margin-desktop": "40px",
+                        "unit": "4px",
+                        "sm": "8px",
+                        "gutter": "16px",
+                        "xl": "32px",
+                        "md": "16px",
+                        "lg": "24px",
+                        "margin-mobile": "20px"
+                    },
+                    "fontFamily": {
+                        "label-sm": ["Plus Jakarta Sans"],
+                        "headline-lg-mobile": ["Plus Jakarta Sans"],
+                        "headline-lg": ["Plus Jakarta Sans"],
+                        "label-md": ["Plus Jakarta Sans"],
+                        "headline-md": ["Plus Jakarta Sans"],
+                        "body-sm": ["Plus Jakarta Sans"],
+                        "headline-xl": ["Plus Jakarta Sans"],
+                        "body-lg": ["Plus Jakarta Sans"],
+                        "body-md": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "label-sm": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
+                        "headline-lg-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "700" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "label-md": ["14px", { "lineHeight": "20px", "fontWeight": "600" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "body-sm": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "headline-xl": ["40px", { "lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background antialiased min-h-screen flex flex-col pt-[72px] pb-[80px]">
+<!-- TopAppBar -->
+<header class="bg-surface dark:bg-surface-dim border-b border-outline-variant dark:border-outline fixed top-0 w-full z-50 flex justify-between items-center px-margin-mobile md:px-margin-desktop h-[72px]">
+<div class="flex items-center gap-4">
+<button aria-label="Go back" class="hover:bg-surface-container-high transition-colors p-2 rounded-full text-primary dark:text-primary-fixed">
+<span class="material-symbols-outlined" data-icon="arrow_back">arrow_back</span>
+</button>
+<h1 class="text-headline-md font-headline-md font-bold text-primary dark:text-primary-fixed">JayBobo Transit</h1>
+</div>
+<button aria-label="Wallet" class="hover:bg-surface-container-high transition-colors p-2 rounded-full text-primary dark:text-primary-fixed">
+<span class="material-symbols-outlined" data-icon="account_balance_wallet">account_balance_wallet</span>
+</button>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-grow w-full max-w-[1280px] mx-auto px-margin-mobile md:px-margin-desktop py-xl">
+<!-- Header & Filters -->
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-lg gap-md">
+<div>
+<h2 class="text-headline-lg-mobile md:text-headline-lg font-headline-lg-mobile md:font-headline-lg text-on-surface">Your Rides</h2>
+<p class="text-body-md font-body-md text-secondary mt-xs">Review your past trips and transactions.</p>
+</div>
+<div class="flex items-center gap-sm overflow-x-auto w-full md:w-auto pb-2 md:pb-0 scrollbar-hide">
+<button class="flex items-center gap-xs px-md py-sm bg-primary-container text-on-primary-container rounded-full text-label-md font-label-md shrink-0">
+<span class="material-symbols-outlined text-[18px]">done_all</span>
+                    All Rides
+                </button>
+<button class="flex items-center gap-xs px-md py-sm bg-surface-container text-on-surface rounded-full border border-outline-variant text-label-md font-label-md shrink-0 hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-[18px]">check_circle</span>
+                    Completed
+                </button>
+<button class="flex items-center gap-xs px-md py-sm bg-surface-container text-on-surface rounded-full border border-outline-variant text-label-md font-label-md shrink-0 hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-[18px]">cancel</span>
+                    Cancelled
+                </button>
+<button class="flex items-center gap-xs px-md py-sm bg-surface-container text-on-surface rounded-full border border-outline-variant text-label-md font-label-md shrink-0 hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-[18px]">tune</span>
+                    Filter
+                </button>
+</div>
+</div>
+<!-- Ride Cards Grid (Bento style for larger screens, list for mobile) -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-lg">
+<!-- Trip Card 1: Completed -->
+<div class="bg-surface-container rounded-xl border border-outline-variant p-md md:p-lg flex flex-col gap-md shadow-[0_8px_24px_rgba(0,0,0,0.02)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)] transition-shadow">
+<!-- Card Header -->
+<div class="flex justify-between items-start border-b border-outline-variant pb-sm">
+<div class="flex items-center gap-sm">
+<div class="bg-primary/10 p-2 rounded-full text-primary">
+<span class="material-symbols-outlined" data-icon="directions_car">directions_car</span>
+</div>
+<div>
+<p class="text-label-md font-label-md text-on-surface">Oct 24, 2023 • 08:30 AM</p>
+<p class="text-body-sm font-body-sm text-secondary">Standard Ride</p>
+</div>
+</div>
+<div class="flex flex-col items-end">
+<p class="text-headline-md font-headline-md text-on-surface">₦450</p>
+<span class="inline-flex items-center px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider bg-[#dcfce7] text-[#166534]">Completed</span>
+</div>
+</div>
+<!-- Route Details -->
+<div class="relative pl-6 py-sm">
+<!-- Timeline Line -->
+<div class="absolute left-[11px] top-[24px] bottom-[24px] w-[2px] bg-outline-variant"></div>
+<!-- Pickup -->
+<div class="relative flex items-start gap-md mb-md">
+<div class="absolute left-[-24px] top-1 w-3 h-3 rounded-full bg-primary ring-4 ring-surface-container"></div>
+<div>
+<p class="text-body-sm font-body-sm text-secondary">Pickup</p>
+<p class="text-body-md font-body-md font-medium text-on-surface">SEET Head Office</p>
+</div>
+</div>
+<!-- Dropoff -->
+<div class="relative flex items-start gap-md">
+<div class="absolute left-[-24px] top-1 w-3 h-3 rounded-sm bg-primary ring-4 ring-surface-container"></div>
+<div>
+<p class="text-body-sm font-body-sm text-secondary">Dropoff</p>
+<p class="text-body-md font-body-md font-medium text-on-surface">Senate Building</p>
+</div>
+</div>
+</div>
+<!-- Driver Info -->
+<div class="flex items-center justify-between bg-surface-container-low rounded-lg p-sm mt-auto">
+<div class="flex items-center gap-sm">
+<div class="w-10 h-10 rounded-full overflow-hidden bg-outline-variant shrink-0">
+<img alt="Driver" class="w-full h-full object-cover" data-alt="A close-up portrait of a friendly male transit driver in a bright, modern setting, wearing a professional blue uniform. Natural daylight, high-key lighting, corporate mobility aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBIG7wmf5FAP2-UmEzriD84RuYs2fB7Z10TJT8FNdR1y1ISI3Nc8LZuGLgXYwq4srjRU2Gs_PF0X-0IpbBOlm-6Exiq_azESmJGy4bGVW6WKIQLsfeguHHLzqB8DSyRsL6_uycAB59bNo2fWUbaVVW-1W2F8jFRh_kcry_-s8P52ZAne20wBLNgZlufCFaflD_CbHcsB48s7sTq16uXnBAANGNpkWcUMXKboqF8UuN-zMLKBMvgiAO44oIoONPbZZ-38BCE5CFv3bHb"/>
+</div>
+<div>
+<p class="text-label-md font-label-md text-on-surface">Chukwudi M.</p>
+<div class="flex items-center gap-1 text-secondary text-label-sm font-label-sm">
+<span class="material-symbols-outlined text-[14px] text-[#fbbf24]" style="font-variation-settings: 'FILL' 1;">star</span>
+                                4.9 • Toyota Corolla
+                            </div>
+</div>
+</div>
+<button class="text-primary text-label-md font-label-md hover:underline">Receipt</button>
+</div>
+</div>
+<!-- Trip Card 2: Cancelled -->
+<div class="bg-surface-container rounded-xl border border-outline-variant p-md md:p-lg flex flex-col gap-md shadow-[0_8px_24px_rgba(0,0,0,0.02)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)] transition-shadow">
+<!-- Card Header -->
+<div class="flex justify-between items-start border-b border-outline-variant pb-sm">
+<div class="flex items-center gap-sm">
+<div class="bg-error/10 p-2 rounded-full text-error">
+<span class="material-symbols-outlined" data-icon="block">block</span>
+</div>
+<div>
+<p class="text-label-md font-label-md text-on-surface">Oct 23, 2023 • 02:15 PM</p>
+<p class="text-body-sm font-body-sm text-secondary">Shared Ride</p>
+</div>
+</div>
+<div class="flex flex-col items-end">
+<p class="text-headline-md font-headline-md text-on-surface line-through text-outline">₦300</p>
+<span class="inline-flex items-center px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider bg-error-container text-on-error-container">Cancelled</span>
+</div>
+</div>
+<!-- Route Details -->
+<div class="relative pl-6 py-sm opacity-70">
+<!-- Timeline Line -->
+<div class="absolute left-[11px] top-[24px] bottom-[24px] w-[2px] bg-outline-variant"></div>
+<!-- Pickup -->
+<div class="relative flex items-start gap-md mb-md">
+<div class="absolute left-[-24px] top-1 w-3 h-3 rounded-full border-2 border-outline bg-surface-container ring-4 ring-surface-container"></div>
+<div>
+<p class="text-body-sm font-body-sm text-secondary">Pickup</p>
+<p class="text-body-md font-body-md font-medium text-on-surface">Hostel C</p>
+</div>
+</div>
+<!-- Dropoff -->
+<div class="relative flex items-start gap-md">
+<div class="absolute left-[-24px] top-1 w-3 h-3 rounded-sm border-2 border-outline bg-surface-container ring-4 ring-surface-container"></div>
+<div>
+<p class="text-body-sm font-body-sm text-secondary">Dropoff</p>
+<p class="text-body-md font-body-md font-medium text-on-surface">Main Gate</p>
+</div>
+</div>
+</div>
+<!-- Driver Info (None for cancelled before matching, but showing example if cancelled by driver) -->
+<div class="flex items-center justify-between bg-surface-container-low rounded-lg p-sm mt-auto opacity-70">
+<p class="text-body-sm font-body-sm text-secondary italic">Trip cancelled by rider.</p>
+</div>
+</div>
+<!-- Trip Card 3: Completed -->
+<div class="bg-surface-container rounded-xl border border-outline-variant p-md md:p-lg flex flex-col gap-md shadow-[0_8px_24px_rgba(0,0,0,0.02)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)] transition-shadow">
+<!-- Card Header -->
+<div class="flex justify-between items-start border-b border-outline-variant pb-sm">
+<div class="flex items-center gap-sm">
+<div class="bg-primary/10 p-2 rounded-full text-primary">
+<span class="material-symbols-outlined" data-icon="directions_car">directions_car</span>
+</div>
+<div>
+<p class="text-label-md font-label-md text-on-surface">Oct 20, 2023 • 05:45 PM</p>
+<p class="text-body-sm font-body-sm text-secondary">Standard Ride</p>
+</div>
+</div>
+<div class="flex flex-col items-end">
+<p class="text-headline-md font-headline-md text-on-surface">₦500</p>
+<span class="inline-flex items-center px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider bg-[#dcfce7] text-[#166534]">Completed</span>
+</div>
+</div>
+<!-- Route Details -->
+<div class="relative pl-6 py-sm">
+<!-- Timeline Line -->
+<div class="absolute left-[11px] top-[24px] bottom-[24px] w-[2px] bg-outline-variant"></div>
+<!-- Pickup -->
+<div class="relative flex items-start gap-md mb-md">
+<div class="absolute left-[-24px] top-1 w-3 h-3 rounded-full bg-primary ring-4 ring-surface-container"></div>
+<div>
+<p class="text-body-sm font-body-sm text-secondary">Pickup</p>
+<p class="text-body-md font-body-md font-medium text-on-surface">FUTO Library</p>
+</div>
+</div>
+<!-- Dropoff -->
+<div class="relative flex items-start gap-md">
+<div class="absolute left-[-24px] top-1 w-3 h-3 rounded-sm bg-primary ring-4 ring-surface-container"></div>
+<div>
+<p class="text-body-sm font-body-sm text-secondary">Dropoff</p>
+<p class="text-body-md font-body-md font-medium text-on-surface">Ihiagwa Junction</p>
+</div>
+</div>
+</div>
+<!-- Driver Info -->
+<div class="flex items-center justify-between bg-surface-container-low rounded-lg p-sm mt-auto">
+<div class="flex items-center gap-sm">
+<div class="w-10 h-10 rounded-full overflow-hidden bg-outline-variant shrink-0">
+<img alt="Driver" class="w-full h-full object-cover" data-alt="A portrait of a cheerful female driver in a clean, modern vehicle setting. Wearing a neat branded cap and uniform. Soft, even lighting emphasizing reliability and safety." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA0yh9yB_VKSKNTwBloY0_RTojcK5aqvhR96K9aP3xx6oE3zKjmazdUDgs-DI2df9FxU0_Bmsyej6QTJpbm4kIwWVNymTSzNgTtuYhHz5TaJbOfySx4DbIDl4AXoyBCe95pNhuYz_Mfs--NXTk8z81g8UE5KON1rC3weDnQTdvd4qgJWgCYL0wPEwrSZFRY0iJSwLWGivNdn7pjncFpt5z11zhRWmzb9xooxjsrkSwBIhrWxjRYuROOYj3ue_pQ0mqHNXxIYMOWGSDX"/>
+</div>
+<div>
+<p class="text-label-md font-label-md text-on-surface">Ngozi E.</p>
+<div class="flex items-center gap-1 text-secondary text-label-sm font-label-sm">
+<span class="material-symbols-outlined text-[14px] text-[#fbbf24]" style="font-variation-settings: 'FILL' 1;">star</span>
+                                4.8 • Hyundai Elantra
+                            </div>
+</div>
+</div>
+<button class="text-primary text-label-md font-label-md hover:underline">Receipt</button>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="md:hidden bg-surface dark:bg-surface-container-highest shadow-[0_-4px_12px_rgba(0,0,0,0.1)] fixed bottom-0 w-full z-50 flex justify-around items-center px-4 py-2">
+<a class="flex flex-col items-center justify-center text-secondary dark:text-secondary-fixed-dim hover:bg-surface-container-low dark:hover:bg-surface-variant p-2 rounded-lg transition-colors w-16" href="#">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="text-label-sm font-label-sm mt-1">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-primary dark:text-primary-fixed font-bold scale-95 transition-transform duration-200 p-2 rounded-lg w-16" href="#">
+<span class="material-symbols-outlined" data-icon="history" style="font-variation-settings: 'FILL' 1;">history</span>
+<span class="text-label-sm font-label-sm mt-1">Rides</span>
+</a>
+<a class="flex flex-col items-center justify-center text-secondary dark:text-secondary-fixed-dim hover:bg-surface-container-low dark:hover:bg-surface-variant p-2 rounded-lg transition-colors w-16" href="#">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+<span class="text-label-sm font-label-sm mt-1">Alerts</span>
+</a>
+<a class="flex flex-col items-center justify-center text-secondary dark:text-secondary-fixed-dim hover:bg-surface-container-low dark:hover:bg-surface-variant p-2 rounded-lg transition-colors w-16" href="#">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="text-label-sm font-label-sm mt-1">Account</span>
+</a>
+</nav>
+</body></html>

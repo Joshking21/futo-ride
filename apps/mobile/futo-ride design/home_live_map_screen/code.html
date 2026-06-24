@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>FUTO Ride - Home Map</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "outline": "#757687",
+                      "primary-fixed-dim": "#bcc2ff",
+                      "surface-dim": "#cbdbf5",
+                      "on-tertiary-container": "#bbbeca",
+                      "on-primary-container": "#b1b9ff",
+                      "secondary-container": "#dfe2eb",
+                      "error": "#ba1a1a",
+                      "on-error-container": "#93000a",
+                      "surface-container-lowest": "#ffffff",
+                      "surface-bright": "#f8f9ff",
+                      "on-secondary-fixed": "#181c22",
+                      "on-tertiary": "#ffffff",
+                      "surface-variant": "#d3e4fe",
+                      "surface-container": "#e5eeff",
+                      "on-primary-fixed-variant": "#112ccb",
+                      "on-secondary-container": "#61646c",
+                      "secondary-fixed": "#dfe2eb",
+                      "surface-tint": "#354be2",
+                      "secondary": "#5b5e66",
+                      "on-primary": "#ffffff",
+                      "on-primary-fixed": "#000c61",
+                      "tertiary-fixed-dim": "#c3c6d2",
+                      "tertiary-container": "#4a4d57",
+                      "on-background": "#0b1c30",
+                      "inverse-surface": "#213145",
+                      "outline-variant": "#c5c5d8",
+                      "tertiary": "#333640",
+                      "on-secondary-fixed-variant": "#43474e",
+                      "surface-container-highest": "#d3e4fe",
+                      "inverse-primary": "#bcc2ff",
+                      "error-container": "#ffdad6",
+                      "surface": "#f8f9ff",
+                      "on-error": "#ffffff",
+                      "primary-fixed": "#dfe0ff",
+                      "inverse-on-surface": "#eaf1ff",
+                      "surface-container-low": "#eff4ff",
+                      "primary": "#001caa",
+                      "on-tertiary-fixed-variant": "#434751",
+                      "tertiary-fixed": "#e0e2ef",
+                      "on-secondary": "#ffffff",
+                      "primary-container": "#1d35d1",
+                      "on-tertiary-fixed": "#181b24",
+                      "surface-container-high": "#dce9ff",
+                      "on-surface": "#0b1c30",
+                      "background": "#f8f9ff",
+                      "secondary-fixed-dim": "#c3c6cf",
+                      "on-surface-variant": "#444655"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "gutter": "16px",
+                      "sm": "8px",
+                      "md": "16px",
+                      "margin-mobile": "20px",
+                      "lg": "24px",
+                      "unit": "4px",
+                      "margin-desktop": "40px",
+                      "xs": "4px",
+                      "xl": "32px"
+              },
+              "fontFamily": {
+                      "headline-xl": ["Plus Jakarta Sans"],
+                      "label-sm": ["Plus Jakarta Sans"],
+                      "body-sm": ["Plus Jakarta Sans"],
+                      "headline-lg": ["Plus Jakarta Sans"],
+                      "body-md": ["Plus Jakarta Sans"],
+                      "headline-md": ["Plus Jakarta Sans"],
+                      "body-lg": ["Plus Jakarta Sans"],
+                      "headline-lg-mobile": ["Plus Jakarta Sans"],
+                      "label-md": ["Plus Jakarta Sans"]
+              },
+              "fontSize": {
+                      "headline-xl": ["40px", {"lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                      "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                      "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                      "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                      "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                      "headline-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "700"}],
+                      "label-md": ["14px", {"lineHeight": "20px", "fontWeight": "600"}]
+              }
+            },
+          }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.fill {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        
+        /* Map background placeholder styling */
+        .bg-map-pattern {
+            background-color: #f0f4f8;
+            background-image: radial-gradient(#dce9ff 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body-md h-screen w-screen overflow-hidden relative">
+<!-- Top Navigation Placeholder (Hidden on Mobile per rules, but drawer toggle present) -->
+<div class="absolute top-margin-mobile left-margin-mobile z-[60] md:hidden">
+<button class="bg-surface text-on-surface p-sm rounded-full shadow-lg flex items-center justify-center hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined text-headline-md">menu</span>
+</button>
+</div>
+<!-- Full Screen Map Area -->
+<div class="absolute inset-0 z-0 bg-map-pattern w-full h-full flex items-center justify-center relative" data-location="Abuja" style="">
+<!-- Abstract map representation lines -->
+<svg class="absolute inset-0 w-full h-full opacity-30 pointer-events-none" xmlns="http://www.w3.org/2000/svg">
+<path d="M-100,200 Q 150,100 300,400 T 800,300" fill="none" stroke="#bcc2ff" stroke-width="8"></path>
+<path d="M200,-50 L 250,800" fill="none" stroke="#cbdbf5" stroke-width="12"></path>
+<path d="M-50,600 Q 400,500 900,700" fill="none" stroke="#dfe0ff" stroke-width="6"></path>
+</svg>
+<!-- User Location Marker -->
+<div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex items-center justify-center">
+<div class="w-24 h-24 bg-primary rounded-full opacity-10 animate-ping absolute"></div>
+<div class="w-16 h-16 bg-primary rounded-full opacity-20 absolute"></div>
+<div class="w-4 h-4 bg-primary border-2 border-surface rounded-full z-10 shadow-md"></div>
+</div>
+<!-- Vehicle Markers (Keke & Bus mix) -->
+<div class="absolute top-1/4 left-1/4 transform -translate-x-1/2 -translate-y-1/2">
+<div class="bg-surface rounded-lg shadow-md p-xs border border-outline-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-body-lg fill">directions_car</span>
+</div>
+</div>
+<div class="absolute top-1/3 right-1/4 transform -translate-x-1/2 -translate-y-1/2">
+<div class="bg-surface rounded-lg shadow-md p-xs border border-outline-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-tertiary text-body-lg fill">directions_bus</span>
+</div>
+</div>
+<div class="absolute bottom-1/3 left-1/3 transform -translate-x-1/2 -translate-y-1/2">
+<div class="bg-surface rounded-lg shadow-md p-xs border border-outline-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-body-lg fill">directions_car</span>
+</div>
+</div>
+<div class="absolute bottom-1/4 right-1/3 transform -translate-x-1/2 -translate-y-1/2">
+<div class="bg-surface rounded-lg shadow-md p-xs border border-outline-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-tertiary text-body-lg fill">directions_bus</span>
+</div>
+</div>
+</div>
+<!-- Top Overlay Controls -->
+<div class="absolute top-margin-mobile right-margin-mobile z-10 flex flex-col gap-md">
+<!-- Target Location Button -->
+<button class="bg-surface text-on-surface p-sm rounded-full shadow-lg flex items-center justify-center hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined text-headline-md">my_location</span>
+</button>
+</div>
+<!-- Bottom Action Area -->
+<div class="absolute bottom-[80px] w-full px-margin-mobile z-10 flex flex-col gap-md pb-md">
+<!-- Floating SOS Button -->
+<div class="flex justify-end mb-sm pointer-events-none">
+<button class="bg-error-container text-on-error-container p-md rounded-full shadow-lg flex flex-col items-center justify-center hover:bg-error hover:text-on-error transition-colors pointer-events-auto w-16 h-16">
+<span class="material-symbols-outlined text-headline-md fill">notifications_active</span>
+<span class="font-label-sm text-label-sm mt-xs">SOS</span>
+</button>
+</div>
+<!-- Search & Toggle Panel -->
+<div class="bg-surface rounded-xl shadow-xl border border-surface-container-highest p-md flex flex-col gap-md">
+<!-- Where to Search Bar -->
+<div class="flex gap-sm">
+<div class="flex-1 bg-surface-container-low border border-outline-variant rounded-full flex items-center px-md py-sm focus-within:border-primary focus-within:border-2 transition-all">
+<span class="material-symbols-outlined text-on-surface-variant mr-sm">search</span>
+<input class="bg-transparent border-none outline-none text-body-md font-body-md w-full placeholder:text-on-surface-variant focus:ring-0 p-0 text-on-surface" placeholder="Where to?" type="text"/>
+</div>
+<button class="bg-surface-container-low border border-outline-variant text-on-surface p-sm rounded-full w-12 h-12 flex items-center justify-center hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined">schedule</span>
+</button>
+</div>
+<!-- Vehicle Type Toggle -->
+<div class="flex bg-surface-container-low rounded-lg p-xs">
+<button class="flex-1 bg-primary text-on-primary py-sm px-md rounded-md flex items-center justify-center gap-sm shadow-sm transition-colors">
+<span class="material-symbols-outlined fill">directions_car</span>
+<span class="font-label-md text-label-md">Keke</span>
+</button>
+<button class="flex-1 text-on-surface-variant py-sm px-md rounded-md flex items-center justify-center gap-sm hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined">directions_bus</span>
+<span class="font-label-md text-label-md">Bus</span>
+</button>
+</div>
+<!-- Nearby Status -->
+<button class="w-full flex items-center justify-between pt-sm border-t border-surface-container-highest group">
+<div class="flex items-center gap-sm">
+<div class="w-2 h-2 rounded-full bg-green-500"></div>
+<span class="font-body-md text-body-md text-on-surface"><strong class="font-bold">8</strong> Kekes nearby</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant group-hover:translate-x-1 transition-transform">chevron_right</span>
+</button>
+</div>
+</div>
+<!-- BottomNavBar (Shared Component JSON Rendered) -->
+<nav class="md:hidden bg-surface dark:bg-surface-container-highest shadow-[0_-4px_12px_rgba(0,0,0,0.1)] fixed bottom-0 w-full z-50 flex justify-around items-center px-4 py-2">
+<a class="flex flex-col items-center justify-center text-primary dark:text-primary-fixed font-bold scale-95 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined text-headline-md mb-xs fill">home</span>
+<span class="text-label-md font-label-md">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-secondary dark:text-secondary-fixed-dim hover:bg-surface-container-low dark:hover:bg-surface-variant p-sm rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined text-headline-md mb-xs">history</span>
+<span class="text-label-md font-label-md">Rides</span>
+</a>
+<a class="flex flex-col items-center justify-center text-secondary dark:text-secondary-fixed-dim hover:bg-surface-container-low dark:hover:bg-surface-variant p-sm rounded-lg transition-colors relative" href="#">
+<span class="material-symbols-outlined text-headline-md mb-xs">notifications</span>
+<!-- Notification Badge Example -->
+<span class="absolute top-1 right-2 w-2 h-2 bg-error rounded-full"></span>
+<span class="text-label-md font-label-md">Alerts</span>
+</a>
+<a class="flex flex-col items-center justify-center text-secondary dark:text-secondary-fixed-dim hover:bg-surface-container-low dark:hover:bg-surface-variant p-sm rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined text-headline-md mb-xs">person</span>
+<span class="text-label-md font-label-md">Account</span>
+</a>
+</nav>
+<!-- Desktop Navigation Drawer (Hidden on Mobile) -->
+<aside class="hidden md:flex flex-col bg-surface dark:bg-surface-container rounded-r-xl h-full w-80 shadow-xl fixed inset-y-0 left-0 z-[60] p-md">
+<div class="mb-xl">
+<!-- Profile Header -->
+<div class="flex items-center gap-md p-sm rounded-lg hover:bg-surface-container-high transition-colors cursor-pointer mb-lg">
+<div class="w-12 h-12 rounded-full bg-surface-container-highest overflow-hidden flex-shrink-0">
+<img alt="User Profile Avatar" class="w-full h-full object-cover" data-alt="A close up portrait of a young college student looking friendly and approachable in a bright, modern light-mode setting. Soft professional studio lighting highlights a clean background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuArq3DSkq_jfvtLXpnoUAGA3O0or2keSC9kz03v46a4FBJdw_sbrxuVBiRPQuQCTsLK85Kvi0Q_UgFGveGleQDmyeeB7pX1LRolli79xqRfZFVlCt4Xe0W1KjrRWZ-dV32Oh1J-MMyu-UroeOlfMH9uVRP3njBAHc0AkrldGk5k1FX_PlNxCQpmEalT0xC5xtllkAC2-qslhctp_2FEDzxrpHQ4dhIa_84OemuWU7k4M0O_4OQW46Xe33d8v9QTLhCcUlwSUhszvTNY"/>
+</div>
+<div class="flex flex-col">
+<span class="font-headline-md text-headline-md text-primary">FUTO Student</span>
+<span class="font-body-sm text-body-sm text-secondary">Verified Rider</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant mt-xs">JayBobo ID: 29482</span>
+</div>
+</div>
+<!-- Drawer Links -->
+<nav class="flex flex-col gap-sm">
+<a class="flex items-center gap-md p-md rounded-lg text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-colors" href="#">
+<span class="material-symbols-outlined">swap_horiz</span>
+<span class="font-label-md text-label-md">Switch to Driver</span>
+</a>
+<a class="flex items-center gap-md p-md rounded-lg text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-colors" href="#">
+<span class="material-symbols-outlined">security</span>
+<span class="font-label-md text-label-md">Safety Center</span>
+</a>
+<a class="flex items-center gap-md p-md rounded-lg text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-colors" href="#">
+<span class="material-symbols-outlined">payments</span>
+<span class="font-label-md text-label-md">Payment Methods</span>
+</a>
+<a class="flex items-center gap-md p-md rounded-lg text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-colors" href="#">
+<span class="material-symbols-outlined">map</span>
+<span class="font-label-md text-label-md">Campus Map</span>
+</a>
+<a class="flex items-center gap-md p-md rounded-lg text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-colors" href="#">
+<span class="material-symbols-outlined">help</span>
+<span class="font-label-md text-label-md">Help Support</span>
+</a>
+</nav>
+</div>
+</aside>
+</body></html>

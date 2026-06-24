@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Trip Complete - JayBobo Transit</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "tertiary": "#333640",
+                    "on-secondary": "#ffffff",
+                    "on-surface-variant": "#444655",
+                    "on-error": "#ffffff",
+                    "background": "#f8f9ff",
+                    "on-primary-fixed-variant": "#112ccb",
+                    "inverse-on-surface": "#eaf1ff",
+                    "surface-container-highest": "#d3e4fe",
+                    "surface-container-low": "#eff4ff",
+                    "on-secondary-fixed": "#181c22",
+                    "primary-fixed": "#dfe0ff",
+                    "surface": "#f8f9ff",
+                    "surface-variant": "#d3e4fe",
+                    "surface-container": "#e5eeff",
+                    "surface-container-lowest": "#ffffff",
+                    "tertiary-fixed": "#e0e2ef",
+                    "on-tertiary-fixed": "#181b24",
+                    "on-surface": "#0b1c30",
+                    "outline-variant": "#c5c5d8",
+                    "outline": "#757687",
+                    "on-error-container": "#93000a",
+                    "secondary-fixed": "#dfe2eb",
+                    "on-secondary-container": "#61646c",
+                    "tertiary-fixed-dim": "#c3c6d2",
+                    "primary-container": "#1d35d1",
+                    "on-tertiary": "#ffffff",
+                    "inverse-primary": "#bcc2ff",
+                    "primary": "#001caa",
+                    "on-tertiary-container": "#bbbeca",
+                    "on-primary": "#ffffff",
+                    "surface-tint": "#354be2",
+                    "on-secondary-fixed-variant": "#43474e",
+                    "error": "#ba1a1a",
+                    "secondary-container": "#dfe2eb",
+                    "on-primary-fixed": "#000c61",
+                    "inverse-surface": "#213145",
+                    "secondary-fixed-dim": "#c3c6cf",
+                    "surface-dim": "#cbdbf5",
+                    "secondary": "#5b5e66",
+                    "primary-fixed-dim": "#bcc2ff",
+                    "on-background": "#0b1c30",
+                    "tertiary-container": "#4a4d57",
+                    "on-tertiary-fixed-variant": "#434751",
+                    "error-container": "#ffdad6",
+                    "surface-bright": "#f8f9ff",
+                    "on-primary-container": "#b1b9ff",
+                    "surface-container-high": "#dce9ff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "xs": "4px",
+                    "margin-desktop": "40px",
+                    "unit": "4px",
+                    "sm": "8px",
+                    "gutter": "16px",
+                    "xl": "32px",
+                    "md": "16px",
+                    "lg": "24px",
+                    "margin-mobile": "20px"
+            },
+            "fontFamily": {
+                    "label-sm": ["Plus Jakarta Sans"],
+                    "headline-lg-mobile": ["Plus Jakarta Sans"],
+                    "headline-lg": ["Plus Jakarta Sans"],
+                    "label-md": ["Plus Jakarta Sans"],
+                    "headline-md": ["Plus Jakarta Sans"],
+                    "body-sm": ["Plus Jakarta Sans"],
+                    "headline-xl": ["Plus Jakarta Sans"],
+                    "body-lg": ["Plus Jakarta Sans"],
+                    "body-md": ["Plus Jakarta Sans"]
+            },
+            "fontSize": {
+                    "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                    "headline-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "700"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "label-md": ["14px", {"lineHeight": "20px", "fontWeight": "600"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "headline-xl": ["40px", {"lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.fill-icon {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background min-h-screen flex flex-col pb-[100px]">
+<!-- Top App Bar - Transactional (No Nav Shell logic) -->
+<header class="fixed top-0 w-full z-50 flex justify-between items-center px-margin-mobile md:px-margin-desktop h-16 bg-surface dark:bg-surface-dim border-b border-outline-variant dark:border-outline">
+<button aria-label="Close receipt" class="p-2 -ml-2 rounded-full hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-primary dark:text-primary-fixed">close</span>
+</button>
+<h1 class="text-headline-sm font-headline-sm font-bold text-primary dark:text-primary-fixed">JayBobo Transit</h1>
+<div class="w-10"></div> <!-- Spacer for centering -->
+</header>
+<main class="flex-grow pt-24 px-margin-mobile md:px-margin-desktop max-w-2xl mx-auto w-full">
+<!-- Success Header -->
+<section class="flex flex-col items-center text-center mb-xl">
+<div class="w-20 h-20 bg-primary-container rounded-full flex items-center justify-center mb-md shadow-lg shadow-primary-container/20">
+<span class="material-symbols-outlined fill-icon text-[40px] text-on-primary-container">check_circle</span>
+</div>
+<h2 class="text-headline-md font-headline-md text-on-background mb-sm">Trip Complete</h2>
+<p class="text-body-md font-body-md text-secondary">Hope you enjoyed your ride across campus.</p>
+</section>
+<!-- Receipt Card -->
+<section class="bg-surface-container rounded-xl p-lg border border-outline-variant shadow-sm mb-xl">
+<div class="flex justify-between items-end border-b border-outline-variant pb-md mb-md">
+<div class="flex flex-col">
+<span class="text-label-md font-label-md text-secondary mb-xs">Total Fare</span>
+<span class="text-headline-xl font-headline-xl text-primary">₦500</span>
+</div>
+<div class="bg-surface-container-high px-3 py-1 rounded-full border border-outline-variant">
+<span class="text-label-sm font-label-sm text-on-surface">Card •••• 4242</span>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-md pt-xs">
+<div class="flex items-center gap-sm">
+<div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[18px]">route</span>
+</div>
+<div>
+<p class="text-label-sm font-label-sm text-secondary">Distance</p>
+<p class="text-body-md font-body-md text-on-surface">3.2 km</p>
+</div>
+</div>
+<div class="flex items-center gap-sm">
+<div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[18px]">schedule</span>
+</div>
+<div>
+<p class="text-label-sm font-label-sm text-secondary">Duration</p>
+<p class="text-body-md font-body-md text-on-surface">12 mins</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Rating Section -->
+<section class="bg-surface-container-lowest rounded-xl p-lg border border-outline-variant shadow-sm mb-xl">
+<h3 class="text-headline-sm font-headline-sm text-on-background mb-lg text-center">How was your driver?</h3>
+<div class="flex flex-col items-center mb-lg">
+<img alt="Driver Profile" class="w-16 h-16 rounded-full object-cover border-2 border-primary-container mb-sm" data-alt="A professional headshot of a friendly Nigerian driver in his 30s, wearing a neat light blue uniform shirt. Bright, natural daylight, soft bokeh background suggesting a clean modern vehicle interior. Corporate and modern mobility aesthetic, reliable and approachable mood." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB1Y8oDWslyDf83gor7zF4EFJJlSFCZGTZ1DGy3gob3ga3_XxicOnudUwtclxk9nvHT3IDglyMk4v_WsTGIQ7C8hH0pD7C151AsSkOlO17gbjCqjxs6bKpgxKbdVeebQaHmNnyyGpIxKTfr_xcKqjUYt6i65xB1TbNEQkbDLZIhcw2266WTA-7pmrO5LbL4bc4lbwRK2TxNUKykWWkjNSXUh6nKvjmfds-ftAGDRiPtEy67P6SbM534djzp4kBB1FlzHfPkj5uYo4j4"/>
+<h4 class="text-body-lg font-body-lg text-on-surface font-semibold">Emeka O.</h4>
+<p class="text-label-sm font-label-sm text-secondary">Toyota Camry • XYZ 123</p>
+</div>
+<div class="flex justify-center gap-2 mb-lg" id="star-rating">
+<button class="p-2 text-outline hover:text-primary transition-colors group">
+<span class="material-symbols-outlined text-[32px] group-hover:fill-icon">star</span>
+</button>
+<button class="p-2 text-outline hover:text-primary transition-colors group">
+<span class="material-symbols-outlined text-[32px] group-hover:fill-icon">star</span>
+</button>
+<button class="p-2 text-outline hover:text-primary transition-colors group">
+<span class="material-symbols-outlined text-[32px] group-hover:fill-icon">star</span>
+</button>
+<button class="p-2 text-outline hover:text-primary transition-colors group">
+<span class="material-symbols-outlined text-[32px] group-hover:fill-icon">star</span>
+</button>
+<button class="p-2 text-outline hover:text-primary transition-colors group">
+<span class="material-symbols-outlined text-[32px] group-hover:fill-icon">star</span>
+</button>
+</div>
+<div class="mt-md">
+<label class="sr-only" for="feedback">Leave a compliment or comment</label>
+<textarea class="w-full rounded-lg border-outline-variant bg-surface-bright focus:border-primary focus:ring focus:ring-primary-container/30 text-body-md font-body-md p-md placeholder-secondary resize-none" id="feedback" placeholder="Leave a compliment or comment (optional)" rows="3"></textarea>
+</div>
+</section>
+</main>
+<!-- Fixed Bottom Action -->
+<div class="fixed bottom-0 w-full bg-surface-container-lowest p-margin-mobile border-t border-outline-variant z-40 max-w-2xl left-1/2 -translate-x-1/2">
+<button class="w-full h-12 bg-primary text-on-primary rounded-lg text-label-md font-label-md hover:bg-primary-container transition-colors shadow-md flex items-center justify-center">
+            Done
+        </button>
+</div>
+<script>
+        // Simple star rating interaction
+        const stars = document.querySelectorAll('#star-rating button');
+        stars.forEach((star, index) => {
+            star.addEventListener('click', () => {
+                stars.forEach((s, i) => {
+                    const icon = s.querySelector('span');
+                    if (i <= index) {
+                        s.classList.remove('text-outline');
+                        s.classList.add('text-primary');
+                        icon.classList.add('fill-icon');
+                    } else {
+                        s.classList.add('text-outline');
+                        s.classList.remove('text-primary');
+                        icon.classList.remove('fill-icon');
+                    }
+                });
+            });
+        });
+    </script>
+</body></html>

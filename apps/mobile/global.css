@@ -1,0 +1,11 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+.bg-primary {
+  background-color: #001caa;
+}
+.text-primary {
+  color: #001caa;
+}
