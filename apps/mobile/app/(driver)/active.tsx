@@ -1,14 +1,24 @@
-import React, { useState } from "react";
-import { View, Text, Image, Pressable, ScrollView } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import {
+  CornerUpRight,
+  MapPin,
+  Menu,
+  MessageSquare,
+  Phone,
+  ShieldAlert,
+  Star,
+} from "lucide-react-native";
+import React, { useState } from "react";
+import { Image, Pressable, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useApp } from "../../context/AppContext";
-import { Menu, ShieldAlert, Navigation, Star, MessageSquare, Phone, MapPin, ArrowRight, CornerUpRight, ArrowLeft } from "lucide-react-native";
 
 export default function DriverActiveTrip() {
   const router = useRouter();
   const { activeTrip, progressDriverTrip } = useApp();
-  const [tripState, setTripState] = useState<"arrived" | "start" | "dropoff" | "complete">("arrived");
+  const [tripState, setTripState] = useState<
+    "arrived" | "start" | "dropoff" | "complete"
+  >("arrived");
 
   const handleTripAction = () => {
     progressDriverTrip();
@@ -41,12 +51,17 @@ export default function DriverActiveTrip() {
     <SafeAreaView className="flex-1 bg-background" edges={["top", "bottom"]}>
       {/* Top Navigation */}
       <View className="flex-row justify-between items-center px-4 h-16 bg-surface border-b border-outline-variant z-50">
-        <Pressable onPress={() => router.back()} className="w-10 h-10 rounded-full bg-surface border border-outline-variant items-center justify-center">
+        <Pressable
+          onPress={() => router.back()}
+          className="w-10 h-10 rounded-full bg-surface border border-outline-variant items-center justify-center"
+        >
           <Menu color="#001caa" size={20} />
         </Pressable>
         <View className="bg-surface rounded-full border border-outline-variant px-4 py-1.5 flex-row items-center gap-2">
           <View className="w-2 h-2 rounded-full bg-success animate-pulse" />
-          <Text className="text-label-md font-bold text-on-surface font-jakarta">Navigating</Text>
+          <Text className="text-label-md font-bold text-on-surface font-jakarta">
+            Navigating
+          </Text>
         </View>
         <Pressable
           onPress={() => router.push("/sos")}
@@ -70,8 +85,12 @@ export default function DriverActiveTrip() {
           <View className="bg-primary rounded-xl shadow-lg p-4 flex-row items-center gap-4 border border-primary-container">
             <CornerUpRight color="#ffffff" size={32} />
             <View className="flex-1">
-              <Text className="text-headline-md font-bold text-white font-jakarta">200m</Text>
-              <Text className="text-body-sm text-white/90 font-jakarta">Turn right onto Senate Drive</Text>
+              <Text className="text-headline-md font-bold text-white font-jakarta">
+                200m
+              </Text>
+              <Text className="text-body-sm text-white/90 font-jakarta">
+                Turn right onto Senate Drive
+              </Text>
             </View>
           </View>
         </View>
@@ -102,13 +121,19 @@ export default function DriverActiveTrip() {
               </View>
             </View>
             <View>
-              <Text className="text-headline-sm font-bold text-on-surface font-jakarta">Alex</Text>
+              <Text className="text-headline-sm font-bold text-on-surface font-jakarta">
+                Alex
+              </Text>
               <View className="flex-row items-center gap-2 mt-0.5">
                 <View className="bg-surface-container px-2 py-0.5 rounded flex-row items-center gap-0.5">
                   <Star color="#fbbf24" fill="#fbbf24" size={12} />
-                  <Text className="text-label-sm font-bold font-jakarta text-on-surface-variant">4.9</Text>
+                  <Text className="text-label-sm font-bold font-jakarta text-on-surface-variant">
+                    4.9
+                  </Text>
                 </View>
-                <Text className="text-body-sm text-secondary font-jakarta">• Student</Text>
+                <Text className="text-body-sm text-secondary font-jakarta">
+                  • Student
+                </Text>
               </View>
             </View>
           </View>
@@ -124,27 +149,35 @@ export default function DriverActiveTrip() {
 
         {/* Trip Details (Waypoints) */}
         <View className="bg-surface-container-lowest rounded-xl border border-outline-variant p-4 relative">
-          <View className="absolute left-[27px] top-[24px] bottom-[24px] w-0.5 bg-outline-variant" />
-          
+          <View className="absolute left-[23px] top-[24px] bottom-[24px] w-0.5 bg-outline-variant" />
+
           {/* Pickup */}
           <View className="flex-row items-start gap-4 mb-4 relative z-10">
             <View className="mt-1 bg-surface-container-lowest rounded-full p-0.5">
               <MapPin color="#001caa" size={16} />
             </View>
             <View>
-              <Text className="text-label-sm text-secondary uppercase tracking-wider mb-0.5 font-jakarta">Pickup</Text>
-              <Text className="text-body-md font-medium text-on-surface font-jakarta">{activeTrip.pickup || "SOES Building"}</Text>
+              <Text className="text-label-sm text-secondary uppercase tracking-wider mb-0.5 font-jakarta">
+                Pickup
+              </Text>
+              <Text className="text-body-md font-medium text-on-surface font-jakarta">
+                {activeTrip.pickup || "SOES Building"}
+              </Text>
             </View>
           </View>
 
           {/* Dropoff */}
-          <View className="flex-row items-start relative z-10">
+          <View className="flex-row items-start relative gap-4 z-10">
             <View className="mt-1 bg-surface-container-lowest rounded-full p-0.5">
               <MapPin color="#ba1a1a" size={16} />
             </View>
             <View>
-              <Text className="text-label-sm text-secondary uppercase tracking-wider mb-0.5 font-jakarta">Dropoff</Text>
-              <Text className="text-body-md font-medium text-on-surface font-jakarta">{activeTrip.destination || "Senate Building"}</Text>
+              <Text className="text-label-sm text-secondary uppercase tracking-wider mb-0.5 font-jakarta">
+                Dropoff
+              </Text>
+              <Text className="text-body-md font-medium text-on-surface font-jakarta">
+                {activeTrip.destination || "Senate Building"}
+              </Text>
             </View>
           </View>
         </View>
@@ -154,10 +187,11 @@ export default function DriverActiveTrip() {
           onPress={handleTripAction}
           className={`w-full h-14 rounded-xl items-center justify-center shadow-md active:scale-[0.98] transition-all ${getButtonClass()}`}
         >
-          <Text className="text-on-primary text-headline-md font-bold font-jakarta">{getButtonText()}</Text>
+          <Text className="text-on-primary text-headline-md font-bold font-jakarta">
+            {getButtonText()}
+          </Text>
         </Pressable>
       </View>
     </SafeAreaView>
   );
 }
-

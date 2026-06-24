@@ -1,9 +1,19 @@
-import React from "react";
-import { View, Text, Image, Pressable, ScrollView } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import {
+  Bell,
+  Car,
+  CheckCircle2,
+  ChevronRight,
+  Compass,
+  Edit2,
+  HelpCircle,
+  Landmark,
+  LogOut,
+} from "lucide-react-native";
+import React from "react";
+import { Image, Pressable, ScrollView, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useApp } from "../../context/AppContext";
-import { Landmark, ChevronRight, Compass, LogOut, CheckCircle2, Edit2, HelpCircle, Bell, Car } from "lucide-react-native";
 
 export default function DriverProfile() {
   const router = useRouter();
@@ -22,18 +32,24 @@ export default function DriverProfile() {
     <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
       {/* Top Header */}
       <View className="px-4 h-16 bg-surface border-b border-outline-variant flex-row items-center justify-between">
-        <Text className="text-headline-md font-bold text-primary font-jakarta">Futo Ride</Text>
-        <Pressable 
-          onPress={() => router.push("/(driver)/earnings")} 
+        <Text className="text-headline-md font-bold text-primary font-jakarta">
+          Futo Ride
+        </Text>
+        <Pressable
+          onPress={() => router.push("/(driver)/earnings")}
           className="flex-row items-center gap-1.5 bg-surface-container px-3 py-1.5 rounded-full active:opacity-75"
         >
-          <Landmark color="#001caa" size={16} />
-          <Text className="text-label-sm text-primary font-bold">₦ {earnings.daily.toLocaleString()}</Text>
+          {/* <Landmark color="#001caa" size={16} /> */}
+          <Text className="text-label-sm text-primary font-bold">
+            ₦ {earnings.daily.toLocaleString()}
+          </Text>
         </Pressable>
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 100 }} className="flex-1 px-4 py-6">
-        
+      <ScrollView
+        contentContainerStyle={{ paddingBottom: 100 }}
+        className="flex-1 px-4 py-6"
+      >
         {/* Profile Info Header */}
         <View className="items-center text-center mt-4 mb-8">
           <View className="relative w-24 h-24 mb-4">
@@ -47,12 +63,18 @@ export default function DriverProfile() {
               <Edit2 color="#ffffff" size={14} />
             </Pressable>
           </View>
-          <Text className="text-headline-md font-bold text-on-surface font-jakarta">Chidi Operator</Text>
-          <Text className="text-body-sm text-secondary font-jakarta">chidi.driver@futo.edu.ng</Text>
-          
+          <Text className="text-headline-md font-bold text-on-surface font-jakarta">
+            Chidi Operator
+          </Text>
+          <Text className="text-body-sm text-secondary font-jakarta">
+            chidi.driver@futo.edu.ng
+          </Text>
+
           <View className="mt-2 bg-surface-container-low px-4 py-1.5 rounded-full border border-outline-variant flex-row items-center gap-1.5">
             <CheckCircle2 color="#001caa" size={14} fill="#bcc2ff" />
-            <Text className="text-label-sm font-bold text-primary font-jakarta">Verified Driver</Text>
+            <Text className="text-label-sm font-bold text-primary font-jakarta">
+              Verified Driver
+            </Text>
           </View>
         </View>
 
@@ -62,12 +84,16 @@ export default function DriverProfile() {
           className="bg-primary/5 border border-primary/30 rounded-xl p-4 flex-row justify-between items-center mb-6 active:bg-primary/10 shadow-sm"
         >
           <View className="flex-row items-center gap-3">
-            <View className="w-10 h-10 rounded-full bg-primary/10 items-center justify-center">
-              <Compass color="#001caa" size={20} />
+            <View className="w-7 h-7 rounded-full bg-primary/10 items-center justify-center">
+              <Compass color="#001caa" size={19} />
             </View>
             <View>
-              <Text className="text-body-lg font-bold text-primary font-jakarta">Switch to Rider Mode</Text>
-              <Text className="text-body-sm text-secondary font-jakarta">Book transits as student passenger</Text>
+              <Text className="text-md font-bold text-primary font-jakarta">
+                Switch to Rider Mode
+              </Text>
+              <Text className="text-sm text-secondary font-jakarta">
+                Book transits as student passenger
+              </Text>
             </View>
           </View>
           <ChevronRight color="#001caa" size={20} />
@@ -75,7 +101,6 @@ export default function DriverProfile() {
 
         {/* Settings List */}
         <View className="bg-surface-container rounded-xl border border-outline-variant overflow-hidden shadow-sm mb-8">
-          
           {/* Vehicle Info */}
           <Pressable className="flex-row items-center justify-between p-4 border-b border-outline-variant active:bg-surface-container-high">
             <View className="flex-row items-center gap-3">
@@ -83,15 +108,19 @@ export default function DriverProfile() {
                 <Car color="#001caa" size={20} />
               </View>
               <View>
-                <Text className="text-label-md font-bold text-on-surface font-jakarta">Vehicle Details</Text>
-                <Text className="text-body-sm text-secondary font-jakarta">ABJ-123-XY • Blue Keke</Text>
+                <Text className="text-label-md font-bold text-on-surface font-jakarta">
+                  Vehicle Details
+                </Text>
+                <Text className="text-body-sm text-secondary font-jakarta">
+                  ABJ-123-XY • Blue Keke
+                </Text>
               </View>
             </View>
             <ChevronRight color="#757687" size={20} />
           </Pressable>
 
           {/* Payout Settings */}
-          <Pressable 
+          <Pressable
             onPress={() => router.push("/(driver)/earnings")}
             className="flex-row items-center justify-between p-4 border-b border-outline-variant active:bg-surface-container-high"
           >
@@ -100,8 +129,12 @@ export default function DriverProfile() {
                 <Landmark color="#001caa" size={20} />
               </View>
               <View>
-                <Text className="text-label-md font-bold text-on-surface font-jakarta">Payout Account</Text>
-                <Text className="text-body-sm text-secondary font-jakarta">Manage bank details & cashouts</Text>
+                <Text className="text-label-md font-bold text-on-surface font-jakarta">
+                  Payout Account
+                </Text>
+                <Text className="text-body-sm text-secondary font-jakarta">
+                  Manage bank details & cashouts
+                </Text>
               </View>
             </View>
             <ChevronRight color="#757687" size={20} />
@@ -114,8 +147,12 @@ export default function DriverProfile() {
                 <Bell color="#001caa" size={20} />
               </View>
               <View>
-                <Text className="text-label-md font-bold text-on-surface font-jakarta">Driver Alerts</Text>
-                <Text className="text-body-sm text-secondary font-jakarta">Notification and proximity settings</Text>
+                <Text className="text-label-md font-bold text-on-surface font-jakarta">
+                  Driver Alerts
+                </Text>
+                <Text className="text-body-sm text-secondary font-jakarta">
+                  Notification and proximity settings
+                </Text>
               </View>
             </View>
             <ChevronRight color="#757687" size={20} />
@@ -128,13 +165,16 @@ export default function DriverProfile() {
                 <HelpCircle color="#5b5e66" size={20} />
               </View>
               <View>
-                <Text className="text-label-md font-bold text-on-surface font-jakarta">Help & Support</Text>
-                <Text className="text-body-sm text-secondary font-jakarta">FAQs, Support tickets</Text>
+                <Text className="text-label-md font-bold text-on-surface font-jakarta">
+                  Help & Support
+                </Text>
+                <Text className="text-body-sm text-secondary font-jakarta">
+                  FAQs, Support tickets
+                </Text>
               </View>
             </View>
             <ChevronRight color="#757687" size={20} />
           </Pressable>
-
         </View>
 
         {/* Action Panel */}
@@ -143,9 +183,10 @@ export default function DriverProfile() {
           className="w-full h-12 rounded-xl bg-error-container border border-red-200 flex-row items-center justify-center gap-2 active:opacity-90"
         >
           <LogOut color="#ba1a1a" size={18} />
-          <Text className="text-error text-label-md font-bold font-jakarta">Log Out</Text>
+          <Text className="text-error text-label-md font-bold font-jakarta">
+            Log Out
+          </Text>
         </Pressable>
-
       </ScrollView>
     </SafeAreaView>
   );

@@ -124,7 +124,7 @@ export default function DriverHome() {
             </View>
 
             {/* Online Time Card */}
-            <View style={styles.statsCard}>
+            <View style={styles.statsCard} className="">
               <View style={styles.statsIconWrapper}>
                 <Clock color="#001caa" size={20} />
               </View>
@@ -443,11 +443,16 @@ const styles = StyleSheet.create({
     backgroundColor: "#e5eeff",
     padding: 16,
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#c5c5d8",
+    // borderWidth: 1,
+    // borderColor: "#c5c5d8",
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 3,
   },
   statsIconWrapper: {
     width: 40,
