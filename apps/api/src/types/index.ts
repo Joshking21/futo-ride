@@ -55,8 +55,8 @@ export type Ride = {
   fromStop: string;
   toStop: string;
   status: RideStatus;
-  fare: number;
-  priorityFee: number;
+  fare: number; // kobo (integer)
+  priorityFee: number; // kobo (integer)
   payMethod: PayMethod;
   qrToken: string;
   createdAt: number;
@@ -78,7 +78,7 @@ export type Payment = {
   id: string;
   rideId: string;
   method: PayMethod;
-  amount: number;
+  amount: number; // kobo (integer)
   status: string;
   ref: string;
 };
