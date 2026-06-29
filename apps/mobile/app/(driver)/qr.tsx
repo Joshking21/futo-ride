@@ -1,21 +1,7 @@
 import { useRouter } from "expo-router";
-import {
-  ArrowLeft,
-  CheckCircle2,
-  DollarSign,
-  MapPin,
-  Navigation,
-  Wallet,
-} from "lucide-react-native";
+import { ArrowLeft, ShieldCheck, Wallet, Maximize } from "lucide-react-native";
 import React from "react";
-import {
-  ActivityIndicator,
-  Image,
-  Pressable,
-  ScrollView,
-  Text,
-  View,
-} from "react-native";
+import { Image, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useApp } from "../../context/AppContext";
 
@@ -29,71 +15,40 @@ export default function DriverQR() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
+    <SafeAreaView className="flex-1 bg-surface-bright" edges={["top", "bottom"]}>
       {/* Top Header */}
-      <View className="px-4 h-16 bg-surface border-b border-outline-variant flex-row items-center justify-between z-30">
+      <View className="flex-row items-center justify-between px-margin-mobile h-[64px] bg-white border-b border-outline-variant/10 z-20">
         <Pressable
           onPress={() => router.back()}
-          className="w-10 h-10 flex items-center justify-center rounded-full active:bg-surface-container-high transition-colors"
+          className="w-12 h-12 rounded-2xl bg-white items-center justify-center border border-outline-variant/10 active:bg-surface-container"
         >
-          <ArrowLeft color="#001caa" size={24} />
+          <ArrowLeft color="#0B1C30" size={24} />
         </Pressable>
-        <Text className="text-xl font-bold text-primary font-jakarta">
-          Completion Scan
-        </Text>
-        <Pressable className="flex-row items-center gap-1.5 bg-surface-container px-3 py-1.5 rounded-full active:opacity-75">
-          <Wallet color="#001caa" size={16} />
-          <Text className="text-label-sm text-primary font-bold">₦ 12,500</Text>
-        </Pressable>
+        <Text className="text-headline-md font-bold text-on-surface font-jakarta">Payout QR</Text>
+        <View className="w-12" />
       </View>
-      <ScrollView>
-        <View className="flex-1 items-center justify-between px-4 py-4   max-w-md mx-auto w-full">
-          {/* Success Indicator */}
-          <View className="w-20 h-20 bg-primary-container rounded-full flex items-center justify-center shadow-lg mb-4">
-            <CheckCircle2 color="#ffffff" size={40} fill="#1d35d1" />
+
+      <ScrollView contentContainerStyle={{ padding: 20, gap: 20, alignItems: "center" }} className="flex-1">
+        <Text className="text-body-sm text-secondary text-center leading-5 font-jakarta px-4">
+          Let passenger scan this QR code to verify trip completion and release payment.
+        </Text>
+
+        {/* QR Code Card Box */}
+        <View className="w-full bg-white rounded-[36px] border border-outline-variant/10 shadow-sm p-6 items-center gap-5">
+          <View className="items-center">
+            <Text className="text-body-sm text-secondary font-jakarta">Trip Payout</Text>
+            <Text className="text-headline-xl font-bold text-primary font-jakarta mt-0.5">₦950.00</Text>
           </View>
 
-          {/* Route Summary Card */}
-          <View className="w-full bg-surface-container-lowest border border-outline-variant rounded-xl p-4 shadow-sm">
-            <View className="flex-row items-center gap-3">
-              <View className="w-6 h-6 rounded-full bg-surface-container flex items-center justify-center">
-                <Navigation color="#001caa" size={14} />
-              </View>
-              <Text className="text-body-md text-on-surface font-medium font-jakarta">
-                {activeTrip.pickup || "SOES Building"}
-              </Text>
-            </View>
-            <View className="pl-3 border-l-2 border-dashed border-outline-variant ml-3 h-4 my-1" />
-            <View className="flex-row items-center gap-3">
-              <View className="w-6 h-6 rounded-full bg-surface-container flex items-center justify-center">
-                <MapPin color="#ba1a1a" size={14} />
-              </View>
-              <Text className="text-body-md text-on-surface font-semibold font-jakarta">
-                {activeTrip.destination || "Senate Building"}
-              </Text>
-            </View>
-            <View className="mt-4 pt-4 border-t border-outline-variant flex-row justify-between items-center">
-              <Text className="text-body-sm text-secondary font-jakarta">
-                Total Fare
-              </Text>
-              <Text className="text-headline-md font-bold text-primary font-jakarta">
-                ₦{activeTrip.price || 300}.00
-              </Text>
-            </View>
-          </View>
+          {/* QR Scan Scanner Box Frame */}
+          <View className="relative w-56 h-56 items-center justify-center p-4 border border-outline-variant/10 rounded-3xl bg-surface">
+            {/* Corner styling anchors */}
+            <View className="absolute top-2 left-2 w-6 h-6 border-t-2 border-l-2 border-primary rounded-tl-lg" />
+            <View className="absolute top-2 right-2 w-6 h-6 border-t-2 border-r-2 border-primary rounded-tr-lg" />
+            <View className="absolute bottom-2 left-2 w-6 h-6 border-b-2 border-l-2 border-primary rounded-bl-lg" />
+            <View className="absolute bottom-2 right-2 w-6 h-6 border-b-2 border-r-2 border-primary rounded-br-lg" />
 
-          {/* QR Code Section */}
-          <View className="bg-surface-container-lowest p-6 rounded-2xl border border-outline-variant shadow-sm items-center gap-4 relative my-4 w-full">
-            <View className="absolute inset-0 border-2 border-primary rounded-2xl opacity-20" />
-            <Text className="text-label-md font-bold text-on-surface-variant text-center uppercase tracking-wider font-jakarta">
-              Scan to Pay
-            </Text>
-
-            {/* Simulated QR Code Image */}
-            <Pressable
-              onPress={handleScanDone}
-              className="w-44 h-44 bg-surface border border-outline-variant rounded-lg overflow-hidden p-1 active:opacity-85"
-            >
+            <Pressable onPress={handleScanDone} className="w-full h-full rounded-2xl overflow-hidden p-1.5 active:opacity-90">
               <Image
                 source={{
                   uri: "https://lh3.googleusercontent.com/aida-public/AB6AXuAwU9p-p3MAM0M5CJ_uCAQo00mPIGbk1LtH9mb6CeU6eK4o9ldjRGsAlGd7jEJucTJ44oFbnErneToX7T0XMWtCmX3suULYGB5cD8gMskYI8qXtGDZsJjMGrb6_0-o6JGC6TBuPHkVX_H4qz6MrMOMMJ5dRmwR9z2SwKiRdf6DxhqSAymb8J-JREiJQtgrLkMKEh6_jqg2HjDJYhJfNAK1MK8kgKCAis6aO3S1YeVDn2BLeggH5-57fKB6I3Ol-1I-LRXn7VlgTBIrf",
@@ -101,37 +56,34 @@ export default function DriverQR() {
                 className="w-full h-full object-contain"
               />
             </Pressable>
-
-            {/* Animated Status */}
-            <View className="flex-row items-center gap-2 bg-primary-container/10 px-4 py-2 rounded-full border border-primary/10">
-              <ActivityIndicator color="#001caa" size="small" />
-              <Text className="text-label-sm font-bold text-primary font-jakarta">
-                Waiting for rider to scan...
-              </Text>
-            </View>
           </View>
 
-          {/* Manual Override Actions */}
-          <View className="w-full flex-row justify-center gap-3 mt-4">
-            <Pressable
-              onPress={() => router.back()}
-              className="px-6 h-12 rounded-full border border-error items-center justify-center active:bg-error-container/50 bg-error-container"
-            >
-              <Text className="text-error font-bold text-label-md font-jakarta">
-                Cancel Scan
-              </Text>
-            </Pressable>
-            <Pressable
-              onPress={handleScanDone}
-              className="px-6 h-12 rounded-full bg-surface-container-highest flex-row items-center justify-center gap-2 active:bg-surface-variant"
-            >
-              <DollarSign color="#001caa" size={16} />
-              <Text className="text-primary font-bold text-label-md font-jakarta">
-                Cash Received
-              </Text>
-            </Pressable>
+          <View className="items-center">
+            <Text className="text-body-sm font-bold text-on-surface font-jakarta">Verify payout</Text>
+            <Text className="text-body-sm text-secondary font-mono mt-0.5">Trip ID: FUTO-984-KLX</Text>
           </View>
         </View>
+
+        {/* Security Encryption Details Box */}
+        <View className="bg-success/5 rounded-3xl p-5 border border-success/10 flex-row items-start gap-4 w-full">
+          <View className="w-10 h-10 bg-success/10 rounded-full flex items-center justify-center shrink-0">
+            <ShieldCheck color="#22c55e" size={22} />
+          </View>
+          <View className="flex-1">
+            <Text className="text-body-md font-bold text-on-surface font-jakarta">Secure Transaction</Text>
+            <Text className="text-body-sm text-secondary font-jakarta leading-5 mt-1">
+              Payments are held securely in cNGN smart contracts and released immediately upon scanning.
+            </Text>
+          </View>
+        </View>
+
+        {/* Complete & Return Button */}
+        <Pressable
+          onPress={handleScanDone}
+          className="w-full h-14 bg-[#0b1c30] rounded-full flex items-center justify-center shadow-md active:scale-[0.98] mt-4"
+        >
+          <Text className="text-white text-action-lg font-bold font-jakarta">Complete & Return</Text>
+        </Pressable>
       </ScrollView>
     </SafeAreaView>
   );

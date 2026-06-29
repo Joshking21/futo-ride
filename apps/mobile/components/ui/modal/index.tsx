@@ -13,7 +13,7 @@ import {
   withStyleContext,
   useStyleContext,
 } from '@gluestack-ui/utils/nativewind-utils';
-import { cssInterop } from 'nativewind';
+import { cssInterop } from 'react-native-css-interop';
 import type { VariantProps } from '@gluestack-ui/utils/nativewind-utils';
 
 type IAnimatedPressableProps = React.ComponentProps<typeof Pressable> &

@@ -1,13 +1,12 @@
 import { useRouter } from "expo-router";
 import {
-  Car,
-  Compass,
-  Eye,
-  EyeOff,
+  ArrowLeft,
   Lock,
   Mail,
+  Eye,
+  EyeOff,
+  Compass,
   ShieldCheck,
-  User,
 } from "lucide-react-native";
 import { useState } from "react";
 import {
@@ -21,6 +20,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useApp } from "../context/AppContext";
+import KekeIcon from "../components/KekeIcon";
 
 export default function Login() {
   const router = useRouter();
@@ -32,7 +32,6 @@ export default function Login() {
   const [error, setError] = useState("");
   const [isEmailFocused, setIsEmailFocused] = useState(false);
   const [isPasswordFocused, setIsPasswordFocused] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
 
   const handleLogin = () => {
     if (!email || !password) {
@@ -58,51 +57,41 @@ export default function Login() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-surface" edges={["top", "bottom"]}>
-      {/* Decorative Blurs */}
-      <View
-        pointerEvents="none"
-        className="absolute top-0 right-0 w-80 h-80 bg-primary/5 rounded-full blur-[80px]"
-      />
-      <View
-        pointerEvents="none"
-        className="absolute bottom-20 left-0 w-64 h-64 bg-surface-container-highest/40 rounded-full blur-[60px]"
-      />
-
+    <SafeAreaView className="flex-1 bg-surface-bright" edges={["top", "bottom"]}>
       {/* Background Pressable to dismiss keyboard */}
       <Pressable onPress={Keyboard.dismiss} className="absolute inset-0 z-0" />
+
+      {/* Top Header with Back Button */}
+      <View className="px-margin-mobile pt-4 flex-row items-center justify-between z-20">
+        <Pressable
+          onPress={() => router.back()}
+          className="w-12 h-12 rounded-2xl bg-white shadow-sm shadow-black/5 items-center justify-center border border-outline-variant/10 active:bg-surface-container"
+        >
+          <ArrowLeft color="#1A1A1A" size={24} />
+        </Pressable>
+        <View className="w-12" />
+      </View>
 
       <ScrollView
         contentContainerStyle={{ flexGrow: 1 }}
         keyboardShouldPersistTaps="handled"
         className="z-10"
       >
-        <View className="flex-1 justify-center px-margin-mobile py-xl max-w-md w-full mx-auto">
-          {/* Brand Header */}
-          <View className="items-center mb-xl">
-            <Text className="font-headline-xl text-headline-xl text-primary font-bold tracking-tight text-center">
-              Futo Ride
-            </Text>
-            {/* Mode Indicator Badge */}
-            <View className="bg-primary/10 px-3 py-1 rounded-full flex flex-row gap-1.5 items-center mt-2">
-              {userRole === "rider" ? (
-                <User size={12} color="#001caa" />
-              ) : (
-                <Car size={12} color="#001caa" />
-              )}
-              <Text className="text-[10px] font-bold text-primary uppercase tracking-wider">
-                {userRole === "driver" ? "Driver Mode" : "Rider Mode"}
-              </Text>
+        <View className="flex-1 justify-center px-margin-mobile pb-12 max-w-md w-full mx-auto">
+          {/* Logo Box */}
+          <View className="items-center mb-6">
+            <View className="w-20 h-20 rounded-2xl bg-white shadow-md shadow-black/5 flex items-center justify-center border border-outline-variant/10">
+              <KekeIcon size={54} color="#001caa" />
             </View>
           </View>
 
-          {/* Welcome Text */}
-          <View className="mb-xl text-center">
-            <Text className="font-headline-lg-mobile text-headline-lg-mobile text-on-background font-bold mb-2">
-              Welcome Back
+          {/* Welcome Headline */}
+          <View className="mb-8 items-center">
+            <Text className="font-jakarta text-headline-lg text-on-surface font-bold text-center">
+              Log <Text className="text-primary">In</Text>
             </Text>
-            <Text className="font-body-md text-body-md text-secondary">
-              Please enter your details to sign in.
+            <Text className="font-jakarta text-body-sm text-secondary text-center mt-2 px-4 leading-5">
+              Welcome back! Please log in to continue riding with Futo Ride.
             </Text>
           </View>
 
@@ -113,157 +102,127 @@ export default function Login() {
           ) : null}
 
           {/* Form Fields */}
-          <View className="gap-md">
+          <View className="gap-4">
             {/* Email Field */}
-            <View>
-              <Text className="block font-label-md text-label-md text-on-surface mb-xs">
-                Email
-              </Text>
-              <View
-                className={`flex-row items-center bg-surface-container-lowest border rounded-lg px-3 py-2 ${
-                  isEmailFocused
-                    ? "border-primary border-2"
-                    : "border-outline-variant"
-                }`}
-              >
-                <Mail
-                  color={isEmailFocused ? "#001caa" : "#757687"}
-                  size={20}
-                  className="mr-2"
-                />
-                <TextInput
-                  placeholder="Enter your email"
-                  placeholderTextColor="#c5c5d8"
-                  value={email}
-                  onChangeText={(val) => {
-                    setEmail(val);
-                    setError("");
-                  }}
-                  onFocus={() => setIsEmailFocused(true)}
-                  onBlur={() => setIsEmailFocused(false)}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  underlineColorAndroid="transparent"
-                  className="flex-1 text-on-surface text-body-md py-1"
-                />
-              </View>
+            <View
+              className={`flex-row items-center bg-white border rounded-2xl px-4 py-3.5 shadow-sm shadow-black/5 ${
+                isEmailFocused ? "border-primary" : "border-outline-variant/10"
+              }`}
+            >
+              <Mail
+                color={isEmailFocused ? "#001caa" : "#757687"}
+                size={20}
+                className="mr-3"
+              />
+              <TextInput
+                placeholder="Email address"
+                placeholderTextColor="#c5c5d8"
+                value={email}
+                onChangeText={(val) => {
+                  setEmail(val);
+                  setError("");
+                }}
+                onFocus={() => setIsEmailFocused(true)}
+                onBlur={() => setIsEmailFocused(false)}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                underlineColorAndroid="transparent"
+                className="flex-1 text-on-surface text-body-md py-0.5 font-jakarta"
+              />
             </View>
 
             {/* Password Field */}
-            <View>
-              <Text className="block font-label-md text-label-md text-on-surface mb-xs">
-                Password
-              </Text>
-              <View
-                className={`flex-row items-center bg-surface-container-lowest border rounded-lg px-3 py-2 ${
-                  isPasswordFocused
-                    ? "border-primary border-2"
-                    : "border-outline-variant"
-                }`}
+            <View
+              className={`flex-row items-center bg-white border rounded-2xl px-4 py-3.5 shadow-sm shadow-black/5 ${
+                isPasswordFocused ? "border-primary" : "border-outline-variant/10"
+              }`}
+            >
+              <Lock
+                color={isPasswordFocused ? "#001caa" : "#757687"}
+                size={20}
+                className="mr-3"
+              />
+              <TextInput
+                placeholder="Password"
+                placeholderTextColor="#c5c5d8"
+                value={password}
+                onChangeText={(val) => {
+                  setPassword(val);
+                  setError("");
+                }}
+                onFocus={() => setIsPasswordFocused(true)}
+                onBlur={() => setIsPasswordFocused(false)}
+                secureTextEntry={!showPassword}
+                autoCapitalize="none"
+                underlineColorAndroid="transparent"
+                className="flex-1 text-on-surface text-body-md py-0.5 font-jakarta"
+              />
+              <Pressable
+                onPress={() => setShowPassword(!showPassword)}
+                className="p-1"
               >
-                <Lock
-                  color={isPasswordFocused ? "#001caa" : "#757687"}
-                  size={20}
-                  className="mr-2"
-                />
-                <TextInput
-                  placeholder="Enter your password"
-                  placeholderTextColor="#c5c5d8"
-                  value={password}
-                  onChangeText={(val) => {
-                    setPassword(val);
-                    setError("");
-                  }}
-                  onFocus={() => setIsPasswordFocused(true)}
-                  onBlur={() => setIsPasswordFocused(false)}
-                  secureTextEntry={!showPassword}
-                  autoCapitalize="none"
-                  underlineColorAndroid="transparent"
-                  className="flex-1 text-on-surface text-body-md py-1"
-                />
-                <Pressable
-                  onPress={() => setShowPassword(!showPassword)}
-                  className="p-1"
-                >
-                  {showPassword ? (
-                    <EyeOff
-                      color={isPasswordFocused ? "#001caa" : "#757687"}
-                      size={18}
-                    />
-                  ) : (
-                    <Eye
-                      color={isPasswordFocused ? "#001caa" : "#757687"}
-                      size={18}
-                    />
-                  )}
-                </Pressable>
-              </View>
+                {showPassword ? (
+                  <EyeOff
+                    color={isPasswordFocused ? "#001caa" : "#757687"}
+                    size={20}
+                  />
+                ) : (
+                  <Eye
+                    color={isPasswordFocused ? "#001caa" : "#757687"}
+                    size={20}
+                  />
+                )}
+              </Pressable>
             </View>
 
-            {/* Remember Me and Forgot Password */}
-            <View className="flex-row items-center justify-between mt-sm mb-lg">
-              <Pressable
-                onPress={() => setRememberMe(!rememberMe)}
-                className="flex-row items-center"
-              >
-                <View
-                  className={`w-4 h-4 rounded border mr-2 items-center justify-center ${
-                    rememberMe
-                      ? "bg-primary border-primary"
-                      : "border-outline-variant bg-transparent"
-                  }`}
-                >
-                  {rememberMe && (
-                    <View className="w-1.5 h-1.5 bg-white rounded-sm" />
-                  )}
-                </View>
-                <Text className="font-body-sm text-body-sm text-secondary">
-                  Remember me
-                </Text>
-              </Pressable>
-
+            {/* Forgot Password Link */}
+            <View className="flex-row justify-end mt-1 mb-2">
               <Pressable>
-                <Text className="font-label-md text-label-md text-primary font-semibold hover:text-primary-container">
+                <Text className="font-jakarta text-body-sm text-primary font-bold">
                   Forgot password?
                 </Text>
               </Pressable>
             </View>
 
-            {/* Primary Login Button */}
-            <Pressable
-              onPress={handleLogin}
-              disabled={isSubmitting}
-              className="w-full flex justify-center py-4 bg-primary rounded-full shadow-md active:opacity-90 active:scale-[0.98] transition-all"
-            >
-              <Text className="font-label-md text-label-md text-on-primary font-bold text-center">
-                Log In
-              </Text>
-              {isSubmitting && <ActivityIndicator color="#ffffff" />}
-            </Pressable>
-
             {/* Divider */}
-            <View className="flex-row items-center my-xl">
-              <View className="flex-1 h-[1px] bg-outline-variant" />
-              <Text className="px-3 text-body-sm text-secondary font-medium uppercase tracking-wider">
-                Or continue with
+            <View className="flex-row items-center my-4">
+              <View className="flex-1 h-[0.5px] bg-outline-variant/20" />
+              <Text className="px-3 text-body-sm text-secondary font-medium">
+                or
               </Text>
-              <View className="flex-1 h-[1px] bg-outline-variant" />
+              <View className="flex-1 h-[0.5px] bg-outline-variant/20" />
             </View>
 
-            {/* Social Login Button */}
-            <Pressable className="w-full inline-flex justify-center items-center py-3.5 border border-outline-variant rounded-full bg-surface-container-lowest active:bg-surface-container-low transition-colors">
-              <Text className="font-label-md text-label-md text-on-surface font-semibold text-center">
+            {/* Google Login Button */}
+            <Pressable className="w-full h-14 bg-white border border-outline-variant/15 rounded-2xl flex-row items-center justify-center gap-3 shadow-sm shadow-black/5 active:bg-surface-container-low">
+              {/* Google G icon simulation */}
+              <View className="w-5 h-5 rounded-full bg-red-500 items-center justify-center">
+                <Text className="text-[10px] text-white font-bold">G</Text>
+              </View>
+              <Text className="font-jakarta text-body-md text-on-surface font-bold text-center">
                 Log in with Google
               </Text>
             </Pressable>
 
+            {/* Primary Login Button */}
+            <Pressable
+              onPress={handleLogin}
+              disabled={isSubmitting}
+              className="w-full h-14 bg-primary rounded-full items-center justify-center shadow-md active:opacity-95 active:scale-[0.99] flex-row mt-4"
+            >
+              <Text className="font-jakarta text-action-lg text-on-primary font-bold text-center mr-2">
+                Log In
+              </Text>
+              {isSubmitting && <ActivityIndicator color="#ffffff" size="small" />}
+            </Pressable>
+
             {/* Redirect to Sign Up */}
-            <View className="mt-lg flex-row justify-center items-center p-4 ">
-              <Text className="font-body-sm text-body-sm text-secondary">
+            <View className="mt-6 flex-row justify-center items-center">
+              <Text className="font-jakarta text-body-sm text-secondary">
                 Don't have an account?{" "}
               </Text>
-              <Pressable onPress={createAccount} className=" p-4 ">
-                <Text className="font-label-md text-label-md text-primary font-semibold hover:underline">
+              <Pressable onPress={createAccount}>
+                <Text className="font-jakarta text-body-sm text-primary font-bold">
                   Create account
                 </Text>
               </Pressable>
@@ -272,20 +231,20 @@ export default function Login() {
             {/* Switch Role Trigger */}
             <Pressable
               onPress={() => setRole(userRole === "rider" ? "driver" : "rider")}
-              className="mt-6 py-2 px-3 bg-surface-container rounded-lg self-center flex-row items-center gap-1.5 active:opacity-75"
+              className="mt-6 py-2.5 px-4 bg-surface-container rounded-full self-center flex-row items-center gap-2 active:opacity-75"
             >
               {userRole === "rider" ? (
                 <>
                   <ShieldCheck color="#001caa" size={14} />
-                  <Text className="text-[11px] text-primary font-bold">
+                  <Text className="text-[11px] text-primary font-bold uppercase tracking-wider font-jakarta">
                     Switch to Driver login
                   </Text>
                 </>
               ) : (
                 <>
                   <Compass color="#001caa" size={14} />
-                  <Text className="text-[11px] text-primary font-bold">
-                    Switch to Student/Rider login
+                  <Text className="text-[11px] text-primary font-bold uppercase tracking-wider font-jakarta">
+                    Switch to Rider login
                   </Text>
                 </>
               )}

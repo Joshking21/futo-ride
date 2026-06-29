@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { ArrowLeft, MapPin, Compass, Wallet } from "lucide-react-native";
+import { ArrowLeft, MapPin, Compass, Wallet, X, ChevronDown } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
   Image,
@@ -12,16 +12,16 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useApp } from "../../context/AppContext";
+import KekeIcon from "../../components/KekeIcon";
 
 const CAMPUS_LOCATIONS = [
-  "SEET Head",
-  "SOSC Extension",
-  "Hall C",
-  "Senate Building",
-  "SOES Building",
-  "FUTO Main Gate",
-  "PGS (Post Graduate School)",
-  "Health Centre",
+  { name: "SEET Head", desc: "School of Engineering & Tech Complex" },
+  { name: "FUTO Main Gate", desc: "Campus main entrance shuttle park" },
+  { name: "Hall C Hostel", desc: "Student housing residential area" },
+  { name: "Senate Building", desc: "University admin & vice chancellor office" },
+  { name: "SOES Building", desc: "School of Environmental Sciences" },
+  { name: "PGS Complex", desc: "Post Graduate School building" },
+  { name: "Health Centre", desc: "Campus medical clinic and emergency" },
 ];
 
 export default function BookRide() {
@@ -30,45 +30,33 @@ export default function BookRide() {
   const { startBooking } = useApp();
 
   const [pickup, setPickup] = useState("FUTO Main Gate");
+  const [pickupDesc, setPickupDesc] = useState("Campus main entrance shuttle park");
   const [destination, setDestination] = useState("");
+  const [destinationDesc, setDestinationDesc] = useState("Select your dropoff point");
   const [rideType, setRideType] = useState<"keke" | "bus">("keke");
-  const [filteredDestinations, setFilteredDestinations] = useState<string[]>(
-    [],
-  );
-  const [showDropdown, setShowDropdown] = useState(false);
+  const [showPickupDropdown, setShowPickupDropdown] = useState(false);
+  const [showDestDropdown, setShowDestDropdown] = useState(false);
 
   useEffect(() => {
     if (params.prefillDestination) {
-      setDestination(params.prefillDestination as string);
+      const matched = CAMPUS_LOCATIONS.find(loc => loc.name === params.prefillDestination);
+      if (matched) {
+        setDestination(matched.name);
+        setDestinationDesc(matched.desc);
+      } else {
+        setDestination(params.prefillDestination as string);
+        setDestinationDesc("Selected location");
+      }
     }
   }, [params]);
 
-  const handleDestinationChange = (text: string) => {
-    setDestination(text);
-    if (text.length > 0) {
-      const filtered = CAMPUS_LOCATIONS.filter(
-        (loc) =>
-          loc.toLowerCase().includes(text.toLowerCase()) &&
-          loc.toLowerCase() !== pickup.toLowerCase(),
-      );
-      setFilteredDestinations(filtered);
-      setShowDropdown(true);
-    } else {
-      setFilteredDestinations([]);
-      setShowDropdown(false);
-    }
-  };
-
-  const handleSelectDestination = (loc: string) => {
-    setDestination(loc);
-    setShowDropdown(false);
-    Keyboard.dismiss();
-  };
-
   const handleSwap = () => {
-    const temp = pickup;
+    const tempName = pickup;
+    const tempDesc = pickupDesc;
     setPickup(destination || "Where to?");
-    setDestination(temp === "Where to?" ? "" : temp);
+    setPickupDesc(destinationDesc);
+    setDestination(tempName === "Where to?" ? "" : tempName);
+    setDestinationDesc(tempDesc);
   };
 
   const handleFindRide = () => {
@@ -78,19 +66,21 @@ export default function BookRide() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-background" edges={["top", "bottom"]}>
-      {/* Top App Bar */}
-      <View className="flex-row justify-between items-center px-margin-mobile h-[64px] bg-surface border-b border-outline-variant z-20">
+    <SafeAreaView className="flex-1 bg-surface-bright" edges={["top", "bottom"]}>
+      {/* Top Header with Back & Close Buttons */}
+      <View className="flex-row justify-between items-center px-margin-mobile h-[64px] bg-white border-b border-outline-variant/10 z-20">
         <Pressable
           onPress={() => router.back()}
-          className="w-10 h-10 flex items-center justify-center rounded-full active:bg-surface-container-high text-primary"
+          className="w-12 h-12 rounded-2xl bg-white items-center justify-center border border-outline-variant/10 active:bg-surface-container"
         >
-          <ArrowLeft color="#001caa" size={24} />
+          <ArrowLeft color="#0B1C30" size={24} />
         </Pressable>
-        <Text className="text-headline-md font-bold text-primary font-jakarta">Book a Ride</Text>
-        <Pressable className="flex-row items-center gap-1.5 bg-surface-container px-3 py-1.5 rounded-full active:opacity-75">
-          <Wallet color="#001caa" size={16} />
-          <Text className="text-label-sm text-primary font-bold">₦ 1,850</Text>
+        <Text className="text-headline-md font-bold text-on-surface font-jakarta">Book a Ride</Text>
+        <Pressable
+          onPress={() => router.replace("/(rider)/home")}
+          className="w-12 h-12 rounded-2xl bg-white items-center justify-center border border-outline-variant/10 active:bg-surface-container"
+        >
+          <X color="#0B1C30" size={24} />
         </Pressable>
       </View>
 
@@ -99,136 +89,182 @@ export default function BookRide() {
         keyboardShouldPersistTaps="handled"
         className="flex-1"
       >
-        <View className="p-margin-mobile flex-1 gap-lg md:max-w-[600px] md:mx-auto w-full">
+        <View className="px-margin-mobile pt-6 flex-1 gap-6 md:max-w-[600px] md:mx-auto w-full pb-32">
           {/* Map Preview Card */}
-          <View className="w-full h-[200px] rounded-xl overflow-hidden shadow-md border border-outline-variant relative bg-surface-container-lowest">
+          <View className="w-full h-[220px] rounded-3xl overflow-hidden shadow-sm border border-outline-variant/10 relative bg-surface-container-lowest">
             <Image
               source={{
                 uri: "https://lh3.googleusercontent.com/aida-public/AB6AXuBhChECydpDyPgt27hlQrat9Rk2U89C00BRo9HxQfDmpSr4MRrxjAG1pGL6iwr1A__rTa5hkvxx5VNhyBHIwUrgEL1XAzRh3vdUsCbmpnjEWdd5tXIJyvuoNbsf17_pEryhtId0Y6snYs2mm-iQfYuoPK3Zrsg2EAG-XD5-Bq8QCQpcEyE5GcSDWhm7yhm20vy7oBcRqJFt0hbOoiU-LdxjqFg6qiW_P7A1aJmd6buI9IlGZRklUN8jk7Fl9tud8gafRai7G4XXH9hL",
               }}
               className="w-full h-full object-cover"
             />
-            {/* Overlay Gradient */}
-            <View className="absolute inset-0 bg-gradient-to-t from-surface to-transparent opacity-40" />
+            {/* Draw a route path simulation using absolute views on web/app */}
+            <View className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              {/* Path dots */}
+              <View className="absolute top-[40%] left-[30%] w-3 h-3 rounded-full bg-primary border-2 border-white shadow-sm" />
+              <View className="absolute top-[50%] left-[60%] w-3.5 h-3.5 rounded-full bg-primary border-2 border-white shadow-sm" />
+              {/* Simulated blue path line */}
+              <View className="absolute top-[45%] left-[35%] w-[45%] h-1 bg-primary/80 rotate-[18deg]" />
+            </View>
           </View>
 
-          {/* Booking Input Card */}
-          <View className="bg-surface-container-lowest rounded-xl shadow-lg border border-outline-variant p-md flex flex-col gap-md relative">
+          {/* Booking Inputs Bento Card */}
+          <View className="bg-white rounded-3xl shadow-sm border border-outline-variant/10 p-5 flex-col relative">
             {/* Timeline connector line */}
-            <View className="absolute left-[31px] top-[40px] bottom-[40px] w-[1px] border-l border-dashed border-outline-variant" />
+            <View className="absolute left-[31px] top-[48px] bottom-[48px] w-[1px] border-l border-dashed border-outline-variant/30" />
 
-            {/* From Input */}
-            <View className="flex-row items-center gap-md relative z-10 w-full">
-              <View className="w-[30px] items-center justify-center shrink-0">
-                <View className="w-4 h-4 rounded-full bg-primary-fixed-dim border-2 border-primary flex items-center justify-center">
-                  <View className="w-1.5 h-1.5 rounded-full bg-primary" />
-                </View>
+            {/* From Row */}
+            <View className="flex-row items-center gap-4 relative z-10 w-full pb-4">
+              <View className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                <View className="w-3 h-3 rounded-full bg-primary" />
               </View>
-              <View className="flex-1">
-                <Text className="text-label-sm font-label-sm text-secondary block mb-0.5">From</Text>
-                <TextInput
-                  value={pickup}
-                  onChangeText={setPickup}
-                  placeholder="Pickup Location"
-                  placeholderTextColor="#c5c5d8"
-                  className="w-full py-1 text-body-md font-semibold text-on-surface"
-                />
-              </View>
-            </View>
-
-            {/* Swap Button */}
-            <View className="relative h-4 w-full flex items-center justify-center z-20">
-              <View className="absolute w-full border-t border-outline-variant/30" />
               <Pressable
-                onPress={handleSwap}
-                className="w-8 h-8 rounded-full bg-surface border border-outline-variant flex items-center justify-center text-secondary shadow-sm active:bg-surface-container-low"
+                onPress={() => {
+                  setShowPickupDropdown(!showPickupDropdown);
+                  setShowDestDropdown(false);
+                }}
+                className="flex-1 flex-row items-center justify-between border-b border-outline-variant/10 pb-2"
               >
-                <Text className="text-[18px] text-secondary">⇅</Text>
+                <View className="flex-1">
+                  <Text className="text-[10px] uppercase font-bold text-secondary font-jakarta">From</Text>
+                  <Text className="text-body-md font-bold text-on-surface font-jakarta mt-0.5">{pickup}</Text>
+                  <Text className="text-body-sm text-secondary font-jakarta mt-0.5">{pickupDesc}</Text>
+                </View>
+                <ChevronDown color="#757687" size={18} />
               </Pressable>
             </View>
 
-            {/* To Input */}
-            <View className="flex-row items-center gap-md relative z-10 w-full">
-              <View className="w-[30px] items-center justify-center shrink-0">
-                <View className="w-4 h-4 rounded-full bg-surface-variant border-2 border-primary flex items-center justify-center" />
+            {/* Swap Button Divider */}
+            <View className="relative h-6 w-full flex items-center justify-center z-20 my-1">
+              <View className="absolute w-full border-t border-outline-variant/10" />
+              <Pressable
+                onPress={handleSwap}
+                className="w-9 h-9 rounded-full bg-white border border-outline-variant/15 flex items-center justify-center shadow-sm active:bg-surface-container"
+              >
+                <Text className="text-[20px] text-on-surface font-bold">⇅</Text>
+              </Pressable>
+            </View>
+
+            {/* To Row */}
+            <View className="flex-row items-center gap-4 relative z-10 w-full pt-2">
+              <View className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                <View className="w-3.5 h-3.5 rounded-full bg-primary border-2 border-white" />
               </View>
-              <View className="flex-1">
-                <Text className="text-label-sm font-label-sm text-secondary block mb-0.5">To</Text>
-                <TextInput
-                  placeholder="Where to?"
-                  placeholderTextColor="#c5c5d8"
-                  value={destination}
-                  onChangeText={handleDestinationChange}
-                  className="w-full py-1 text-body-md font-semibold text-on-surface"
-                />
-              </View>
+              <Pressable
+                onPress={() => {
+                  setShowDestDropdown(!showDestDropdown);
+                  setShowPickupDropdown(false);
+                }}
+                className="flex-1 flex-row items-center justify-between pb-1"
+              >
+                <View className="flex-1">
+                  <Text className="text-[10px] uppercase font-bold text-secondary font-jakarta">To</Text>
+                  <Text className="text-body-md font-bold text-on-surface font-jakarta mt-0.5">
+                    {destination || "Where to?"}
+                  </Text>
+                  <Text className="text-body-sm text-secondary font-jakarta mt-0.5">{destinationDesc}</Text>
+                </View>
+                <ChevronDown color="#757687" size={18} />
+              </Pressable>
             </View>
           </View>
 
-          {/* Autocomplete Dropdown List */}
-          {showDropdown && filteredDestinations.length > 0 && (
-            <View className="border border-outline-variant bg-surface rounded-xl max-h-[160px] overflow-hidden -mt-2">
+          {/* Autocomplete Pickup Dropdown List */}
+          {showPickupDropdown && (
+            <View className="border border-outline-variant/10 bg-white rounded-2xl max-h-[200px] overflow-hidden -mt-3 shadow-md">
               <ScrollView keyboardShouldPersistTaps="handled">
-                {filteredDestinations.map((loc, idx) => (
+                {CAMPUS_LOCATIONS.map((loc, idx) => (
                   <Pressable
                     key={idx}
-                    onPress={() => handleSelectDestination(loc)}
-                    className="flex-row items-center gap-3 px-4 py-3 border-b border-outline-variant/10 active:bg-surface-container-low"
+                    onPress={() => {
+                      setPickup(loc.name);
+                      setPickupDesc(loc.desc);
+                      setShowPickupDropdown(false);
+                    }}
+                    className="flex-row items-center gap-3.5 px-4 py-3.5 border-b border-outline-variant/5 active:bg-surface-container-low"
                   >
                     <MapPin color="#757687" size={16} />
-                    <Text className="text-body-md text-on-surface font-semibold">
-                      {loc}
-                    </Text>
+                    <View>
+                      <Text className="text-body-md text-on-surface font-bold font-jakarta">{loc.name}</Text>
+                      <Text className="text-body-sm text-secondary font-jakarta">{loc.desc}</Text>
+                    </View>
                   </Pressable>
                 ))}
               </ScrollView>
             </View>
           )}
 
-          {/* Vehicle Type Selection */}
-          <View className="bg-surface-container-lowest rounded-xl border border-outline-variant flex overflow-hidden shadow-sm h-14">
+          {/* Autocomplete Dropoff Dropdown List */}
+          {showDestDropdown && (
+            <View className="border border-outline-variant/10 bg-white rounded-2xl max-h-[200px] overflow-hidden -mt-3 shadow-md">
+              <ScrollView keyboardShouldPersistTaps="handled">
+                {CAMPUS_LOCATIONS.map((loc, idx) => (
+                  <Pressable
+                    key={idx}
+                    onPress={() => {
+                      setDestination(loc.name);
+                      setDestinationDesc(loc.desc);
+                      setShowDestDropdown(false);
+                    }}
+                    className="flex-row items-center gap-3.5 px-4 py-3.5 border-b border-outline-variant/5 active:bg-surface-container-low"
+                  >
+                    <MapPin color="#757687" size={16} />
+                    <View>
+                      <Text className="text-body-md text-on-surface font-bold font-jakarta">{loc.name}</Text>
+                      <Text className="text-body-sm text-secondary font-jakarta">{loc.desc}</Text>
+                    </View>
+                  </Pressable>
+                ))}
+              </ScrollView>
+            </View>
+          )}
+
+          {/* Vehicle Type selection tabs */}
+          <View className="flex-row bg-surface border border-outline-variant/10 rounded-2xl p-1 h-14">
             <Pressable
               onPress={() => setRideType("keke")}
-              className={`flex-1 flex-row items-center justify-center gap-2 ${
-                rideType === "keke" ? "bg-primary" : "bg-transparent"
+              className={`flex-1 flex-row h-11 rounded-xl items-center justify-center gap-2 ${
+                rideType === "keke" ? "bg-primary shadow-sm" : ""
               }`}
             >
-              <Compass color={rideType === "keke" ? "#ffffff" : "#5b5e66"} size={20} />
-              <Text className={`font-label-md text-label-md font-bold ${
-                rideType === "keke" ? "text-on-primary" : "text-secondary"
+              <KekeIcon size={20} color={rideType === "keke" ? "#ffffff" : "#5b5e66"} />
+              <Text className={`font-jakarta text-body-sm font-bold ${
+                rideType === "keke" ? "text-white" : "text-secondary"
               }`}>Keke</Text>
             </Pressable>
 
             <Pressable
               onPress={() => setRideType("bus")}
-              className={`flex-1 flex-row items-center justify-center gap-2 border-l border-outline-variant ${
-                rideType === "bus" ? "bg-primary" : "bg-transparent"
+              className={`flex-1 flex-row h-11 rounded-xl items-center justify-center gap-2 ${
+                rideType === "bus" ? "bg-primary shadow-sm" : ""
               }`}
             >
-              <Compass color={rideType === "bus" ? "#ffffff" : "#5b5e66"} size={20} />
-              <Text className={`font-label-md text-label-md font-bold ${
-                rideType === "bus" ? "text-on-primary" : "text-secondary"
+              <Compass color={rideType === "bus" ? "#ffffff" : "#5b5e66"} size={18} />
+              <Text className={`font-jakarta text-body-sm font-bold ${
+                rideType === "bus" ? "text-white" : "text-secondary"
               }`}>Bus</Text>
             </Pressable>
           </View>
         </View>
       </ScrollView>
 
-      {/* Bottom Action Area */}
-      <View className="p-margin-mobile border-t border-outline-variant/30 bg-surface-container-lowest md:max-w-[600px] md:mx-auto w-full">
-        <Pressable
-          onPress={handleFindRide}
-          disabled={!pickup || !destination}
-          className={`w-full h-14 rounded-xl items-center justify-center shadow-lg active:scale-[0.98] ${
-            pickup && destination ? "bg-on-surface" : "bg-outline-variant/50"
-          }`}
-        >
-          <Text className={`text-action-lg font-bold ${
-            pickup && destination ? "text-surface-container-lowest" : "text-secondary"
-          }`}>
-            Find ride
-          </Text>
-        </Pressable>
+      {/* Floating Bottom Action Area */}
+      <View className="absolute bottom-0 left-0 right-0 bg-white border-t border-outline-variant/10 p-4 z-40">
+        <View className="max-w-[600px] mx-auto w-full">
+          <Pressable
+            onPress={handleFindRide}
+            disabled={!pickup || !destination}
+            className={`w-full h-14 rounded-full items-center justify-center shadow-md active:scale-[0.98] ${
+              pickup && destination ? "bg-[#0b1c30]" : "bg-outline-variant/30"
+            }`}
+          >
+            <Text className={`text-action-lg font-bold font-jakarta ${
+              pickup && destination ? "text-white" : "text-secondary"
+            }`}>
+              Find ride
+            </Text>
+          </Pressable>
+        </View>
       </View>
     </SafeAreaView>
   );

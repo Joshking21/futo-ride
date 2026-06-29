@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { View, Text, Image, Pressable } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { ShieldAlert, AlertTriangle, Signal, X } from "lucide-react-native";
+import { Shield, ShieldAlert, Lock, X } from "lucide-react-native";
 
 export default function SOSScreen() {
   const router = useRouter();
@@ -16,82 +16,111 @@ export default function SOSScreen() {
   }, []);
 
   const handleSendSOS = () => {
-    // In a real app, this triggers Alerta integration and calls campus security
-    alert("Emergency SOS Transmitted! Campus security and your emergency contacts have been notified with your live coordinates.");
+    alert("Emergency SOS Transmitted! Campus Security Team has been notified of your live coordinates.");
     router.back();
   };
 
   return (
-    <SafeAreaView className="flex-grow bg-inverse-surface flex-col justify-between p-6" style={{ flex: 1 }}>
-      {/* Top Section */}
-      <View className="w-full flex-row justify-center mb-6">
-        <View className="flex-row items-center gap-2 bg-black/50 px-4 py-2 rounded-full border border-error/30">
-          <View className="relative flex h-2.5 w-2.5">
-            <View className={`absolute h-full w-full rounded-full bg-error opacity-75 ${isPulsing ? "scale-150" : "scale-100"}`} />
-            <View className="h-2.5 w-2.5 rounded-full bg-error" />
-          </View>
-          <Text className="font-bold text-xs tracking-widest text-white font-jakarta">GPS ACTIVE</Text>
-        </View>
+    <SafeAreaView className="flex-1 bg-surface-bright flex-col justify-between px-margin-mobile py-6" edges={["top", "bottom"]}>
+      {/* Top Header Row with Close Button */}
+      <View className="flex-row items-center justify-between w-full">
+        <Pressable
+          onPress={() => router.back()}
+          className="w-12 h-12 rounded-2xl bg-white shadow-sm shadow-black/5 items-center justify-center border border-outline-variant/10 active:bg-surface-container"
+        >
+          <X color="#1A1A1A" size={24} />
+        </Pressable>
+        <View className="w-12" />
       </View>
 
-      {/* Center Action Area */}
-      <View className="flex-1 items-center justify-center gap-8 w-full max-w-sm mx-auto">
-        {/* Warning Text */}
-        <View className="items-center text-center gap-2">
-          <ShieldAlert color="#ba1a1a" size={48} />
-          <Text className="text-headline-lg-mobile font-bold text-white mb-1 font-jakarta">Emergency Alert</Text>
-          <Text className="text-body-sm text-outline-variant text-center max-w-[280px] font-jakarta">
-            This alerts campus security with your live location. Use only in genuine emergencies.
+      {/* Main Content Area */}
+      <View className="flex-grow justify-center items-center py-6 gap-6 w-full max-w-sm mx-auto">
+        {/* Glowing Red Warning Header */}
+        <View className="items-center">
+          <View className="w-20 h-20 bg-error/10 rounded-full flex items-center justify-center relative mb-4">
+            {/* Pulsing ring */}
+            <View className={`absolute inset-0 rounded-full bg-error/15 ${isPulsing ? "scale-125" : "scale-100"}`} />
+            <ShieldAlert color="#ba1a1a" size={38} />
+          </View>
+          <Text className="text-headline-xl font-bold text-error tracking-tight text-center font-jakarta mb-1">
+            SOS
+          </Text>
+          <Text className="text-headline-md font-bold text-on-surface text-center font-jakarta mb-2">
+            Need Help?
+          </Text>
+          <Text className="text-body-sm text-secondary text-center px-4 leading-5 font-jakarta">
+            This alerts campus security with your live location
           </Text>
         </View>
 
-        {/* SOS Button */}
+        {/* Action Button */}
         <Pressable
           onPress={handleSendSOS}
-          className={`w-44 h-44 rounded-full bg-error items-center justify-center border-4 border-error-container/20 shadow-2xl active:scale-95 ${
-            isPulsing ? "scale-105" : "scale-100"
-          }`}
+          className="w-full bg-error h-14 rounded-full flex-row items-center justify-center gap-2.5 shadow-lg shadow-error/25 active:scale-[0.98]"
         >
-          <AlertTriangle color="#ffffff" size={48} />
-          <Text className="text-headline-md font-bold text-white tracking-wider mt-2 font-jakarta">SEND SOS</Text>
+          {/* Custom siren icon styling using text/shields */}
+          <Shield color="#ffffff" size={20} />
+          <Text className="text-white text-action-lg font-bold font-jakarta">
+            Send SOS
+          </Text>
         </Pressable>
 
-        {/* Location Coordinates Card */}
-        <View className="w-full bg-surface-container-highest rounded-xl border border-outline-variant overflow-hidden shadow-lg mt-2">
-          {/* Map Area Placeholder */}
-          <View className="relative h-32 w-full bg-surface-variant overflow-hidden flex items-center justify-center">
-            <Image
-              source={{
-                uri: "https://lh3.googleusercontent.com/aida-public/AB6AXuAP-YY12q4fIeKFG_wzPcoIcBRPLtpUTLf-VuKfLWRRYbsp8wgOMHvXe9nosnoRXv9Z5e3FVYNUOtnSElahC0xoiqUZC3FOgCw111OvV5wFMdke19nnodcTXN0YOklZ86MX7j-IAZOOOBTolg8IQpX3j4BRIMpc9kaA3Aij7udi4mpFssXmbFfKJgR3xvhmZ2qSnlrKUJ9HlYHrgdZmn2PsNg1sB43Y3BsSUm9jnnl3lnf60y9amt2p6SDmFgyObabyrj-NOhdrKgEz",
-              }}
-              className="w-full h-full object-cover opacity-90"
-            />
-            {/* Red Pulse Marker */}
-            <View className="absolute inset-0 flex items-center justify-center">
-              <View className="w-4 h-4 bg-error rounded-full border-2 border-white" />
+        {/* Warning Policy Box */}
+        <View className="bg-error-container border border-error-container/20 rounded-2xl p-4 flex-row items-start gap-3 w-full">
+          <ShieldAlert color="#93000a" size={20} className="shrink-0 mt-0.5" />
+          <View className="flex-1">
+            <Text className="text-body-sm font-bold text-on-error-container font-jakarta">
+              Use SOS only in real emergencies.
+            </Text>
+            <Text className="text-body-sm text-on-error-container/80 font-jakarta mt-0.5">
+              False alarms may lead to disciplinary action.
+            </Text>
+          </View>
+        </View>
+
+        {/* Location Map Preview */}
+        <View className="w-full bg-surface border border-outline-variant/15 rounded-2xl overflow-hidden shadow-sm relative">
+          <Image
+            source={{
+              uri: "https://lh3.googleusercontent.com/aida-public/AB6AXuBhChECydpDyPgt27hlQrat9Rk2U89C00BRo9HxQfDmpSr4MRrxjAG1pGL6iwr1A__rTa5hkvxx5VNhyBHIwUrgEL1XAzRh3vdUsCbmpnjEWdd5tXIJyvuoNbsf17_pEryhtId0Y6snYs2mm-iQfYuoPK3Zrsg2EAG-XD5-Bq8QCQpcEyE5GcSDWhm7yhm20vy7oBcRqJFt0hbOoiU-LdxjqFg6qiW_P7A1aJmd6buI9IlGZRklUN8jk7Fl9tud8gafRai7G4XXH9hL",
+            }}
+            className="w-full h-44 object-cover"
+          />
+          {/* Floating Location Badge */}
+          <View className="absolute top-4 left-4 bg-white px-3.5 py-2.5 rounded-2xl border border-outline-variant/10 shadow-sm flex-row items-center gap-2.5">
+            <View className="w-6 h-6 rounded-full bg-error/15 items-center justify-center">
+              <View className="w-2.5 h-2.5 rounded-full bg-error" />
+            </View>
+            <View>
+              <Text className="text-[10px] text-secondary font-bold font-jakarta">Your Location</Text>
+              <Text className="text-body-sm font-bold text-on-surface font-jakarta mt-0.5">SEET Roundabout, FUTO</Text>
             </View>
           </View>
 
-          {/* Coordinates Details */}
-          <View className="p-4 flex-row justify-between items-center bg-surface">
-            <View>
-              <Text className="text-[10px] text-secondary font-bold font-jakarta">CURRENT COORDINATES</Text>
-              <Text className="text-body-md font-bold text-on-surface font-mono mt-0.5">5°23'14"N 6°59'35"E</Text>
-            </View>
-            <View className="w-10 h-10 rounded-full bg-surface-container-low flex items-center justify-center">
-              <Signal color="#001caa" size={20} />
-            </View>
+          {/* User Marker Dot */}
+          <View className="absolute top-[50%] left-[50%] -ml-5 -mt-5 w-10 h-10 items-center justify-center">
+            <View className="absolute w-8 h-8 rounded-full bg-primary/20 scale-125" />
+            <View className="absolute w-6 h-6 rounded-full bg-primary/40" />
+            <View className="w-3.5 h-3.5 rounded-full bg-primary border-2 border-white" />
           </View>
+        </View>
+
+        {/* Security team subtext */}
+        <View className="flex-row items-center justify-center gap-2 w-full">
+          <Lock color="#757687" size={14} />
+          <Text className="text-body-sm text-secondary font-jakarta">
+            Your location will be shared with <Text className="text-error font-semibold">Campus Security Team</Text>
+          </Text>
         </View>
       </View>
 
-      {/* Bottom Section */}
-      <View className="w-full max-w-sm mx-auto mt-6">
+      {/* Cancel Button */}
+      <View className="w-full max-w-sm mx-auto pt-2">
         <Pressable
           onPress={() => router.back()}
-          className="w-full h-14 rounded-lg border border-outline-variant items-center justify-center active:bg-white/10"
+          className="w-full h-14 rounded-full border border-error flex items-center justify-center bg-white active:bg-error/5"
         >
-          <Text className="text-white font-bold text-label-md font-jakarta">Cancel</Text>
+          <Text className="text-error font-bold text-action-lg font-jakarta">Cancel</Text>
         </Pressable>
       </View>
     </SafeAreaView>

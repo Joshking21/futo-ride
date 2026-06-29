@@ -2,16 +2,17 @@ import { useRouter } from "expo-router";
 import {
   CornerUpRight,
   MapPin,
-  Menu,
   MessageSquare,
   Phone,
   ShieldAlert,
   Star,
+  ArrowLeft,
 } from "lucide-react-native";
 import React, { useState } from "react";
 import { Image, Pressable, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useApp } from "../../context/AppContext";
+import KekeIcon from "../../components/KekeIcon";
 
 export default function DriverActiveTrip() {
   const router = useRouter();
@@ -40,34 +41,41 @@ export default function DriverActiveTrip() {
     return "Complete Trip (Show QR)";
   };
 
-  const getButtonClass = () => {
-    if (tripState === "arrived") return "bg-primary";
-    if (tripState === "start") return "bg-inverse-surface";
-    if (tripState === "dropoff") return "bg-primary";
-    return "bg-success";
+  const getStatusTitle = () => {
+    if (tripState === "arrived") return "Navigate to pickup";
+    if (tripState === "start") return "Passenger Boarding";
+    if (tripState === "dropoff") return "Navigate to destination";
+    return "Arrived at destination";
+  };
+
+  const getStatusSubtitle = () => {
+    if (tripState === "arrived") return "Alex is waiting at SOES Building";
+    if (tripState === "start") return "Alex is boarding your Keke";
+    if (tripState === "dropoff") return "Drop off Alex at Senate Building";
+    return "Complete the trip and generate payment QR";
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-background" edges={["top", "bottom"]}>
-      {/* Top Navigation */}
-      <View className="flex-row justify-between items-center px-4 h-16 bg-surface border-b border-outline-variant z-50">
+    <SafeAreaView className="flex-1 bg-surface-bright" edges={["top", "bottom"]}>
+      {/* Top Navigation Row */}
+      <View className="absolute top-4 left-margin-mobile right-margin-mobile flex-row items-center justify-between z-30">
         <Pressable
           onPress={() => router.back()}
-          className="w-10 h-10 rounded-full bg-surface border border-outline-variant items-center justify-center"
+          className="w-12 h-12 rounded-2xl bg-white shadow-md shadow-black/5 items-center justify-center border border-outline-variant/10 active:bg-surface-container"
         >
-          <Menu color="#001caa" size={20} />
+          <ArrowLeft color="#0B1C30" size={24} />
         </Pressable>
-        <View className="bg-surface rounded-full border border-outline-variant px-4 py-1.5 flex-row items-center gap-2">
+        <View className="bg-white/95 rounded-2xl border border-outline-variant/10 px-4 py-2.5 flex-row items-center gap-2 shadow-sm">
           <View className="w-2 h-2 rounded-full bg-success animate-pulse" />
-          <Text className="text-label-md font-bold text-on-surface font-jakarta">
+          <Text className="text-body-sm font-bold text-on-surface font-jakarta">
             Navigating
           </Text>
         </View>
         <Pressable
           onPress={() => router.push("/sos")}
-          className="w-10 h-10 rounded-full bg-error items-center justify-center active:opacity-90"
+          className="w-12 h-12 rounded-2xl bg-error items-center justify-center active:opacity-90 shadow-md"
         >
-          <ShieldAlert color="#ffffff" size={20} />
+          <ShieldAlert color="#ffffff" size={24} />
         </Pressable>
       </View>
 
@@ -80,15 +88,15 @@ export default function DriverActiveTrip() {
           className="w-full h-full object-cover"
         />
 
-        {/* Turn-by-Turn Instruction Card */}
-        <View className="absolute top-4 left-4 right-4 z-40">
-          <View className="bg-primary rounded-xl shadow-lg p-4 flex-row items-center gap-4 border border-primary-container">
-            <CornerUpRight color="#ffffff" size={32} />
+        {/* Turn-by-Turn Instruction Card Overlay */}
+        <View className="absolute top-20 left-4 right-4 z-40">
+          <View className="bg-primary rounded-3xl shadow-md p-5 flex-row items-center gap-4 border border-outline-variant/10">
+            <CornerUpRight color="#ffffff" size={28} />
             <View className="flex-1">
               <Text className="text-headline-md font-bold text-white font-jakarta">
                 200m
               </Text>
-              <Text className="text-body-sm text-white/90 font-jakarta">
+              <Text className="text-body-sm text-white/90 font-jakarta mt-0.5">
                 Turn right onto Senate Drive
               </Text>
             </View>
@@ -96,98 +104,104 @@ export default function DriverActiveTrip() {
         </View>
 
         {/* Map Location markers */}
-        <View className="absolute top-[52%] left-[48%] -mt-2 -ml-2 w-4 h-4 bg-primary rounded-full border-2 border-white shadow-md" />
-        <View className="absolute top-[42%] left-[32%] -mt-4 -ml-4 bg-surface-container-lowest border border-outline-variant w-8 h-8 rounded-full items-center justify-center shadow-md">
-          <Text className="text-[12px]">🛺</Text>
+        <View className="absolute top-[52%] left-[48%] -mt-3 -ml-3 w-6 h-6 items-center justify-center">
+          <View className="absolute w-5 h-5 rounded-full bg-primary/20 scale-125" />
+          <View className="w-3.5 h-3.5 bg-primary rounded-full border-2 border-white shadow-sm" />
+        </View>
+        <View className="absolute top-[42%] left-[32%] -mt-6 -ml-6 bg-white border border-outline-variant/10 w-12 h-12 rounded-2xl items-center justify-center shadow-md">
+          <KekeIcon size={28} color="#001caa" />
         </View>
       </View>
 
-      {/* Bottom Sheet containing Passenger Info & Actions */}
-      <View className="bg-surface rounded-t-2xl border-t border-outline-variant/60 p-5 gap-4 z-10 pb-8">
-        <View className="w-12 h-1 bg-outline-variant rounded-full mx-auto mb-1" />
+      {/* Bottom Sheet Passenger Info & Controls */}
+      <View className="bg-white rounded-t-[36px] shadow-xl shadow-black/15 border-t border-outline-variant/10 p-6 gap-5 z-10">
+        <View className="w-12 h-1.5 bg-outline-variant/20 rounded-full mx-auto" />
 
-        {/* Passenger Info */}
-        <View className="flex-row items-center justify-between border-b border-outline-variant/20 pb-4">
-          <View className="flex-row items-center gap-3">
-            <View className="relative">
+        {/* Trip State Info Header */}
+        <View className="flex-col gap-1 pb-1">
+          <Text className="text-headline-lg font-bold text-on-surface font-jakarta">
+            {getStatusTitle()}
+          </Text>
+          <Text className="text-body-sm text-secondary font-jakarta">
+            {getStatusSubtitle()}
+          </Text>
+        </View>
+
+        {/* Passenger Profile Row */}
+        <View className="bg-surface rounded-3xl p-4 flex-row items-center justify-between border border-outline-variant/10 shadow-sm">
+          <View className="flex-row items-center gap-3.5 flex-1 pr-4">
+            <View className="relative w-12 h-12 rounded-full overflow-hidden border border-outline-variant/10 bg-white">
               <Image
                 source={{
                   uri: "https://lh3.googleusercontent.com/aida-public/AB6AXuCKv18St18L7X2vZAAMPrAWpe_RTK8EptXVp0FFMqsUDuP_GgeffQiG2BXUbeBK5fAppU3V1r1xiIbGeVUoaoTLduIBmWdC2WEHiVaf2hilbRU54kKuZ7O6ukr9iC-soO0wPXucYYRHL1OQTZr0q7bDRr1TZqfKpkpL290p2tVDrufDqbY7kxXIdHRNxOex755J1_4AtLe8z7qbpg1umUVPxW4tt5r_i6df9PbNJdOf5PFxcsnG6bDlUgGoGZnLt0vZSzW4H3KHhOMD",
                 }}
-                className="w-14 h-14 rounded-full object-cover border border-outline-variant/30"
+                className="w-full h-full object-cover"
               />
-              <View className="absolute bottom-0 right-0 bg-surface rounded-full p-0.5">
-                <View className="bg-success w-2.5 h-2.5 rounded-full" />
-              </View>
             </View>
-            <View>
-              <Text className="text-headline-sm font-bold text-on-surface font-jakarta">
-                Alex
-              </Text>
-              <View className="flex-row items-center gap-2 mt-0.5">
-                <View className="bg-surface-container px-2 py-0.5 rounded flex-row items-center gap-0.5">
-                  <Star color="#fbbf24" fill="#fbbf24" size={12} />
-                  <Text className="text-label-sm font-bold font-jakarta text-on-surface-variant">
-                    4.9
-                  </Text>
-                </View>
-                <Text className="text-body-sm text-secondary font-jakarta">
-                  • Student
-                </Text>
+            <View className="flex-1">
+              <Text className="text-body-md font-bold text-on-surface font-jakarta">Alex</Text>
+              <View className="flex-row items-center gap-1.5 mt-0.5">
+                <Star color="#eab308" fill="#eab308" size={13} />
+                <Text className="text-body-sm text-secondary font-jakarta font-semibold">4.9 • Student</Text>
               </View>
             </View>
           </View>
           <View className="flex-row gap-2">
-            <Pressable className="w-10 h-10 rounded-full bg-surface-container items-center justify-center active:bg-surface-container-high">
-              <MessageSquare color="#001caa" size={18} />
+            <Pressable className="bg-white w-11 h-11 rounded-2xl items-center justify-center border border-outline-variant/15 shadow-sm active:bg-surface-container">
+              <MessageSquare color="#0B1C30" size={18} />
             </Pressable>
-            <Pressable className="w-10 h-10 rounded-full bg-surface-container items-center justify-center active:bg-surface-container-high">
-              <Phone color="#001caa" size={18} fill="#001caa" />
+            <Pressable className="bg-white w-11 h-11 rounded-2xl items-center justify-center border border-outline-variant/15 shadow-sm active:bg-surface-container">
+              <Phone color="#0B1C30" size={18} />
             </Pressable>
           </View>
         </View>
 
-        {/* Trip Details (Waypoints) */}
-        <View className="bg-surface-container-lowest rounded-xl border border-outline-variant p-4 relative">
-          <View className="absolute left-[23px] top-[24px] bottom-[24px] w-0.5 bg-outline-variant" />
+        {/* Route Details Connector Timeline */}
+        <View className="bg-surface rounded-3xl p-4 border border-outline-variant/10 shadow-sm relative">
+          <View className="absolute left-[25px] top-[26px] bottom-[26px] w-[1px] border-l border-dashed border-outline-variant/30" />
 
           {/* Pickup */}
-          <View className="flex-row items-start gap-4 mb-4 relative z-10">
-            <View className="mt-1 bg-surface-container-lowest rounded-full p-0.5">
-              <MapPin color="#001caa" size={16} />
+          <View className="flex-row items-center gap-3.5 mb-3.5">
+            <View className="w-5 h-5 rounded-full bg-primary/15 items-center justify-center">
+              <View className="w-2 h-2 rounded-full bg-primary" />
             </View>
             <View>
-              <Text className="text-label-sm text-secondary uppercase tracking-wider mb-0.5 font-jakarta">
-                Pickup
-              </Text>
-              <Text className="text-body-md font-medium text-on-surface font-jakarta">
+              <Text className="text-[10px] uppercase font-bold text-secondary font-jakarta">Pickup Location</Text>
+              <Text className="text-body-sm font-bold text-on-surface font-jakarta mt-0.5">
                 {activeTrip.pickup || "SOES Building"}
               </Text>
             </View>
           </View>
 
           {/* Dropoff */}
-          <View className="flex-row items-start relative gap-4 z-10">
-            <View className="mt-1 bg-surface-container-lowest rounded-full p-0.5">
-              <MapPin color="#ba1a1a" size={16} />
+          <View className="flex-row items-center gap-3.5">
+            <View className="w-5 h-5 rounded-full bg-primary/15 items-center justify-center">
+              <View className="w-2 h-2 rounded-full bg-primary border-2 border-white" />
             </View>
             <View>
-              <Text className="text-label-sm text-secondary uppercase tracking-wider mb-0.5 font-jakarta">
-                Dropoff
-              </Text>
-              <Text className="text-body-md font-medium text-on-surface font-jakarta">
+              <Text className="text-[10px] uppercase font-bold text-secondary font-jakarta">Destination</Text>
+              <Text className="text-body-sm font-bold text-on-surface font-jakarta mt-0.5">
                 {activeTrip.destination || "Senate Building"}
               </Text>
             </View>
           </View>
         </View>
 
+        {/* Boarding instruction detail for state start */}
+        {tripState === "start" && (
+          <View className="bg-primary/5 border border-primary/10 rounded-2xl p-4">
+            <Text className="text-body-sm text-secondary font-jakarta text-center">
+              Verify boarding by checking payment option or scanning QR code.
+            </Text>
+          </View>
+        )}
+
         {/* Action Button */}
         <Pressable
           onPress={handleTripAction}
-          className={`w-full h-14 rounded-xl items-center justify-center shadow-md active:scale-[0.98] transition-all ${getButtonClass()}`}
+          className="w-full h-14 bg-[#0b1c30] rounded-full flex items-center justify-center shadow-md active:scale-[0.98]"
         >
-          <Text className="text-on-primary text-headline-md font-bold font-jakarta">
+          <Text className="text-white text-action-lg font-bold font-jakarta">
             {getButtonText()}
           </Text>
         </Pressable>

@@ -1,9 +1,10 @@
 import { useRouter } from "expo-router";
-import { ArrowRight, Car, Compass, ShieldCheck } from "lucide-react-native";
+import { ArrowRight, Compass, ShieldCheck } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, Text, View, Image } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useApp } from "../context/AppContext";
+import KekeIcon from "../components/KekeIcon";
 import "../global.css";
 
 export default function Splash() {
@@ -20,39 +21,35 @@ export default function Splash() {
 
   const selectRole = (role: "rider" | "driver") => {
     setRole(role);
-    // router.push("/login");
-    router.push("/(driver)/home");
-    // /(driver)/home
+    router.push("/(rider)/home");
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-container-lowest justify-between px-margin-mobile py-xl relative">
-      {/* Decorative subtle background elements */}
-      <View
-        pointerEvents="none"
-        className="absolute top-0 right-0 w-96 h-96 bg-primary/5 rounded-full blur-[80px]"
-      />
-      <View
-        pointerEvents="none"
-        className="absolute bottom-0 left-0 w-96 h-96 bg-primary-container/5 rounded-full blur-[80px]"
+    <SafeAreaView className="flex-1 bg-surface-bright justify-between px-margin-mobile py-xl relative">
+      {/* Map outline background image */}
+      <Image
+        source={{
+          uri: "https://lh3.googleusercontent.com/aida-public/AB6AXuBhChECydpDyPgt27hlQrat9Rk2U89C00BRo9HxQfDmpSr4MRrxjAG1pGL6iwr1A__rTa5hkvxx5VNhyBHIwUrgEL1XAzRh3vdUsCbmpnjEWdd5tXIJyvuoNbsf17_pEryhtId0Y6snYs2mm-iQfYuoPK3Zrsg2EAG-XD5-Bq8QCQpcEyE5GcSDWhm7yhm20vy7oBcRqJFt0hbOoiU-LdxjqFg6qiW_P7A1aJmd6buI9IlGZRklUN8jk7Fl9tud8gafRai7G4XXH9hL",
+        }}
+        className="absolute inset-0 opacity-[0.07] object-cover"
+        resizeMode="cover"
       />
 
       <View className="flex-1 justify-center items-center">
         {/* App Logo & Branding */}
         <View className="flex flex-col items-center justify-center">
           {/* Logo Container */}
-          <View className="w-24 h-24 rounded-xl bg-primary shadow-lg flex items-center justify-center overflow-hidden mb-6 relative">
-            <View className="absolute inset-0 bg-gradient-to-tr from-primary to-primary-container opacity-90" />
-            <Car color="#ffffff" size={48} />
+          <View className="w-28 h-28 rounded-3xl bg-white shadow-xl shadow-black/5 flex items-center justify-center border border-outline-variant/20 mb-6">
+            <KekeIcon size={76} color="#001caa" />
           </View>
 
           {/* Typography */}
           <View className="flex flex-col items-center">
-            <Text className="text-headline-xl font-bold text-primary tracking-tight text-center font-jakarta">
-              Futo Ride
+            <Text className="text-headline-xl font-bold text-on-surface tracking-tight text-center font-jakarta">
+              Futo <Text className="text-primary">Ride</Text>
             </Text>
             <Text className="text-body-md text-secondary max-w-[280px] text-center mt-2 font-jakarta">
-              Fast, safe, and reliable rides across FUTO campus.
+              Move better. Live better.
             </Text>
           </View>
         </View>
@@ -61,7 +58,7 @@ export default function Splash() {
       {/* Action phase or Loading spinner */}
       {loading ? (
         <View className="w-full justify-center items-center py-8">
-          <ActivityIndicator size="large" color="#001caa" />
+          <ActivityIndicator size="large" color="#001caa" className="scale-110" />
         </View>
       ) : (
         <View className="w-full gap-4 pb-6 px-2">
