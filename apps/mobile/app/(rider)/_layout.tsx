@@ -15,7 +15,7 @@ export default function RiderLayout() {
         tabBarActiveTintColor: "#001caa",
         tabBarInactiveTintColor: "#5b5e66",
         tabBarStyle: {
-          backgroundColor: "#f8f9ff",
+          backgroundColor: "#ffffff",
           // borderTopWidth: 1,
           // borderTopColor: "#c5c5d8",
           height: 75,

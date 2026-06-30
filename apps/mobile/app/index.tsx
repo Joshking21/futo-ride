@@ -21,7 +21,7 @@ export default function Splash() {
 
   const selectRole = (role: "rider" | "driver") => {
     setRole(role);
-    router.push("/(driver)/home");
+    router.push("/login");
   };
 
   return (

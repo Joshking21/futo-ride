@@ -8,14 +8,14 @@ export default function DriverLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarShowLabel: false,
+        // tabBarShowLabel: false,
         tabBarActiveTintColor: "#001caa",
         tabBarInactiveTintColor: "#5b5e66",
         tabBarStyle: {
           backgroundColor: "#f8f9ff",
          
           
-          height: 64,
+          height: 70,
           paddingBottom: 8,
           paddingTop: 8,
           ...Platform.select({

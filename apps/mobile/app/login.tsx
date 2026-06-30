@@ -21,6 +21,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useApp } from "../context/AppContext";
 import KekeIcon from "../components/KekeIcon";
+import { handleUserSignIn } from "@/config/userSignIn";
 
 export default function Login() {
   const router = useRouter();
@@ -33,7 +34,7 @@ export default function Login() {
   const [isEmailFocused, setIsEmailFocused] = useState(false);
   const [isPasswordFocused, setIsPasswordFocused] = useState(false);
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!email || !password) {
       setError("Please fill in all fields");
       return;
@@ -42,14 +43,32 @@ export default function Login() {
     setIsSubmitting(true);
 
     // Simulate network authentication
-    setTimeout(() => {
-      setIsSubmitting(false);
-      if (userRole === "driver") {
-        router.replace("/(driver)/home");
-      } else {
-        router.replace("/(rider)/home");
-      }
-    }, 1200);
+     try {
+          const result = await handleUserSignIn(
+            email,
+            password
+          );
+          if (result.success) {
+            setIsSubmitting(false);
+            if (userRole === "driver") {
+              router.replace("/(driver)/home");
+            } else {
+              router.replace("/(rider)/home");
+            }
+          }
+          setIsSubmitting(false);
+        } catch (error: any) {
+          setError(error.message);
+          setIsSubmitting(false);
+        }
+    // setTimeout(() => {
+    //   setIsSubmitting(false);
+    //   if (userRole === "driver") {
+    //     router.replace("/(driver)/home");
+    //   } else {
+    //     router.replace("/(rider)/home");
+    //   }
+    // }, 1200);
   };
 
   const createAccount = () => {
@@ -184,8 +203,19 @@ export default function Login() {
               </Pressable>
             </View>
 
+ {/* Primary Login Button */}
+            <Pressable
+              onPress={handleLogin}
+              disabled={isSubmitting}
+              className={`w-full h-14 bg-primary rounded-full items-center justify-center ${isSubmitting? "bg-primary/30":""} shadow-md active:opacity-95 active:scale-[0.99] flex-row `}
+            >
+              <Text className="font-jakarta text-action-lg text-on-primary font-bold text-center mr-2">
+                Log In
+              </Text>
+              {isSubmitting && <ActivityIndicator color="#ffffff" size="small" />}
+            </Pressable>
             {/* Divider */}
-            <View className="flex-row items-center my-4">
+            <View className="flex-row items-center ">
               <View className="flex-1 h-[0.5px] bg-outline-variant/20" />
               <Text className="px-3 text-body-sm text-secondary font-medium">
                 or
@@ -204,20 +234,10 @@ export default function Login() {
               </Text>
             </Pressable>
 
-            {/* Primary Login Button */}
-            <Pressable
-              onPress={handleLogin}
-              disabled={isSubmitting}
-              className="w-full h-14 bg-primary rounded-full items-center justify-center shadow-md active:opacity-95 active:scale-[0.99] flex-row mt-4"
-            >
-              <Text className="font-jakarta text-action-lg text-on-primary font-bold text-center mr-2">
-                Log In
-              </Text>
-              {isSubmitting && <ActivityIndicator color="#ffffff" size="small" />}
-            </Pressable>
+           
 
             {/* Redirect to Sign Up */}
-            <View className="mt-6 flex-row justify-center items-center">
+            <View className=" flex-row justify-center items-center">
               <Text className="font-jakarta text-body-sm text-secondary">
                 Don't have an account?{" "}
               </Text>
@@ -231,7 +251,7 @@ export default function Login() {
             {/* Switch Role Trigger */}
             <Pressable
               onPress={() => setRole(userRole === "rider" ? "driver" : "rider")}
-              className="mt-6 py-2.5 px-4 bg-surface-container rounded-full self-center flex-row items-center gap-2 active:opacity-75"
+              className="mt-2 py-2.5 px-4 bg-surface-container rounded-full self-center flex-row items-center gap-2 active:opacity-75"
             >
               {userRole === "rider" ? (
                 <>

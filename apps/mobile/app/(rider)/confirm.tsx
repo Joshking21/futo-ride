@@ -1,10 +1,16 @@
-import React, { useState } from "react";
-import { View, Text, Image, Pressable, ScrollView, Switch } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { useApp } from "../../context/AppContext";
-import { ArrowLeft, Zap, ChevronRight, ShieldAlert, Info } from "lucide-react-native";
+import {
+  ArrowLeft,
+  ChevronRight,
+  Info,
+  User,
+  Zap,
+} from "lucide-react-native";
+import React, { useState } from "react";
+import { Image, Pressable, ScrollView, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import KekeIcon from "../../components/KekeIcon";
+import { useApp } from "../../context/AppContext";
 
 export default function ConfirmRide() {
   const router = useRouter();
@@ -22,170 +28,753 @@ export default function ConfirmRide() {
     router.replace("/(rider)/tracking");
   };
 
+  // Custom Toggle Switch
+  const CustomSwitch = ({
+    value,
+    onValueChange,
+  }: {
+    value: boolean;
+    onValueChange: (v: boolean) => void;
+  }) => {
+    return (
+      <Pressable
+        onPress={() => onValueChange(!value)}
+        style={{
+          width: 48,
+          height: 28,
+          borderRadius: 14,
+          padding: 2,
+          justifyContent: "center",
+          alignItems: value ? "flex-end" : "flex-start",
+          backgroundColor: value ? "#001caa" : "#cbd5e1",
+        }}
+      >
+        <View
+          style={{
+            width: 22,
+            height: 22,
+            borderRadius: 11,
+            backgroundColor: "#ffffff",
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 1 },
+            shadowOpacity: 0.1,
+            shadowRadius: 1,
+            elevation: 1,
+          }}
+        />
+      </Pressable>
+    );
+  };
+
   return (
-    <SafeAreaView className="flex-1 bg-surface-bright" edges={["top", "bottom"]}>
-      {/* Top Header with Back Button */}
-      <View className="flex-row items-center justify-between px-margin-mobile h-[64px] bg-white border-b border-outline-variant/10 z-20">
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#f8f9ff" }} edges={["top", "bottom"]}>
+      {/* Top Header */}
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+          paddingHorizontal: 20,
+          height: 72,
+          backgroundColor: "transparent",
+        }}
+      >
         <Pressable
           onPress={() => router.back()}
-          className="w-12 h-12 rounded-2xl bg-white items-center justify-center border border-outline-variant/10 active:bg-surface-container"
+          style={({ pressed }) => ({
+            width: 48,
+            height: 48,
+            borderRadius: 16,
+            backgroundColor: "#ffffff",
+            alignItems: "center",
+            justifyContent: "center",
+            borderWidth: 1,
+            borderColor: "rgba(197, 197, 216, 0.15)",
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 1 },
+            shadowOpacity: 0.05,
+            shadowRadius: 2,
+            elevation: 1,
+            opacity: pressed ? 0.9 : 1,
+          })}
         >
-          <ArrowLeft color="#0B1C30" size={24} />
+          <ArrowLeft color="#0B1C30" size={20} />
         </Pressable>
-        <Text className="text-headline-md font-bold text-on-surface font-jakarta">Confirm Ride</Text>
-        <View className="w-12" />
+
+        <Text
+          style={{
+            fontSize: 18,
+            fontWeight: "700",
+            color: "#0b1c30",
+            fontFamily: "Plus Jakarta Sans",
+          }}
+        >
+          Confirm Ride
+        </Text>
+
+        <View style={{ width: 48 }} />
       </View>
 
-      <ScrollView className="flex-1" contentContainerStyle={{ padding: 20, gap: 16, paddingBottom: 120 }}>
-        {/* Map Preview Card */}
-        <View className="w-full h-48 bg-surface-container rounded-3xl overflow-hidden shadow-sm border border-outline-variant/10 relative">
+      <ScrollView
+        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 110 }}
+        style={{ flex: 1 }}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Map Preview */}
+        <View
+          style={{
+            width: "100%",
+            height: 192,
+            backgroundColor: "#ffffff",
+            borderRadius: 28,
+            overflow: "hidden",
+            borderWidth: 1,
+            borderColor: "rgba(197, 197, 216, 0.15)",
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 1 },
+            shadowOpacity: 0.05,
+            shadowRadius: 2,
+            elevation: 1,
+            position: "relative",
+          }}
+        >
           <Image
             source={{
               uri: "https://lh3.googleusercontent.com/aida-public/AB6AXuBhChECydpDyPgt27hlQrat9Rk2U89C00BRo9HxQfDmpSr4MRrxjAG1pGL6iwr1A__rTa5hkvxx5VNhyBHIwUrgEL1XAzRh3vdUsCbmpnjEWdd5tXIJyvuoNbsf17_pEryhtId0Y6snYs2mm-iQfYuoPK3Zrsg2EAG-XD5-Bq8QCQpcEyE5GcSDWhm7yhm20vy7oBcRqJFt0hbOoiU-LdxjqFg6qiW_P7A1aJmd6buI9IlGZRklUN8jk7Fl9tud8gafRai7G4XXH9hL",
             }}
-            className="w-full h-full object-cover"
+            style={{ width: "100%", height: "100%" }}
+            resizeMode="cover"
           />
-          {/* Simulated route icons overlay */}
-          <View className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <View className="absolute top-[40%] left-[30%] w-3 h-3 rounded-full bg-primary border-2 border-white" />
-            <View className="absolute top-[50%] left-[60%] w-3.5 h-3.5 rounded-full bg-primary border-2 border-white" />
-            <View className="absolute top-[45%] left-[35%] w-[45%] h-1 bg-primary/80 rotate-[18deg]" />
-            <View className="absolute top-[38%] left-[48%] bg-white p-1 rounded-lg border border-outline-variant/10 shadow-sm">
+          {/* Simulated route overlay icons */}
+          <View
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+            pointerEvents="none"
+          >
+            <View
+              style={{
+                position: "absolute",
+                top: "40%",
+                left: "30%",
+                width: 12,
+                height: 12,
+                borderRadius: 6,
+                backgroundColor: "#001caa",
+                borderWidth: 2,
+                borderColor: "#ffffff",
+              }}
+            />
+            <View
+              style={{
+                position: "absolute",
+                top: "50%",
+                left: "60%",
+                width: 14,
+                height: 14,
+                borderRadius: 7,
+                backgroundColor: "#001caa",
+                borderWidth: 2,
+                borderColor: "#ffffff",
+              }}
+            />
+            <View
+              style={{
+                position: "absolute",
+                top: "45%",
+                left: "35%",
+                width: "45%",
+                height: 4,
+                backgroundColor: "rgba(0, 28, 170, 0.8)",
+                transform: [{ rotate: "18deg" }],
+              }}
+            />
+            <View
+              style={{
+                position: "absolute",
+                top: "38%",
+                left: "48%",
+                backgroundColor: "#ffffff",
+                padding: 4,
+                borderRadius: 8,
+                borderWidth: 1,
+                borderColor: "rgba(197, 197, 216, 0.15)",
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 1 },
+                shadowOpacity: 0.05,
+                shadowRadius: 2,
+                elevation: 1,
+              }}
+            >
               <KekeIcon size={20} color="#001caa" />
             </View>
           </View>
         </View>
 
-        {/* Ride Option Details Card */}
-        <View className="bg-white border border-outline-variant/10 rounded-3xl p-5 shadow-sm flex-row items-center justify-between">
-          <View className="flex-row items-center gap-4 flex-1">
-            <View className="w-14 h-14 bg-surface rounded-2xl items-center justify-center border border-outline-variant/5">
+        {/* Ride Option details Card */}
+        <View
+          style={{
+            backgroundColor: "#ffffff",
+            borderWidth: 1,
+            borderColor: "#e5eeff",
+            borderRadius: 24,
+            padding: 20,
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 1 },
+            shadowOpacity: 0.05,
+            shadowRadius: 2,
+            elevation: 1,
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginTop: 16,
+          }}
+        >
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 16, flex: 1 }}>
+            <View
+              style={{
+                width: 56,
+                height: 56,
+                backgroundColor: "#eff3ff",
+                borderRadius: 16,
+                alignItems: "center",
+                justifyContent: "center",
+                borderWidth: 1,
+                borderColor: "#e5eeff",
+              }}
+            >
               <KekeIcon size={38} color="#001caa" />
             </View>
-            <View className="flex-1">
-              <Text className="text-headline-sm font-bold text-on-surface font-jakarta">
+            <View style={{ flex: 1 }}>
+              <Text
+                style={{
+                  fontSize: 15,
+                  fontWeight: "700",
+                  color: "#0b1c30",
+                  fontFamily: "Plus Jakarta Sans",
+                }}
+              >
                 {activeTrip.rideType === "keke" ? "Keke" : "Bus"}
               </Text>
-              <Text className="text-body-sm text-secondary font-jakarta mt-0.5">5 min away • 1.6 km</Text>
-              <Text className="text-body-sm text-secondary font-jakarta font-semibold mt-1">👤 4 seats available</Text>
+              <Text
+                style={{
+                  color: "#5b5e66",
+                  fontSize: 12,
+                  fontFamily: "Plus Jakarta Sans",
+                  marginTop: 4,
+                }}
+              >
+                5 min away • 1.6 km
+              </Text>
+              {/* Seats badge */}
+              <View
+                style={{
+                  backgroundColor: "#eff3ff",
+                  paddingHorizontal: 10,
+                  paddingVertical: 4,
+                  borderRadius: 12,
+                  marginTop: 8,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 6,
+                  alignSelf: "flex-start",
+                }}
+              >
+                <User color="#001caa" size={11} />
+                <Text
+                  style={{
+                    color: "#001caa",
+                    fontSize: 10,
+                    fontWeight: "700",
+                    fontFamily: "Plus Jakarta Sans",
+                    lineHeight: 12,
+                  }}
+                >
+                  4 seats available
+                </Text>
+              </View>
             </View>
           </View>
-          <View className="items-end">
-            <Text className="text-headline-md font-bold text-on-surface font-jakarta">₦{basePrice}</Text>
-            <View className="flex-row items-center gap-1 mt-0.5">
-              <Text className="text-label-sm text-secondary font-jakarta">Estimated fare</Text>
-              <Info color="#757687" size={12} />
+
+          <View style={{ alignItems: "flex-end" }}>
+            <Text
+              style={{
+                fontSize: 24,
+                fontWeight: "800",
+                color: "#0b1c30",
+                fontFamily: "Plus Jakarta Sans",
+              }}
+            >
+              ₦{basePrice}
+            </Text>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 4 }}>
+              <Text
+                style={{
+                  color: "#5b5e66",
+                  fontSize: 10,
+                  fontWeight: "500",
+                  fontFamily: "Plus Jakarta Sans",
+                }}
+              >
+                Estimated fare
+              </Text>
+              <Info color="#5b5e66" size={11} />
             </View>
           </View>
         </View>
 
-        {/* Priority Toggle Card */}
-        <View className="bg-surface rounded-3xl p-4 flex-row items-center justify-between border border-outline-variant/10 shadow-sm">
-          <View className="flex-row items-center gap-3.5 flex-1 pr-4">
-            <View className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
-              <Zap color="#001caa" size={20} fill="#001caa" />
+        {/* Priority Banner Card */}
+        <View
+          style={{
+            backgroundColor: "#eff3ff",
+            padding: 18,
+            borderRadius: 24,
+            borderWidth: 1,
+            borderColor: "#dce9ff",
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 1 },
+            shadowOpacity: 0.05,
+            shadowRadius: 2,
+            elevation: 1,
+            marginTop: 16,
+          }}
+        >
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 14, flex: 1, paddingRight: 16 }}>
+            <View
+              style={{
+                width: 44,
+                height: 44,
+                backgroundColor: "#ffffff",
+                borderRadius: 16,
+                alignItems: "center",
+                justifyContent: "center",
+                borderWidth: 1,
+                borderColor: "#e5eeff",
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 1 },
+                shadowOpacity: 0.05,
+                shadowRadius: 1,
+                elevation: 1,
+              }}
+            >
+              <Zap color="#001caa" size={18} fill="#001caa" />
             </View>
-            <View className="flex-1">
-              <Text className="text-body-md font-bold text-on-surface font-jakarta">Priority — skip the queue</Text>
-              <Text className="text-body-sm text-secondary font-jakarta mt-0.5">Get matched faster</Text>
+            <View style={{ flex: 1 }}>
+              <Text
+                style={{
+                  color: "#0b1c30",
+                  fontSize: 14,
+                  fontWeight: "700",
+                  fontFamily: "Plus Jakarta Sans",
+                }}
+              >
+                Priority — skip the queue
+              </Text>
+              <Text
+                style={{
+                  color: "#5b5e66",
+                  fontSize: 12,
+                  fontFamily: "Plus Jakarta Sans",
+                  marginTop: 2,
+                }}
+              >
+                Get matched faster
+              </Text>
             </View>
           </View>
-          <Switch
-            value={isPriority}
-            onValueChange={setIsPriority}
-            trackColor={{ false: "#c5c5d8", true: "#001caa" }}
-            thumbColor="#ffffff"
-          />
+          <CustomSwitch value={isPriority} onValueChange={setIsPriority} />
         </View>
 
-        {/* Payment Method Selector Card */}
-        <View className="bg-white rounded-3xl p-5 border border-outline-variant/10 shadow-sm gap-4">
-          <Text className="text-label-sm font-bold text-secondary uppercase tracking-wider font-jakarta">Payment method</Text>
-          
+        {/* Payment selector label */}
+        <Text
+          style={{
+            fontSize: 13,
+            fontWeight: "700",
+            color: "#5b5e66",
+            fontFamily: "Plus Jakarta Sans",
+            marginTop: 24,
+            marginBottom: 12,
+          }}
+        >
+          Payment method
+        </Text>
+
+        {/* Payment Selector Cards */}
+        <View style={{ gap: 14 }}>
           {/* Option 1: Naira */}
           <Pressable
             onPress={() => setPaymentMethod("naira")}
-            className={`flex-row items-center justify-between p-3.5 border rounded-2xl ${
-              paymentMethod === "naira" ? "border-primary bg-primary/5" : "border-outline-variant/15"
-            }`}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: 16,
+              borderWidth: 1,
+              borderRadius: 16,
+              backgroundColor: "#ffffff",
+              borderColor: paymentMethod === "naira" ? "#001caa" : "#e5eeff",
+            }}
           >
-            <View className="flex-row items-center gap-3">
-              <View className={`w-5 h-5 rounded-full border flex items-center justify-center ${
-                paymentMethod === "naira" ? "border-primary" : "border-outline-variant"
-              }`}>
-                {paymentMethod === "naira" && <View className="w-2.5 h-2.5 bg-primary rounded-full" />}
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
+              {/* Radio Indicator */}
+              <View
+                style={{
+                  width: 22,
+                  height: 22,
+                  borderRadius: 11,
+                  borderWidth: 2,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  backgroundColor: "#ffffff",
+                  borderColor: paymentMethod === "naira" ? "#001caa" : "#cbd5e1",
+                }}
+              >
+                {paymentMethod === "naira" && (
+                  <View
+                    style={{
+                      width: 12,
+                      height: 12,
+                      backgroundColor: "#001caa",
+                      borderRadius: 6,
+                    }}
+                  />
+                )}
               </View>
-              <View className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                <Text className="text-white font-bold text-lg font-jakarta">₦</Text>
+
+              {/* Currency Logo */}
+              <View
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 16,
+                  backgroundColor: "#001caa",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Text
+                  style={{
+                    color: "#ffffff",
+                    fontWeight: "800",
+                    fontSize: 14,
+                    fontFamily: "Plus Jakarta Sans",
+                    marginTop: -1,
+                  }}
+                >
+                  ₦
+                </Text>
               </View>
-              <Text className="text-body-md text-on-surface font-bold font-jakarta">Naira</Text>
+              <Text
+                style={{
+                  fontSize: 14,
+                  fontWeight: "700",
+                  color: "#0b1c30",
+                  fontFamily: "Plus Jakarta Sans",
+                }}
+              >
+                Naira
+              </Text>
             </View>
-            <View className="flex-row items-center gap-1">
-              <Text className="text-body-sm text-secondary font-jakarta">Balance: ₦5,200</Text>
-              <ChevronRight color="#757687" size={16} />
+
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+              <View
+                style={{
+                  backgroundColor: "#f8fafc",
+                  paddingHorizontal: 12,
+                  paddingVertical: 4,
+                  borderRadius: 9999,
+                  borderWidth: 1,
+                  borderColor: "#f1f5f9",
+                }}
+              >
+                <Text
+                  style={{
+                    color: "#5b5e66",
+                    fontSize: 11,
+                    fontWeight: "700",
+                    fontFamily: "Plus Jakarta Sans",
+                  }}
+                >
+                  Balance: ₦5,200
+                </Text>
+              </View>
+              <ChevronRight color="#c5c5d8" size={16} />
             </View>
           </Pressable>
 
           {/* Option 2: cNGN */}
           <Pressable
             onPress={() => setPaymentMethod("cngn")}
-            className={`flex-row items-center justify-between p-3.5 border rounded-2xl ${
-              paymentMethod === "cngn" ? "border-primary bg-primary/5" : "border-outline-variant/15"
-            }`}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: 16,
+              borderWidth: 1,
+              borderRadius: 16,
+              backgroundColor: "#ffffff",
+              borderColor: paymentMethod === "cngn" ? "#001caa" : "#e5eeff",
+            }}
           >
-            <View className="flex-row items-center gap-3">
-              <View className={`w-5 h-5 rounded-full border flex items-center justify-center ${
-                paymentMethod === "cngn" ? "border-primary" : "border-outline-variant"
-              }`}>
-                {paymentMethod === "cngn" && <View className="w-2.5 h-2.5 bg-primary rounded-full" />}
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
+              {/* Radio Indicator */}
+              <View
+                style={{
+                  width: 22,
+                  height: 22,
+                  borderRadius: 11,
+                  borderWidth: 2,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  backgroundColor: "#ffffff",
+                  borderColor: paymentMethod === "cngn" ? "#001caa" : "#cbd5e1",
+                }}
+              >
+                {paymentMethod === "cngn" && (
+                  <View
+                    style={{
+                      width: 12,
+                      height: 12,
+                      backgroundColor: "#001caa",
+                      borderRadius: 6,
+                    }}
+                  />
+                )}
               </View>
-              <View className="w-8 h-8 bg-on-surface rounded-full flex items-center justify-center">
-                <Text className="text-white text-[10px] font-bold font-jakarta">cNGN</Text>
+
+              {/* Currency Logo */}
+              <View
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 16,
+                  backgroundColor: "#000000",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Text
+                  style={{
+                    color: "#ffffff",
+                    fontWeight: "800",
+                    fontSize: 9,
+                    fontFamily: "Plus Jakarta Sans",
+                  }}
+                >
+                  cNGN
+                </Text>
               </View>
-              <Text className="text-body-md text-on-surface font-bold font-jakarta">cNGN</Text>
+              <Text
+                style={{
+                  fontSize: 14,
+                  fontWeight: "700",
+                  color: "#0b1c30",
+                  fontFamily: "Plus Jakarta Sans",
+                }}
+              >
+                cNGN
+              </Text>
             </View>
-            <View className="flex-row items-center gap-1">
-              <Text className="text-body-sm text-secondary font-jakarta">Balance: cNGN 12.50</Text>
-              <ChevronRight color="#757687" size={16} />
+
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+              <View
+                style={{
+                  backgroundColor: "#f8fafc",
+                  paddingHorizontal: 12,
+                  paddingVertical: 4,
+                  borderRadius: 9999,
+                  borderWidth: 1,
+                  borderColor: "#f1f5f9",
+                }}
+              >
+                <Text
+                  style={{
+                    color: "#5b5e66",
+                    fontSize: 11,
+                    fontWeight: "700",
+                    fontFamily: "Plus Jakarta Sans",
+                  }}
+                >
+                  Balance: cNGN 12.50
+                </Text>
+              </View>
+              <ChevronRight color="#c5c5d8" size={16} />
             </View>
           </Pressable>
         </View>
 
-        {/* Fare Breakdown */}
-        <View className="bg-white rounded-3xl p-5 border border-outline-variant/10 shadow-sm gap-2.5">
-          <View className="flex-row justify-between items-center">
-            <Text className="text-body-sm text-secondary font-jakarta">Fare</Text>
-            <Text className="text-body-sm text-on-surface font-medium font-jakarta">₦{basePrice}</Text>
+        {/* Fare Breakdown Details Card */}
+        <View
+          style={{
+            backgroundColor: "#ffffff",
+            borderRadius: 24,
+            padding: 20,
+            borderWidth: 1,
+            borderColor: "#e5eeff",
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 1 },
+            shadowOpacity: 0.05,
+            shadowRadius: 2,
+            elevation: 1,
+            gap: 14,
+            marginTop: 24,
+          }}
+        >
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+            <Text
+              style={{
+                color: "#5b5e66",
+                fontSize: 13,
+                fontWeight: "500",
+                fontFamily: "Plus Jakarta Sans",
+              }}
+            >
+              Fare
+            </Text>
+            <Text
+              style={{
+                color: "#0b1c30",
+                fontSize: 13,
+                fontWeight: "700",
+                fontFamily: "Plus Jakarta Sans",
+              }}
+            >
+              ₦{basePrice}
+            </Text>
           </View>
-          <View className="flex-row justify-between items-center">
-            <Text className="text-body-sm text-secondary font-jakarta">Service fee</Text>
-            <Text className="text-body-sm text-on-surface font-medium font-jakarta">₦{serviceFee}</Text>
+
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+              <Text
+                style={{
+                  color: "#5b5e66",
+                  fontSize: 13,
+                  fontWeight: "500",
+                  fontFamily: "Plus Jakarta Sans",
+                }}
+              >
+                Service fee
+              </Text>
+              <Info color="#5b5e66" size={11} />
+            </View>
+            <Text
+              style={{
+                color: "#0b1c30",
+                fontSize: 13,
+                fontWeight: "700",
+                fontFamily: "Plus Jakarta Sans",
+              }}
+            >
+              ₦{serviceFee}
+            </Text>
           </View>
+
           {isPriority && (
-            <View className="flex-row justify-between items-center">
-              <Text className="text-body-sm text-secondary font-jakarta">Priority (skip the queue)</Text>
-              <Text className="text-body-sm text-on-surface font-medium font-jakarta">₦{priorityFee}</Text>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+              <Text
+                style={{
+                  color: "#5b5e66",
+                  fontSize: 13,
+                  fontWeight: "500",
+                  fontFamily: "Plus Jakarta Sans",
+                }}
+              >
+                Priority (skip the queue)
+              </Text>
+              <Text
+                style={{
+                  color: "#0b1c30",
+                  fontSize: 13,
+                  fontWeight: "700",
+                  fontFamily: "Plus Jakarta Sans",
+                }}
+              >
+                ₦{priorityFee}
+            </Text>
             </View>
           )}
-          <View className="flex-row justify-between items-center border-t border-outline-variant/10 pt-3 mt-1">
-            <Text className="text-headline-sm font-bold text-on-surface font-jakarta">Total</Text>
-            <Text className="text-headline-sm font-bold text-on-surface font-jakarta">₦{totalPrice}</Text>
+
+          <View style={{ height: 1, backgroundColor: "#f1f5f9", marginVertical: 4 }} />
+
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+            <Text
+              style={{
+                color: "#0b1c30",
+                fontWeight: "800",
+                fontSize: 15,
+                fontFamily: "Plus Jakarta Sans",
+              }}
+            >
+              Total
+            </Text>
+            <Text
+              style={{
+                color: "#0b1c30",
+                fontWeight: "800",
+                fontSize: 15,
+                fontFamily: "Plus Jakarta Sans",
+              }}
+            >
+              ₦{totalPrice}
+            </Text>
           </View>
         </View>
       </ScrollView>
 
-      {/* Fixed Bottom Action Area */}
-      <View className="absolute bottom-0 left-0 right-0 bg-white border-t border-outline-variant/10 p-4 z-40">
-        <View className="max-w-[600px] mx-auto w-full">
+      {/* Fixed bottom action button */}
+      <View
+        style={{
+          position: "absolute",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          backgroundColor: "#ffffff",
+          borderTopWidth: 1,
+          borderTopColor: "rgba(197, 197, 216, 0.2)",
+          padding: 20,
+          zIndex: 40,
+        }}
+      >
+        <View style={{ maxWidth: 600, alignSelf: "center", width: "100%" }}>
           <Pressable
             onPress={handleConfirm}
-            className="w-full h-14 bg-[#0b1c30] rounded-full flex items-center justify-center shadow-md active:scale-[0.98]"
+            style={({ pressed }) => ({
+              width: "100%",
+              height: 56,
+              backgroundColor: "#000000",
+              borderRadius: 28,
+              alignItems: "center",
+              justifyContent: "center",
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.1,
+              shadowRadius: 3,
+              elevation: 2,
+              opacity: pressed ? 0.9 : 1,
+            })}
           >
-            <Text className="text-white text-action-lg font-bold font-jakarta">Confirm Ride</Text>
+            <Text
+              style={{
+                color: "#ffffff",
+                fontSize: 16,
+                fontWeight: "700",
+                fontFamily: "Plus Jakarta Sans",
+              }}
+            >
+              Confirm Ride
+            </Text>
           </Pressable>
         </View>
       </View>
     </SafeAreaView>
   );
 }
-

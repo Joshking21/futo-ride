@@ -1,21 +1,23 @@
 import { useRouter } from "expo-router";
 import {
   ArrowLeft,
-  CornerUpRight,
+  Check,
+  Compass,
+  GraduationCap,
+  Landmark,
   MessageSquare,
   Phone,
-  ShieldAlert,
-  Star,
+  Shield,
 } from "lucide-react-native";
 import React, { useState } from "react";
-import { Image, Pressable, Text, View } from "react-native";
+import { Alert, Image, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import KekeIcon from "../../components/KekeIcon";
 import { useApp } from "../../context/AppContext";
 
 export default function DriverActiveTrip() {
   const router = useRouter();
-  const { activeTrip, progressDriverTrip } = useApp();
+  const { activeTrip, progressDriverTrip, clearActiveTrip } = useApp();
   const [tripState, setTripState] = useState<
     "arrived" | "start" | "dropoff" | "complete"
   >("arrived");
@@ -33,614 +35,265 @@ export default function DriverActiveTrip() {
     }
   };
 
+  const handleCancelTrip = () => {
+    Alert.alert("Cancel Trip", "Are you sure you want to cancel this trip?", [
+      { text: "No", style: "cancel" },
+      {
+        text: "Yes, Cancel",
+        style: "destructive",
+        onPress: () => {
+          clearActiveTrip();
+          router.replace("/(driver)/home");
+        },
+      },
+    ]);
+  };
+
   const getButtonText = () => {
-    if (tripState === "arrived") return "Arrived at Pickup";
+    if (tripState === "arrived") return "I've Arrived at Pickup";
     if (tripState === "start") return "Start Trip";
     if (tripState === "dropoff") return "At Dropoff Location";
     return "Complete Trip (Show QR)";
   };
 
   const getStatusTitle = () => {
-    if (tripState === "arrived") return "Navigate to pickup";
+    if (tripState === "arrived") return "Arrived at Pickup";
     if (tripState === "start") return "Passenger Boarding";
-    if (tripState === "dropoff") return "Navigate to destination";
-    return "Arrived at destination";
+    if (tripState === "dropoff") return "Heading to Dropoff";
+    return "Arrived at Dropoff";
   };
 
-  const getStatusSubtitle = () => {
-    if (tripState === "arrived") return "Alex is waiting at SOES Building";
-    if (tripState === "start") return "Alex is boarding your Keke";
-    if (tripState === "dropoff") return "Drop off Alex at Senate Building";
-    return "Complete the trip and generate payment QR";
+  const getStatusBadge = () => {
+    return (
+      <View className="bg-[#e6f9ed] px-2.5 py-0.5 rounded-full flex-row items-center gap-1 mt-1 self-center">
+        <View className="w-1.5 h-1.5 bg-[#22c55e] rounded-full" />
+        <Text className="text-[#22c55e] text-[10px] font-bold font-jakarta">
+          Trip in progress
+        </Text>
+      </View>
+    );
+  };
+
+  // Helper to render Stepper Nodes
+  const renderStepNode = (step: number, label: string) => {
+    let state: "active" | "completed" | "inactive" = "inactive";
+
+    if (step === 1) {
+      state = tripState === "arrived" ? "active" : "completed";
+    } else if (step === 2) {
+      if (tripState === "arrived") state = "inactive";
+      else if (tripState === "start") state = "active";
+      else state = "completed";
+    } else if (step === 3) {
+      if (tripState === "arrived" || tripState === "start") state = "inactive";
+      else if (tripState === "dropoff") state = "active";
+      else state = "completed";
+    }
+
+    return (
+      <View className="items-center z-10">
+        {state === "active" ? (
+          <View className="w-6 h-6 rounded-full border-2 border-[#001caa] items-center justify-center bg-white">
+            <View className="w-2.5 h-2.5 rounded-full bg-[#001caa]" />
+          </View>
+        ) : state === "completed" ? (
+          <View className="w-6 h-6 rounded-full bg-[#001caa] items-center justify-center">
+            <Check color="#ffffff" size={12} strokeWidth={3} />
+          </View>
+        ) : (
+          <View className="w-6 h-6 rounded-full border-2 border-slate-300 bg-white" />
+        )}
+        <Text
+          className={`text-[10px] font-jakarta mt-1.5 font-bold ${
+            state === "active" ? "text-[#001caa]" : "text-[#5b5e66]"
+          }`}
+        >
+          {label}
+        </Text>
+      </View>
+    );
   };
 
   return (
-    <SafeAreaView
-      style={{ flex: 1, backgroundColor: "#f1f5f9" }}
-      edges={["top", "bottom"]}
-    >
-      {/* Top Navigation Row */}
-      <View
-        style={{
-          position: "absolute",
-          top: 16,
-          left: 20,
-          right: 20,
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "space-between",
-          zIndex: 30,
-        }}
-      >
+    <SafeAreaView className="flex-1 bg-surface" edges={["top", "bottom"]}>
+      {/* Top Header Row */}
+      <View className="flex-row items-center justify-between px-margin-mobile h-[72px] bg-transparent">
         <Pressable
           onPress={() => router.back()}
-          style={({ pressed }) => ({
-            width: 48,
-            height: 48,
-            borderRadius: 16,
-            backgroundColor: "#ffffff",
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.05,
-            shadowRadius: 3,
-            elevation: 2,
-            alignItems: "center",
-            justifyContent: "center",
-            borderWidth: 1,
-            borderColor: "rgba(197, 197, 216, 0.1)",
-            opacity: pressed ? 0.8 : 1,
-          })}
+          className="w-12 h-12 rounded-2xl bg-white items-center justify-center border border-outline-variant/10 shadow-xs active:bg-slate-100"
         >
-          <ArrowLeft color="#0B1C30" size={24} />
+          <ArrowLeft color="#0B1C30" size={20} />
         </Pressable>
-        <View
-          style={{
-            backgroundColor: "rgba(255, 255, 255, 0.95)",
-            borderRadius: 16,
-            borderWidth: 1,
-            borderColor: "rgba(197, 197, 216, 0.1)",
-            paddingHorizontal: 16,
-            paddingVertical: 10,
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 8,
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 1 },
-            shadowOpacity: 0.05,
-            shadowRadius: 2,
-            elevation: 1,
-          }}
-        >
-          <View
-            style={{
-              width: 8,
-              height: 8,
-              borderRadius: 4,
-              backgroundColor: "#22c55e",
-            }}
-          />
-          <Text
-            style={{
-              fontSize: 14,
-              fontWeight: "700",
-              color: "#0b1c30",
-              fontFamily: "Plus Jakarta Sans",
-            }}
-          >
-            Navigating
+
+        <View className="items-center">
+          <Text className="text-lg font-bold text-on-surface font-jakarta">
+            Active Trip
           </Text>
+          {getStatusBadge()}
         </View>
+
         <Pressable
-          onPress={() => router.push("/sos")}
-          style={({ pressed }) => ({
-            width: 48,
-            height: 48,
-            borderRadius: 16,
-            backgroundColor: "#ba1a1a",
-            alignItems: "center",
-            justifyContent: "center",
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.1,
-            shadowRadius: 3,
-            elevation: 2,
-            opacity: pressed ? 0.9 : 1,
-          })}
+          onPress={() => Alert.alert("Call Passenger", "Calling passenger...")}
+          className="w-12 h-12 rounded-2xl bg-white items-center justify-center border border-outline-variant/10 shadow-xs active:bg-slate-100"
         >
-          <ShieldAlert color="#ffffff" size={24} />
+          <Phone color="#001caa" size={18} />
         </Pressable>
       </View>
 
-      {/* Main Map Area */}
-      <View style={{ flex: 1, position: "relative", zIndex: 0 }}>
-        <Image
-          source={{
-            uri: "https://lh3.googleusercontent.com/aida-public/AB6AXuBhChECydpDyPgt27hlQrat9Rk2U89C00BRo9HxQfDmpSr4MRrxjAG1pGL6iwr1A__rTa5hkvxx5VNhyBHIwUrgEL1XAzRh3vdUsCbmpnjEWdd5tXIJyvuoNbsf17_pEryhtId0Y6snYs2mm-iQfYuoPK3Zrsg2EAG-XD5-Bq8QCQpcEyE5GcSDWhm7yhm20vy7oBcRqJFt0hbOoiU-LdxjqFg6qiW_P7A1aJmd6buI9IlGZRklUN8jk7Fl9tud8gafRai7G4XXH9hL",
-          }}
-          style={{ width: "100%", height: "100%" }}
-          resizeMode="cover"
-        />
-
-        {/* Turn-by-Turn Instruction Card Overlay */}
-        <View
-          style={{
-            position: "absolute",
-            top: 80,
-            left: 16,
-            right: 16,
-            zIndex: 40,
-          }}
-        >
-          <View
-            style={{
-              backgroundColor: "#001caa",
-              borderRadius: 24,
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.1,
-              shadowRadius: 3,
-              elevation: 2,
-              padding: 20,
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 16,
-              borderWidth: 1,
-              borderColor: "rgba(197, 197, 216, 0.1)",
+      <ScrollView
+        contentContainerStyle={{ flexGrow: 1 }}
+        className="flex-1"
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Map Container View */}
+        <View className="h-[250px] px-5 relative w-full overflow-hidden border-b border-outline-variant/10">
+          <Image
+            source={{
+              uri: "https://lh3.googleusercontent.com/aida-public/AB6AXuBhChECydpDyPgt27hlQrat9Rk2U89C00BRo9HxQfDmpSr4MRrxjAG1pGL6iwr1A__rTa5hkvxx5VNhyBHIwUrgEL1XAzRh3vdUsCbmpnjEWdd5tXIJyvuoNbsf17_pEryhtId0Y6snYs2mm-iQfYuoPK3Zrsg2EAG-XD5-Bq8QCQpcEyE5GcSDWhm7yhm20vy7oBcRqJFt0hbOoiU-LdxjqFg6qiW_P7A1aJmd6buI9IlGZRklUN8jk7Fl9tud8gafRai7G4XXH9hL",
             }}
-          >
-            <CornerUpRight color="#ffffff" size={28} />
-            <View style={{ flex: 1 }}>
-              <Text
-                style={{
-                  fontSize: 24,
-                  fontWeight: "700",
-                  color: "#ffffff",
-                  fontFamily: "Plus Jakarta Sans",
-                }}
-              >
-                200m
-              </Text>
-              <Text
-                style={{
-                  fontSize: 14,
-                  color: "rgba(255, 255, 255, 0.9)",
-                  fontFamily: "Plus Jakarta Sans",
-                  marginTop: 2,
-                }}
-              >
-                Turn right onto Senate Drive
-              </Text>
-            </View>
+            className="w-full h-full object-cover border-4 border-white rounded-2xl"
+          />
+
+          {/* Floating Actions on Map */}
+          <View className="absolute left-12 bottom-4 gap-2.5">
+            <Pressable
+              onPress={() =>
+                Alert.alert("Target", "Re-centering map on driver location.")
+              }
+              className="w-10 h-10 rounded-xl bg-white items-center justify-center border border-outline-variant/10 shadow-sm active:bg-slate-100"
+            >
+              <Compass color="#001caa" size={18} />
+            </Pressable>
+            <Pressable
+              onPress={() => router.push("/sos")}
+              className="w-10 h-10 rounded-xl bg-[#ba1a1a] items-center justify-center shadow-sm active:bg-red-800"
+            >
+              <Shield color="#ffffff" size={18} />
+            </Pressable>
           </View>
         </View>
 
-        {/* Map Location markers */}
-        <View
-          style={{
-            position: "absolute",
-            top: "52%",
-            left: "48%",
-            marginTop: -12,
-            marginLeft: -12,
-            width: 24,
-            height: 24,
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <View
-            style={{
-              position: "absolute",
-              width: 20,
-              height: 20,
-              borderRadius: 10,
-              backgroundColor: "rgba(0, 28, 170, 0.2)",
-              transform: [{ scale: 1.25 }],
-            }}
-          />
-          <View
-            style={{
-              width: 14,
-              height: 14,
-              backgroundColor: "#001caa",
-              borderRadius: 7,
-              borderWidth: 2,
-              borderColor: "#ffffff",
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 1 },
-              shadowOpacity: 0.1,
-              shadowRadius: 1,
-              elevation: 1,
-            }}
-          />
-        </View>
-        <View
-          style={{
-            position: "absolute",
-            top: "42%",
-            left: "32%",
-            marginTop: -24,
-            marginLeft: -24,
-            backgroundColor: "#ffffff",
-            borderWidth: 1,
-            borderColor: "rgba(197, 197, 216, 0.1)",
-            width: 48,
-            height: 48,
-            borderRadius: 16,
-            alignItems: "center",
-            justifyContent: "center",
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.1,
-            shadowRadius: 3,
-            elevation: 2,
-          }}
-        >
-          <KekeIcon size={28} color="#001caa" />
-        </View>
-      </View>
-
-      {/* Bottom Sheet Passenger Info & Controls */}
-      <View
-        style={{
-          backgroundColor: "#ffffff",
-          borderTopLeftRadius: 36,
-          borderTopRightRadius: 36,
-          shadowColor: "#000",
-          shadowOffset: { width: 0, height: -4 },
-          shadowOpacity: 0.15,
-          shadowRadius: 8,
-          elevation: 5,
-          borderTopWidth: 1,
-          borderTopColor: "rgba(197, 197, 216, 0.1)",
-          padding: 24,
-          gap: 20,
-          zIndex: 10,
-        }}
-      >
-        <View
-          style={{
-            width: 48,
-            height: 6,
-            backgroundColor: "rgba(197, 197, 216, 0.2)",
-            borderRadius: 3,
-            alignSelf: "center",
-          }}
-        />
-
-        {/* Trip State Info Header */}
-        <View style={{ gap: 4, paddingBottom: 4 }}>
-          <Text
-            style={{
-              fontSize: 28,
-              fontWeight: "700",
-              color: "#0b1c30",
-              fontFamily: "Plus Jakarta Sans",
-            }}
-          >
-            {getStatusTitle()}
-          </Text>
-          <Text
-            style={{
-              fontSize: 14,
-              color: "#5b5e66",
-              fontFamily: "Plus Jakarta Sans",
-            }}
-          >
-            {getStatusSubtitle()}
-          </Text>
-        </View>
-
-        {/* Passenger Profile Row */}
-        <View
-          style={{
-            backgroundColor: "#f8f9ff",
-            borderRadius: 24,
-            padding: 16,
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
-            borderWidth: 1,
-            borderColor: "rgba(197, 197, 216, 0.1)",
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 1 },
-            shadowOpacity: 0.05,
-            shadowRadius: 2,
-            elevation: 1,
-          }}
-        >
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 14,
-              flex: 1,
-              paddingRight: 16,
-            }}
-          >
-            <View
-              style={{
-                width: 48,
-                height: 48,
-                borderRadius: 24,
-                overflow: "hidden",
-                borderWidth: 1,
-                borderColor: "rgba(197, 197, 216, 0.1)",
-                backgroundColor: "#ffffff",
-              }}
-            >
-              <Image
-                source={{
-                  uri: "https://lh3.googleusercontent.com/aida-public/AB6AXuCKv18St18L7X2vZAAMPrAWpe_RTK8EptXVp0FFMqsUDuP_GgeffQiG2BXUbeBK5fAppU3V1r1xiIbGeVUoaoTLduIBmWdC2WEHiVaf2hilbRU54kKuZ7O6ukr9iC-soO0wPXucYYRHL1OQTZr0q7bDRr1TZqfKpkpL290p2tVDrufDqbY7kxXIdHRNxOex755J1_4AtLe8z7qbpg1umUVPxW4tt5r_i6df9PbNJdOf5PFxcsnG6bDlUgGoGZnLt0vZSzW4H3KHhOMD",
-                }}
-                style={{ width: "100%", height: "100%" }}
-                resizeMode="cover"
-              />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text
-                style={{
-                  fontSize: 16,
-                  fontWeight: "700",
-                  color: "#0b1c30",
-                  fontFamily: "Plus Jakarta Sans",
-                }}
-              >
-                Alex
-              </Text>
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 6,
-                  marginTop: 2,
-                }}
-              >
-                <Star color="#eab308" fill="#eab308" size={13} />
+        {/* Content Section below Map */}
+        <View className="px-5 py-6 gap-5">
+          {/* Passenger Info Card */}
+          <View className="bg-white p-4 rounded-lg  shadow-xs flex-row items-center justify-between">
+            <View className="flex-row items-center flex-1 mr-2">
+              <View className="w-12 h-12 rounded-2xl bg-[#eff3ff] items-center justify-center border border-[#e5eeff]">
+                <KekeIcon size={22} color="#001caa" />
+              </View>
+              <View className="ml-3.5 flex-1">
+                <Text className="text-[14px] font-bold text-on-surface font-jakarta">
+                  {activeTrip.driverName || "Chinedu"}
+                </Text>
                 <Text
-                  style={{
-                    fontSize: 14,
-                    color: "#5b5e66",
-                    fontFamily: "Plus Jakarta Sans",
-                    fontWeight: "600",
-                  }}
+                  className="text-secondary text-[11px] font-medium font-jakarta mt-0.5"
+                  numberOfLines={1}
                 >
-                  4.9 • Student
+                  KEK-1234 • Ride ID: 7G8H2J
                 </Text>
               </View>
             </View>
-          </View>
-          <View style={{ flexDirection: "row", gap: 8 }}>
+
             <Pressable
-              style={({ pressed }) => ({
-                backgroundColor: "#ffffff",
-                width: 44,
-                height: 44,
-                borderRadius: 16,
-                alignItems: "center",
-                justifyContent: "center",
-                borderWidth: 1,
-                borderColor: "rgba(197, 197, 216, 0.15)",
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 1 },
-                shadowOpacity: 0.05,
-                shadowRadius: 2,
-                elevation: 1,
-                opacity: pressed ? 0.75 : 1,
-              })}
+              onPress={() => Alert.alert("Chat", "Opening passenger chat...")}
+              className="w-11 h-11 rounded-2xl bg-white items-center justify-center border border-outline-variant/15 shadow-sm active:bg-slate-50"
             >
-              <MessageSquare color="#0B1C30" size={18} />
+              <MessageSquare color="#001caa" size={18} />
             </Pressable>
+          </View>
+
+          {/* Locations details Card */}
+          <View className="bg-white p-5 rounded-[28px] shadow-xs relative">
+            <View className="absolute left-[34px] top-[40px] bottom-[40px] w-[1px] border-l border-dashed border-slate-300" />
+
+            {/* Pick up Row */}
+            <View className="flex-row items-start justify-between mb-6">
+              <View className="flex-row items-start flex-1 mr-2">
+                <View className="w-[30px] h-[30px] rounded-full border-2 border-success items-center justify-center bg-white">
+                  <View className="w-2.5 h-2.5 rounded-full bg-success" />
+                </View>
+                <View className="ml-3 flex-1">
+                  <Text className="text-success text-[10px] font-extrabold font-jakarta">
+                    PICK UP
+                  </Text>
+                  <Text className="text-on-surface text-[14px] font-bold font-jakarta mt-0.5">
+                    {activeTrip.pickup || "New Hall"}
+                  </Text>
+                  <Text className="text-secondary text-xs font-medium font-jakarta mt-0.5">
+                    University Road, Km 22, Gwagwalada
+                  </Text>
+                </View>
+              </View>
+
+              <View className="w-10 h-10 rounded-2xl bg-[#f0fcf4] border border-[#dcfce7] items-center justify-center">
+                <GraduationCap color="#22c55e" size={18} />
+              </View>
+            </View>
+
+            {/* Drop off Row */}
+            <View className="flex-row items-start justify-between">
+              <View className="flex-row items-start flex-1 mr-2">
+                <View className="w-[30px] h-[30px] rounded-full border-2 border-primary items-center justify-center bg-white">
+                  <View className="w-2.5 h-2.5 rounded-full bg-primary" />
+                </View>
+                <View className="ml-3 flex-1">
+                  <Text className="text-primary text-[10px] font-extrabold font-jakarta">
+                    DROP OFF
+                  </Text>
+                  <Text className="text-on-surface text-[14px] font-bold font-jakarta mt-0.5">
+                    {activeTrip.destination || "Main Gate"}
+                  </Text>
+                  <Text className="text-secondary text-xs font-medium font-jakarta mt-0.5">
+                    Kubwa Expressway, Gwagwalada
+                  </Text>
+                </View>
+              </View>
+
+              <View className="w-10 h-10 rounded-2xl bg-[#f0f4ff] border border-[#dce9ff] items-center justify-center">
+                <Landmark color="#001caa" size={18} />
+              </View>
+            </View>
+          </View>
+
+          {/* Stepper Progress bar */}
+          <View className="flex-row items-center justify-between px-6 py-2 relative">
+            <View className="absolute left-[54px] right-[54px] top-[20px] h-[1.5px] border-t border-dashed border-slate-300" />
+            {/* Dynamic solid blue line overlays */}
+            {tripState !== "arrived" && (
+              <View
+                className="absolute left-[54px] top-[20px] h-[1.5px] bg-[#001caa]"
+                style={{ width: tripState === "start" ? "42%" : "84%" }}
+              />
+            )}
+
+            {renderStepNode(1, "Arrived")}
+            {renderStepNode(2, "Start Trip")}
+            {renderStepNode(3, "At Dropoff")}
+          </View>
+
+          {/* Buttons Area */}
+          <View className="gap-3.5 mt-2">
             <Pressable
-              style={({ pressed }) => ({
-                backgroundColor: "#ffffff",
-                width: 44,
-                height: 44,
-                borderRadius: 16,
-                alignItems: "center",
-                justifyContent: "center",
-                borderWidth: 1,
-                borderColor: "rgba(197, 197, 216, 0.15)",
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 1 },
-                shadowOpacity: 0.05,
-                shadowRadius: 2,
-                elevation: 1,
-                opacity: pressed ? 0.75 : 1,
-              })}
+              onPress={handleTripAction}
+              className="w-full h-14 bg-[#001caa] rounded-full flex-row items-center justify-center gap-2 shadow-md active:scale-[0.98]"
             >
-              <Phone color="#0B1C30" size={18} />
+              <Check color="#ffffff" size={18} strokeWidth={3} />
+              <Text className="text-white font-bold text-[16px] font-jakarta">
+                {getButtonText()}
+              </Text>
+            </Pressable>
+
+            <Pressable
+              onPress={handleCancelTrip}
+              className="w-full h-14 bg-[#f1f3f7] rounded-full items-center justify-center active:scale-[0.98]"
+            >
+              <Text className="text-[#001caa] font-bold text-[16px] font-jakarta">
+                Cancel Trip
+              </Text>
             </Pressable>
           </View>
         </View>
-
-        {/* Route Details Connector Timeline */}
-        <View
-          style={{
-            backgroundColor: "#f8f9ff",
-            borderRadius: 24,
-            padding: 16,
-            borderWidth: 1,
-            borderColor: "rgba(197, 197, 216, 0.1)",
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 1 },
-            shadowOpacity: 0.05,
-            shadowRadius: 2,
-            elevation: 1,
-            position: "relative",
-          }}
-        >
-          <View
-            style={{
-              position: "absolute",
-              left: 25,
-              top: 26,
-              bottom: 26,
-              width: 1,
-              borderLeftWidth: 1,
-              borderStyle: "dashed",
-              borderColor: "rgba(197, 197, 216, 0.3)",
-            }}
-          />
-
-          {/* Pickup */}
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 14,
-              marginBottom: 14,
-            }}
-          >
-            <View
-              style={{
-                width: 20,
-                height: 20,
-                borderRadius: 10,
-                backgroundColor: "rgba(0, 28, 170, 0.15)",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <View
-                style={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: 4,
-                  backgroundColor: "#001caa",
-                }}
-              />
-            </View>
-            <View>
-              <Text
-                style={{
-                  fontSize: 10,
-                  textTransform: "uppercase",
-                  fontWeight: "700",
-                  color: "#5b5e66",
-                  fontFamily: "Plus Jakarta Sans",
-                }}
-              >
-                Pickup Location
-              </Text>
-              <Text
-                style={{
-                  fontSize: 14,
-                  fontWeight: "700",
-                  color: "#0b1c30",
-                  fontFamily: "Plus Jakarta Sans",
-                  marginTop: 2,
-                }}
-              >
-                {activeTrip.pickup || "SOES Building"}
-              </Text>
-            </View>
-          </View>
-
-          {/* Dropoff */}
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
-            <View
-              style={{
-                width: 20,
-                height: 20,
-                borderRadius: 10,
-                backgroundColor: "rgba(0, 28, 170, 0.15)",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <View
-                style={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: 4,
-                  backgroundColor: "#001caa",
-                  borderWidth: 2,
-                  borderColor: "#ffffff",
-                }}
-              />
-            </View>
-            <View>
-              <Text
-                style={{
-                  fontSize: 10,
-                  textTransform: "uppercase",
-                  fontWeight: "700",
-                  color: "#5b5e66",
-                  fontFamily: "Plus Jakarta Sans",
-                }}
-              >
-                Destination
-              </Text>
-              <Text
-                style={{
-                  fontSize: 14,
-                  fontWeight: "700",
-                  color: "#0b1c30",
-                  fontFamily: "Plus Jakarta Sans",
-                  marginTop: 2,
-                }}
-              >
-                {activeTrip.destination || "Senate Building"}
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Boarding instruction detail for state start */}
-        {tripState === "start" && (
-          <View
-            style={{
-              backgroundColor: "rgba(0, 28, 170, 0.05)",
-              borderWidth: 1,
-              borderColor: "rgba(0, 28, 170, 0.1)",
-              borderRadius: 16,
-              padding: 16,
-            }}
-          >
-            <Text
-              style={{
-                fontSize: 14,
-                color: "#5b5e66",
-                fontFamily: "Plus Jakarta Sans",
-                textAlign: "center",
-              }}
-            >
-              Verify boarding by checking payment option or scanning QR code.
-            </Text>
-          </View>
-        )}
-
-        {/* Action Button */}
-        <Pressable
-          onPress={handleTripAction}
-          style={({ pressed }) => ({
-            width: "100%",
-            height: 56,
-            backgroundColor: "#0b1c30",
-            borderRadius: 28,
-            alignItems: "center",
-            justifyContent: "center",
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.1,
-            shadowRadius: 3,
-            elevation: 2,
-            transform: [{ scale: pressed ? 0.98 : 1 }],
-          })}
-        >
-          <Text
-            style={{
-              color: "#ffffff",
-              fontSize: 16,
-              fontWeight: "700",
-              fontFamily: "Plus Jakarta Sans",
-            }}
-          >
-            {getButtonText()}
-          </Text>
-        </Pressable>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }

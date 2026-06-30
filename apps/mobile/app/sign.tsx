@@ -1,12 +1,13 @@
+import { handleUserRegistration } from "@/config/userRegistration";
 import { useRouter } from "expo-router";
 import {
   ArrowLeft,
+  Eye,
+  EyeOff,
   Key,
   Lock,
   Mail,
   User,
-  Eye,
-  EyeOff,
 } from "lucide-react-native";
 import React, { useState } from "react";
 import {
@@ -19,8 +20,8 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useApp } from "../context/AppContext";
 import KekeIcon from "../components/KekeIcon";
+import { useApp } from "../context/AppContext";
 
 export default function Sign() {
   const router = useRouter();
@@ -39,7 +40,7 @@ export default function Sign() {
   const [isPasswordFocused, setIsPasswordFocused] = useState(false);
   const [isConfirmFocused, setIsConfirmFocused] = useState(false);
 
-  const handleSignup = () => {
+  const handleSignup = async () => {
     if (!fullName || !email || !password || !confirmPassword) {
       setError("All fields are required");
       return;
@@ -55,18 +56,42 @@ export default function Sign() {
     setError("");
     setIsSubmitting(true);
 
-    setTimeout(() => {
-      setIsSubmitting(false);
-      if (userRole === "driver") {
-        router.replace("/(driver)/home");
-      } else {
-        router.replace("/(rider)/home");
+    try {
+      const result = await handleUserRegistration({
+        email,
+        password,
+        fullName,
+        userRole,
+      });
+      if (result.success) {
+        setIsSubmitting(false);
+        if (userRole === "driver") {
+          router.replace("/(driver)/home");
+        } else {
+          router.replace("/(rider)/home");
+        }
       }
-    }, 1200);
+      setIsSubmitting(false);
+    } catch (error: any) {
+      setError(error.message);
+      setIsSubmitting(false);
+    }
+
+    // setTimeout(() => {
+    //   setIsSubmitting(false);
+    //   if (userRole === "driver") {
+    //     router.replace("/(driver)/home");
+    //   } else {
+    //     router.replace("/(rider)/home");
+    //   }
+    // }, 1200);
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-bright" edges={["top", "bottom"]}>
+    <SafeAreaView
+      className="flex-1 bg-surface-bright"
+      edges={["top", "bottom"]}
+    >
       {/* Top Header with Back Button */}
       <View className="px-margin-mobile pt-4 flex-row items-center justify-between z-20">
         <Pressable
@@ -137,10 +162,9 @@ export default function Sign() {
                 onFocus={() => setIsNameFocused(true)}
                 onBlur={() => setIsNameFocused(false)}
                 underlineColorAndroid="transparent"
-                className="flex-1 text-on-surface text-body-md py-0.5 font-jakarta"
+                className="flex-1 text-on-surface text-body-sm py-0.5 font-jakarta"
               />
             </View>
-
             {/* Email Field */}
             <View
               className={`flex-row items-center bg-white border rounded-2xl px-4 py-3.5 shadow-sm shadow-black/5 ${
@@ -165,14 +189,15 @@ export default function Sign() {
                 keyboardType="email-address"
                 autoCapitalize="none"
                 underlineColorAndroid="transparent"
-                className="flex-1 text-on-surface text-body-md py-0.5 font-jakarta"
+                className="flex-1 text-on-surface text-body-sm py-0.5 font-jakarta"
               />
             </View>
-
             {/* Password Field */}
             <View
               className={`flex-row items-center bg-white border rounded-2xl px-4 py-3.5 shadow-sm shadow-black/5 ${
-                isPasswordFocused ? "border-primary" : "border-outline-variant/10"
+                isPasswordFocused
+                  ? "border-primary"
+                  : "border-outline-variant/10"
               }`}
             >
               <Lock
@@ -193,7 +218,7 @@ export default function Sign() {
                 secureTextEntry={!showPassword}
                 autoCapitalize="none"
                 underlineColorAndroid="transparent"
-                className="flex-1 text-on-surface text-body-md py-0.5 font-jakarta"
+                className="flex-1 text-on-surface text-body-sm py-0.5 font-jakarta"
               />
               <Pressable
                 onPress={() => setShowPassword(!showPassword)}
@@ -212,11 +237,12 @@ export default function Sign() {
                 )}
               </Pressable>
             </View>
-
             {/* Confirm Password Field */}
             <View
               className={`flex-row items-center bg-white border rounded-2xl px-4 py-3.5 shadow-sm shadow-black/5 ${
-                isConfirmFocused ? "border-primary" : "border-outline-variant/10"
+                isConfirmFocused
+                  ? "border-primary"
+                  : "border-outline-variant/10"
               }`}
             >
               <Key
@@ -237,7 +263,7 @@ export default function Sign() {
                 secureTextEntry={!showConfirmPassword}
                 autoCapitalize="none"
                 underlineColorAndroid="transparent"
-                className="flex-1 text-on-surface text-body-md py-0.5 font-jakarta"
+                className="flex-1 text-on-surface text-body-sm py-0.5 font-jakarta"
               />
               <Pressable
                 onPress={() => setShowConfirmPassword(!showConfirmPassword)}
@@ -256,9 +282,29 @@ export default function Sign() {
                 )}
               </Pressable>
             </View>
-
+            {/* Primary Signup Button */}
+            <Pressable
+              onPress={handleSignup}
+              disabled={isSubmitting}
+              className={`w-full h-14 bg-primary rounded-full items-center justify-center shadow-md active:opacity-95 active:scale-[0.99] flex-row ${isSubmitting? "bg-primary/30":""}`}
+            >
+              <Text className="font-jakarta text-action-lg text-on-primary font-bold text-center mr-2">
+                Sign Up
+              </Text>
+              {isSubmitting && (
+                <ActivityIndicator color="#ffffff" size="small" />
+              )}
+            </Pressable>
+            {/* Divider */}
+            <View className="flex-row items-center ">
+              <View className="flex-1 h-[0.5px] bg-outline-variant/20" />
+              <Text className="px-3 text-body-sm text-secondary font-medium">
+                or
+              </Text>
+              <View className="flex-1 h-[0.5px] bg-outline-variant/20" />
+            </View>
             {/* Google Signup Button */}
-            <Pressable className="w-full h-14 bg-white border border-outline-variant/15 rounded-2xl flex-row items-center justify-center gap-3 shadow-sm shadow-black/5 active:bg-surface-container-low mt-4">
+            <Pressable className="w-full h-14 bg-white border border-outline-variant/15 rounded-2xl flex-row items-center justify-center gap-3 shadow-sm shadow-black/5 active:bg-surface-container-low ">
               {/* Google G icon simulation */}
               <View className="w-5 h-5 rounded-full bg-red-500 items-center justify-center">
                 <Text className="text-[10px] text-white font-bold">G</Text>
@@ -266,31 +312,9 @@ export default function Sign() {
               <Text className="font-jakarta text-body-md text-on-surface font-bold text-center">
                 Sign up with Google
               </Text>
-            </Pressable>
-
-            {/* Divider */}
-            <View className="flex-row items-center my-4">
-              <View className="flex-1 h-[0.5px] bg-outline-variant/20" />
-              <Text className="px-3 text-body-sm text-secondary font-medium">
-                or
-              </Text>
-              <View className="flex-1 h-[0.5px] bg-outline-variant/20" />
-            </View>
-
-            {/* Primary Signup Button */}
-            <Pressable
-              onPress={handleSignup}
-              disabled={isSubmitting}
-              className="w-full h-14 bg-primary rounded-full items-center justify-center shadow-md active:opacity-95 active:scale-[0.99] flex-row"
-            >
-              <Text className="font-jakarta text-action-lg text-on-primary font-bold text-center mr-2">
-                Sign Up
-              </Text>
-              {isSubmitting && <ActivityIndicator color="#ffffff" size="small" />}
-            </Pressable>
-
+            </Pressable>{" "}
             {/* Already have account */}
-            <View className="flex-row justify-center items-center mt-6 pb-8">
+            <View className="flex-row justify-center items-center pb-8">
               <Text className="font-jakarta text-body-sm text-secondary">
                 Already have an account?{" "}
               </Text>

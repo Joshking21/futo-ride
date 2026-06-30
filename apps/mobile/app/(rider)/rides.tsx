@@ -191,7 +191,7 @@ export default function RideHistory() {
               <View
                 key={ride.id}
                 className="bg-white rounded-3xl p-5 flex-row items-center justify-between"
-                style={{ elevation: 1 }}
+                // style={{ elevation: 1 }}
               >
                 {/* Left side: Timeline & Route Info */}
                 <View className="flex-row items-stretch gap-4 flex-1">
