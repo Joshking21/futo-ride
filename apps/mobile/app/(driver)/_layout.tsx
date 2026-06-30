@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import { Home, Landmark, User } from "lucide-react-native";
+import { Home, Landmark, User, Wallet } from "lucide-react-native";
 import React from "react";
 import { Platform, View } from "react-native";
 
@@ -66,7 +66,7 @@ export default function DriverLayout() {
                   : "px-3 py-1"
               }
             >
-              <Landmark color={color} size={focused ? 25 : 22} strokeWidth={2} />
+              <Wallet color={color} size={focused ? 25 : 22} strokeWidth={2} />
             </View>
           ),
         }}

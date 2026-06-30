@@ -1,6 +1,8 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import {
+  Bus,
+  Car,
   ChevronRight,
   Clock,
   Compass,
@@ -22,7 +24,7 @@ export default function RiderHome() {
   const [vehicleType, setVehicleType] = useState<"keke" | "bus">("keke");
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-bright relative" edges={["top"]}>
+    <SafeAreaView className="flex-1 bg-surface-bright relative" edges={[]}>
       {/* Top Overlay Menu */}
       <View className="absolute top-4 left-margin-mobile z-50">
         <Pressable className="bg-white p-3.5 rounded-full shadow-md border border-outline-variant/10 active:bg-surface-container flex items-center justify-center">
@@ -47,9 +49,9 @@ export default function RiderHome() {
           className="w-full h-full object-cover"
         />
         <LinearGradient
-          colors={["transparent", "rgba(255, 255, 255, 0.7)", "#ffffff"]}
-          locations={[0, 0.6, 1]}
-          className="absolute top-0 left-0 w-full h-[60%]"
+          colors={["transparent", "rgba(255, 255, 255, 0.6)", "#ffffff"]}
+          locations={[0, 0.7, 1]}
+          className="absolute top-0 left-0 w-full h-full"
         />
 
         {/* User Location pulsing dot */}
@@ -77,11 +79,73 @@ export default function RiderHome() {
         </View>
 
         {/* Floating Actions Panel (Right Side above panel) */}
-        <View className="absolute bottom-[260px] right-margin-mobile z-20 gap-3">
+       
+
+        {/* Bottom Search & Toggle Sheet */}
+        <View
+          style={{
+            position: "absolute",
+            bottom: 60,
+            left: 20,
+            right: 20,
+            borderRadius: 24,
+            // padding: 20,
+            // borderWidth: 1,
+            // borderColor: "rgba(197, 197, 216, 0.1)",
+            zIndex: 25,
+            // shadowColor: "#000000",
+            // shadowOffset: { width: 0, height: 10 },
+            // shadowOpacity: 0.1,
+            // shadowRadius: 20,
+            // elevation: 10,
+          }}
+          className="flex gap-4"
+        >
+          {/* Search bar input container */}
+          <View className="flex flex-row  gap-4 align-bottom items-end justify-end">
+          <Pressable
+            onPress={() => router.push("/(rider)/book")}
+            style={{
+              // width: "100%",
+              flexDirection: "row",
+              alignItems: "center",
+              // backgroundColor: "#f8f9ff",
+              // borderWidth: 1,
+              // borderColor: "rgba(197, 197, 216, 0.15)",
+              height: 50,
+              borderRadius: 16,
+              paddingHorizontal: 16,
+              borderWidth: 1,
+              borderColor: "rgba(197, 197, 216, 0.15)",
+              shadowColor: "#000000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.05,
+              shadowRadius: 4,
+              // elevation: 1,
+              // marginBottom: 16,
+            }}
+            className="flex flex-1 bg-white"
+          >
+            <Search color="#757687" size={20} style={{ marginRight: 12 }} />
+            <Text
+              style={{
+                fontSize: 14,
+                lineHeight: 24,
+                color: "#5b5e66",
+                fontWeight: "700",
+                fontFamily: "Plus Jakarta Sans",
+                flex: 1,
+              }}
+              className=""
+            >
+              Where to?
+            </Text>
+          </Pressable>
+           <View className=" gap-3">
           {/* Floating SOS Button */}
           <Pressable
             onPress={() => router.push("/sos")}
-            className="bg-white w-14 h-14 rounded-full items-center justify-center shadow-lg border border-outline-variant/10 active:bg-error/5"
+            className=" bg-white w-14 h-14 rounded-full items-center justify-center shadow-lg border border-outline-variant/10 active:bg-error/5"
           >
             <ShieldAlert color="#ba1a1a" size={24} />
             <Text className="text-[10px] font-bold text-error uppercase tracking-wider font-jakarta mt-0.5">
@@ -92,67 +156,12 @@ export default function RiderHome() {
           {/* Floating History/Clock Button */}
           <Pressable
             onPress={() => router.push("/(rider)/rides")}
-            className="bg-white w-14 h-14 rounded-full items-center justify-center shadow-lg border border-outline-variant/10 active:bg-surface-container-high"
+            className=" bg-white w-14 h-14 rounded-full items-center justify-center shadow-lg border border-outline-variant/10 active:bg-surface-container-high"
           >
             <Clock color="#0B1C30" size={24} />
           </Pressable>
         </View>
-
-        {/* Bottom Search & Toggle Sheet */}
-        <View
-          style={{
-            position: "absolute",
-            bottom: 24,
-            left: 20,
-            right: 20,
-            backgroundColor: "#ffffff",
-            borderRadius: 24,
-            padding: 20,
-            borderWidth: 1,
-            borderColor: "rgba(197, 197, 216, 0.1)",
-            zIndex: 25,
-            shadowColor: "#000000",
-            shadowOffset: { width: 0, height: 10 },
-            shadowOpacity: 0.1,
-            shadowRadius: 20,
-            elevation: 10,
-          }}
-        >
-          {/* Search bar input container */}
-          <Pressable
-            onPress={() => router.push("/(rider)/book")}
-            style={{
-              width: "100%",
-              flexDirection: "row",
-              alignItems: "center",
-              backgroundColor: "#f8f9ff",
-              borderWidth: 1,
-              borderColor: "rgba(197, 197, 216, 0.15)",
-              height: 56,
-              borderRadius: 16,
-              paddingHorizontal: 16,
-              shadowColor: "#000000",
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.05,
-              shadowRadius: 4,
-              elevation: 2,
-              marginBottom: 16,
-            }}
-          >
-            <Search color="#757687" size={20} style={{ marginRight: 12 }} />
-            <Text
-              style={{
-                fontSize: 16,
-                lineHeight: 24,
-                color: "#5b5e66",
-                fontWeight: "500",
-                fontFamily: "Plus Jakarta Sans",
-                flex: 1,
-              }}
-            >
-              Where to?
-            </Text>
-          </Pressable>
+          </View>
 
           {/* Keke vs Bus toggle selection */}
           <View
@@ -162,7 +171,7 @@ export default function RiderHome() {
               borderWidth: 1,
               borderColor: "rgba(197, 197, 216, 0.10)",
               borderRadius: 16,
-              padding: 4,
+              // padding: 4,
               marginBottom: 16,
             }}
           >
@@ -171,8 +180,8 @@ export default function RiderHome() {
               style={{
                 flex: 1,
                 flexDirection: "row",
-                height: 44,
-                borderRadius: 12,
+                height: 40,
+                borderRadius: 15,
                 alignItems: "center",
                 justifyContent: "center",
                 gap: 8,
@@ -208,8 +217,8 @@ export default function RiderHome() {
               style={{
                 flex: 1,
                 flexDirection: "row",
-                height: 44,
-                borderRadius: 12,
+                height: 40,
+                borderRadius: 15,
                 alignItems: "center",
                 justifyContent: "center",
                 gap: 8,
@@ -224,7 +233,7 @@ export default function RiderHome() {
               }}
             >
               {/* Bus icon simulation */}
-              <Compass
+              <Car
                 color={vehicleType === "bus" ? "#ffffff" : "#444655"}
                 size={18}
               />
@@ -249,13 +258,20 @@ export default function RiderHome() {
               flexDirection: "row",
               alignItems: "center",
               justifyContent: "space-between",
-              paddingTop: 12,
-              borderTopWidth: 1,
-              borderTopColor: "rgba(197, 197, 216, 0.15)",
+              padding: 9,
+              borderWidth: 1,
+              borderColor: "rgba(197, 197, 216, 0.15)",
+                shadowColor: "#000000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.05,
+              shadowRadius: 4,
+              elevation: 1,
             }}
+            className=" rounded-2xl px-5 bg-white"
           >
             <View
               style={{ flexDirection: "row", alignItems: "center", gap: 10 }}
+              className=""
             >
               <View
                 style={{

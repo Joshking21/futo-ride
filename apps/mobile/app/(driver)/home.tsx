@@ -1,19 +1,21 @@
 import { useRouter } from "expo-router";
 import {
   Bell,
-  Clock,
-  MapPin,
-  Menu,
-  Navigation,
+  Check,
+  ChevronRight,
+  Compass,
   Radar,
-  Star,
+  ShieldAlert,
+  TrendingUp,
+  Wallet,
   WifiOff,
+  X,
 } from "lucide-react-native";
-import React from "react";
-import { Image, Pressable, ScrollView, Text, View } from "react-native";
+import React, { useEffect, useState } from "react";
+import { Alert, Image, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useApp } from "../../context/AppContext";
 import KekeIcon from "../../components/KekeIcon";
+import { useApp } from "../../context/AppContext";
 
 export default function DriverHome() {
   const router = useRouter();
@@ -23,7 +25,40 @@ export default function DriverHome() {
     activeTrip,
     triggerMockIncomingRequest,
     confirmBooking,
+    clearActiveTrip,
+    earnings,
   } = useApp();
+
+  const [countdown, setCountdown] = useState(30);
+
+  const isRequestPending = activeTrip.status === "searching";
+
+  // Real-time countdown timer for pending requests
+  useEffect(() => {
+    let interval: any;
+    if (isOnline && isRequestPending) {
+      setCountdown(30);
+      interval = setInterval(() => {
+        setCountdown((c) => {
+          if (c <= 1) {
+            clearInterval(interval);
+            // Auto-decline request when countdown reaches 0
+            clearActiveTrip();
+            Alert.alert(
+              "Request Expired",
+              "The incoming ride request has expired.",
+              [{ text: "OK" }],
+            );
+            return 0;
+          }
+          return c - 1;
+        });
+      }, 1000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isOnline, isRequestPending]);
 
   const handleToggleOnline = () => {
     setOnline(!isOnline);
@@ -34,181 +69,1055 @@ export default function DriverHome() {
     router.push("/(driver)/active");
   };
 
-  const isRequestPending =
-    activeTrip.status === "searching" && activeTrip.pickup === "SOES Building";
+  const handleDeclineRequest = () => {
+    clearActiveTrip();
+  };
+
+  const formattedDate = new Date().toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "short",
+    day: "numeric",
+  });
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-bright" edges={["top"]}>
-      {/* Top Header Overlay */}
-      <View className="flex-row items-center justify-between px-margin-mobile h-[64px] bg-white border-b border-outline-variant/10 z-20">
-        <Pressable className="w-11 h-11 bg-white rounded-2xl items-center justify-center border border-outline-variant/10 shadow-sm active:bg-surface-container">
-          <Menu color="#0B1C30" size={20} />
-        </Pressable>
-
-        {/* Online Status Pill */}
-        <Pressable
-          onPress={handleToggleOnline}
-          className={`flex-row items-center gap-2 px-4 py-2.5 rounded-full border ${
-            isOnline ? "bg-success/10 border-success/30" : "bg-surface border-outline-variant/15"
-          }`}
-        >
-          <View className="w-2 h-2 rounded-full relative">
-            <View className={`absolute inset-0 rounded-full ${isOnline ? "bg-success animate-ping" : "bg-secondary"}`} />
-            <View className={`w-2 h-2 rounded-full ${isOnline ? "bg-success" : "bg-secondary"}`} />
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: "#f8f9ff" }}
+      edges={["top"]}
+    >
+      {/* Header Row */}
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+          paddingHorizontal: 20,
+          height: 72,
+          backgroundColor: "transparent",
+        }}
+      >
+        {/* Left Side Driver Profile Greeting */}
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+          <Image
+            source={{
+              uri: "https://lh3.googleusercontent.com/aida-public/AB6AXuCKv18St18L7X2vZAAMPrAWpe_RTK8EptXVp0FFMqsUDuP_GgeffQiG2BXUbeBK5fAppU3V1r1xiIbGeVUoaoTLduIBmWdC2WEHiVaf2hilbRU54kKuZ7O6ukr9iC-soO0wPXucYYRHL1OQTZr0q7bDRr1TZqfKpkpL290p2tVDrufDqbY7kxXIdHRNxOex755J1_4AtLe8z7qbpg1umUVPxW4tt5r_i6df9PbNJdOf5PFxcsnG6bDlUgGoGZnLt0vZSzW4H3KHhOMD",
+            }}
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: 22,
+              borderWidth: 1,
+              borderColor: "rgba(197, 197, 216, 0.1)",
+            }}
+          />
+          <View>
+            <Text
+              style={{
+                fontFamily: "Plus Jakarta Sans",
+                fontSize: 15,
+                fontWeight: "700",
+                color: "#0b1c30",
+                lineHeight: 20,
+              }}
+            >
+              Good morning, Chinedu!
+            </Text>
+            <Text
+              style={{
+                fontFamily: "Plus Jakarta Sans",
+                fontSize: 11,
+                color: "#5b5e66",
+                marginTop: 2,
+              }}
+            >
+              KEK-1234 • TVS King
+            </Text>
           </View>
-          <Text className={`font-jakarta text-body-sm font-bold ${isOnline ? "text-success" : "text-secondary"}`}>
-            {isOnline ? "Online" : "Offline"}
-          </Text>
-        </Pressable>
+        </View>
 
-        <Pressable className="w-11 h-11 bg-white rounded-2xl items-center justify-center border border-outline-variant/10 shadow-sm active:bg-surface-container relative">
+        {/* Right Side Alerts Bell Button */}
+        <Pressable
+          style={{
+            width: 48,
+            height: 48,
+            backgroundColor: "#ffffff",
+            borderRadius: 16,
+            alignItems: "center",
+            justifyContent: "center",
+            borderWidth: 1,
+            borderColor: "rgba(197, 197, 216, 0.1)",
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 1 },
+            shadowOpacity: 0.05,
+            shadowRadius: 2,
+            elevation: 1,
+            position: "relative",
+          }}
+        >
           <Bell color="#0B1C30" size={20} />
-          <View className="absolute top-3 right-3 w-2.5 h-2.5 bg-error border border-white rounded-full" />
+          <View
+            style={{
+              position: "absolute",
+              top: 14,
+              right: 14,
+              width: 8,
+              height: 8,
+              borderRadius: 4,
+              backgroundColor: "#001caa",
+              borderWidth: 1,
+              borderColor: "#ffffff",
+            }}
+          />
         </Pressable>
       </View>
 
-      {/* Main Content Area */}
-      <View className="flex-grow relative z-0">
-        {/* Interactive Map Background */}
-        <Image
-          source={{
-            uri: "https://lh3.googleusercontent.com/aida-public/AB6AXuD0okzKR0KPq91lUrgoEl5fyfMy1B5eqVhArkpdos9nGZDnDI-ks7j4edISnFdnY4EKDclvfu-tXw48XWwCwLTHkiWgUdTJPzw0-Wbjb64syVe-qicEEPGdmkI1X7mJoq5k_B3J8K-Wlt3yAZ33Dzy6Q9HBEh9IjQITFz8IxurvIKiiZPmecWT2IRE_rFhmA4LK39TpJEwR6einizhW-wxyX5mP-M4C_rzF5V9nyd4VRIX-5fdOl05wnH6PWCU_MI8wXXgOBBcGS5kv",
+      <ScrollView
+        contentContainerStyle={{
+          paddingHorizontal: 20,
+          paddingBottom: 40,
+          gap: 16,
+        }}
+        style={{ flexGrow: 1, marginTop: 8 }}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* You are Online Card */}
+        <View
+          style={{
+            backgroundColor: "#ffffff",
+            borderRadius: 24,
+            padding: 20,
+            borderWidth: 1,
+            borderColor: "rgba(197, 197, 216, 0.05)",
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.05,
+            shadowRadius: 3,
+            // elevation: 1,
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
           }}
-          className="w-full h-[280px]"
-        />
+        >
+          <View style={{ flex: 1, paddingRight: 16 }}>
+            <Text
+              style={{
+                fontFamily: "Plus Jakarta Sans",
+                fontSize: 12,
+                color: "#5b5e66",
+                fontWeight: "500",
+              }}
+            >
+              You are
+            </Text>
+            <Text
+              style={{
+                fontFamily: "Plus Jakarta Sans",
+                fontSize: 20,
+                fontWeight: "700",
+                marginTop: 2,
+                color: isOnline ? "#22c55e" : "#5b5e66",
+              }}
+            >
+              {isOnline ? "Online" : "Offline"}
+            </Text>
+            <Text
+              style={{
+                fontFamily: "Plus Jakarta Sans",
+                fontSize: 12,
+                color: "rgba(91, 94, 102, 0.8)",
+                lineHeight: 16,
+                marginTop: 2,
+              }}
+            >
+              {isOnline
+                ? "You're receiving requests"
+                : "Go online to receive requests"}
+            </Text>
+          </View>
 
-        {/* Floating location marker in map */}
-        <View className="absolute top-[120px] left-[50%] -ml-6 -mt-6 bg-white p-2 rounded-2xl border border-outline-variant/10 shadow-md">
-          <KekeIcon size={28} color="#001caa" />
+          {/* Toggle Switch */}
+          <Pressable
+            onPress={handleToggleOnline}
+            style={{
+              width: 54,
+              height: 30,
+              borderRadius: 15,
+              padding: 4,
+              justifyContent: "center",
+              backgroundColor: isOnline ? "#22c55e" : "#cbd5e1",
+              alignItems: isOnline ? "flex-end" : "flex-start",
+            }}
+          >
+            <View
+              style={{
+                width: 22,
+                height: 22,
+                borderRadius: 11,
+                backgroundColor: "#ffffff",
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 1 },
+                shadowOpacity: 0.1,
+                shadowRadius: 1.5,
+                elevation: 1,
+              }}
+            />
+          </Pressable>
         </View>
 
-        {/* Bottom Sheet / Stats Container */}
-        <ScrollView className="flex-1 bg-white rounded-t-[36px] border-t border-outline-variant/10 px-margin-mobile pt-5 -mt-6 z-10">
-          <View className="w-12 h-1.5 bg-outline-variant/20 rounded-full mx-auto mb-4" />
+        {/* Inline Map Card */}
+        <View
+          style={{
+            borderRadius: 24,
+            borderWidth: 1,
+            borderColor: "rgba(197, 197, 216, 0.05)",
+            overflow: "hidden",
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.05,
+            shadowRadius: 3,
+            elevation: 1,
+            backgroundColor: "#ffffff",
+            position: "relative",
+            height: 180,
+          }}
+        >
+          <Image
+            source={{
+              uri: "https://lh3.googleusercontent.com/aida-public/AB6AXuD0okzKR0KPq91lUrgoEl5fyfMy1B5eqVhArkpdos9nGZDnDI-ks7j4edISnFdnY4EKDclvfu-tXw48XWwCwLTHkiWgUdTJPzw0-Wbjb64syVe-qicEEPGdmkI1X7mJoq5k_B3J8K-Wlt3yAZ33Dzy6Q9HBEh9IjQITFz8IxurvIKiiZPmecWT2IRE_rFhmA4LK39TpJEwR6einizhW-wxyX5mP-M4C_rzF5V9nyd4VRIX-5fdOl05wnH6PWCU_MI8wXXgOBBcGS5kv",
+            }}
+            style={{ width: "100%", height: "100%" }}
+          />
 
-          {/* Today's Earnings Header */}
-          <View className="flex-row justify-between items-center bg-primary/5 rounded-3xl p-5 border border-primary/10 mb-4">
-            <View>
-              <Text className="text-body-sm text-secondary font-jakarta">Today's Earnings</Text>
-              <Text className="text-headline-lg font-bold text-primary font-jakarta mt-0.5">₦12,500</Text>
+          {/* Driver Position Marker */}
+          <View
+            style={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              marginLeft: -40,
+              marginTop: -40,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            {/* Concentric location rings */}
+            <View
+              style={{
+                width: 80,
+                height: 80,
+                borderRadius: 40,
+                backgroundColor: "rgba(0, 28, 170, 0.1)",
+                alignItems: "center",
+                justifyContent: "center",
+                position: "absolute",
+              }}
+            />
+            <View
+              style={{
+                width: 48,
+                height: 48,
+                borderRadius: 24,
+                backgroundColor: "rgba(0, 28, 170, 0.2)",
+                alignItems: "center",
+                justifyContent: "center",
+                position: "absolute",
+              }}
+            />
+            {/* Core blue location dot */}
+            <View
+              style={{
+                width: 24,
+                height: 24,
+                borderRadius: 12,
+                backgroundColor: "#001caa",
+                borderWidth: 1,
+                borderColor: "#ffffff",
+                position: "absolute",
+                zIndex: 10,
+              }}
+            />
+            {/* Yellow vehicle front marker */}
+            <View style={{ zIndex: 20, marginTop: -32 }}>
+              <KekeIcon size={32} color="#eab308" />
+            </View>
+          </View>
+
+          {/* Floating Action Buttons */}
+          <Pressable
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 20,
+              backgroundColor: "#ffffff",
+              borderWidth: 1,
+              borderColor: "rgba(197, 197, 216, 0.1)",
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 1 },
+              shadowOpacity: 0.05,
+              shadowRadius: 2,
+              elevation: 1,
+              alignItems: "center",
+              justifyContent: "center",
+              position: "absolute",
+              bottom: 52,
+              right: 16,
+            }}
+          >
+            <Compass color="#001caa" size={18} />
+          </Pressable>
+          <Pressable
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 20,
+              backgroundColor: "#ffffff",
+              borderWidth: 1,
+              borderColor: "rgba(197, 197, 216, 0.1)",
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 1 },
+              shadowOpacity: 0.05,
+              shadowRadius: 2,
+              elevation: 1,
+              alignItems: "center",
+              justifyContent: "center",
+              position: "absolute",
+              bottom: 12,
+              right: 16,
+            }}
+          >
+            <ShieldAlert color="#001caa" size={18} />
+          </Pressable>
+        </View>
+
+        {/* Today's Earnings Card */}
+        <View
+          style={{
+            backgroundColor: "#ffffff",
+            borderRadius: 24,
+            borderWidth: 1,
+            borderColor: "rgba(197, 197, 216, 0.05)",
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.05,
+            shadowRadius: 3,
+            // elevation: 1,
+            padding: 20,
+          }}
+        >
+          {/* Card Header */}
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <View
+              style={{ flexDirection: "row", alignItems: "center", gap: 12 }}
+            >
+              <View
+                style={{
+                  backgroundColor: "#f0fdf4",
+                  width: 40,
+                  height: 40,
+                  borderRadius: 12,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Wallet color="#22c55e" size={20} />
+              </View>
+              <View>
+                <Text
+                  style={{
+                    fontSize: 15,
+                    fontWeight: "700",
+                    color: "#0b1c30",
+                    fontFamily: "Plus Jakarta Sans",
+                  }}
+                >
+                  Today's Earnings
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 12,
+                    color: "#5b5e66",
+                    fontFamily: "Plus Jakarta Sans",
+                    marginTop: 2,
+                  }}
+                >
+                  {formattedDate}
+                </Text>
+              </View>
             </View>
             <Pressable
               onPress={() => router.push("/(driver)/earnings")}
-              className="bg-white border border-outline-variant/15 rounded-2xl px-4 py-2.5 active:bg-surface"
+              style={({ pressed }) => ({ opacity: pressed ? 0.75 : 1 })}
             >
-              <Text className="text-body-sm font-bold text-on-surface font-jakarta">Details</Text>
+              <Text
+                style={{
+                  fontSize: 12,
+                  fontWeight: "700",
+                  color: "#001caa",
+                  fontFamily: "Plus Jakarta Sans",
+                }}
+              >
+                View details <Text style={{ fontWeight: "600" }}>{">"}</Text>
+              </Text>
             </Pressable>
           </View>
 
-          {/* Bento Stats Grid */}
-          <View className="flex-row gap-4 mb-5">
-            {/* Trips Card */}
-            <View className="flex-1 bg-surface border border-outline-variant/10 rounded-3xl p-4 flex-row items-center gap-3">
-              <View className="w-10 h-10 bg-primary/10 rounded-xl items-center justify-center">
-                <Navigation color="#001caa" size={20} className="rotate-45" />
-              </View>
-              <View>
-                <Text className="text-headline-sm font-bold text-on-surface font-jakarta">14</Text>
-                <Text className="text-body-sm text-secondary font-jakarta mt-0.5">Trips</Text>
-              </View>
+          {/* Core Earnings/Trips Stats Grid */}
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              borderTopWidth: 1,
+              borderTopColor: "rgba(197, 197, 216, 0.05)",
+              paddingTop: 16,
+              marginTop: 16,
+            }}
+          >
+            {/* Earnings Stat */}
+            <View
+              style={{
+                flex: 1,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 18,
+                  fontWeight: "700",
+                  color: "#22c55e",
+                  fontFamily: "Plus Jakarta Sans",
+                }}
+              >
+                ₦{earnings?.daily?.toLocaleString() || "6,350.00"}
+              </Text>
+              <Text
+                style={{
+                  fontSize: 11,
+                  color: "#5b5e66",
+                  fontWeight: "500",
+                  fontFamily: "Plus Jakarta Sans",
+                  marginTop: 2,
+                }}
+              >
+                Earnings
+              </Text>
             </View>
 
-            {/* Online Time Card */}
-            <View className="flex-1 bg-surface border border-outline-variant/10 rounded-3xl p-4 flex-row items-center gap-3">
-              <View className="w-10 h-10 bg-primary/10 rounded-xl items-center justify-center">
-                <Clock color="#001caa" size={20} />
-              </View>
-              <View>
-                <Text className="text-headline-sm font-bold text-on-surface font-jakarta">4h 20m</Text>
-                <Text className="text-body-sm text-secondary font-jakarta mt-0.5">Online</Text>
-              </View>
+            {/* Vertical Divider */}
+            <View
+              style={{
+                width: 1,
+                height: 32,
+                backgroundColor: "rgba(197, 197, 216, 0.1)",
+              }}
+            />
+
+            {/* Trips Stat */}
+            <View
+              style={{
+                flex: 1,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 18,
+                  fontWeight: "700",
+                  color: "#0b1c30",
+                  fontFamily: "Plus Jakarta Sans",
+                }}
+              >
+                {earnings?.tripsCount || "14"}
+              </Text>
+              <Text
+                style={{
+                  fontSize: 11,
+                  color: "#5b5e66",
+                  fontWeight: "500",
+                  fontFamily: "Plus Jakarta Sans",
+                  marginTop: 2,
+                }}
+              >
+                Trips
+              </Text>
+            </View>
+
+            {/* Vertical Divider */}
+            <View
+              style={{
+                width: 1,
+                height: 32,
+                backgroundColor: "rgba(197, 197, 216, 0.1)",
+              }}
+            />
+
+            {/* Online Time Stat */}
+            <View
+              style={{
+                flex: 1,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 18,
+                  fontWeight: "700",
+                  color: "#0b1c30",
+                  fontFamily: "Plus Jakarta Sans",
+                }}
+              >
+                {earnings?.onlineTime || "8.6 hrs"}
+              </Text>
+              <Text
+                style={{
+                  fontSize: 11,
+                  color: "#5b5e66",
+                  fontWeight: "500",
+                  fontFamily: "Plus Jakarta Sans",
+                  marginTop: 2,
+                }}
+              >
+                Online time
+              </Text>
             </View>
           </View>
 
-          {/* Incoming Request OR Search Panel */}
-          <View className="pb-12">
-            {!isOnline ? (
-              <View className="bg-error-container/20 border border-error-container rounded-3xl p-5 items-center justify-center gap-3 text-center">
-                <WifiOff color="#ba1a1a" size={32} />
-                <Text className="text-body-md font-bold text-error font-jakarta">You are currently offline</Text>
-                <Text className="text-body-sm text-secondary text-center px-4 leading-5 font-jakarta">
-                  Go online to start receiving ride requests across campus.
-                </Text>
-              </View>
-            ) : isRequestPending ? (
-              /* Request Card Alert */
-              <View className="bg-white rounded-3xl border-2 border-primary p-5 shadow-lg gap-4">
-                <View className="flex-row justify-between items-center border-b border-outline-variant/10 pb-3">
-                  <Text className="text-headline-sm font-bold text-primary font-jakarta">Incoming Ride</Text>
-                  <View className="bg-primary px-3 py-1.5 rounded-full">
-                    <Text className="text-white font-bold text-body-sm font-jakarta">₦850</Text>
-                  </View>
-                </View>
+          {/* Success Trend Banner */}
+          <View
+            style={{
+              backgroundColor: "#f0fdf4",
+              borderWidth: 1,
+              borderColor: "rgba(34, 197, 94, 0.15)",
+              borderRadius: 16,
+              padding: 12,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginTop: 16,
+            }}
+          >
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                flex: 1,
+                paddingRight: 8,
+              }}
+            >
+              <TrendingUp color="#22c55e" size={16} />
+              <Text
+                style={{
+                  fontSize: 12,
+                  fontWeight: "700",
+                  color: "#15803d",
+                  fontFamily: "Plus Jakarta Sans",
+                  marginLeft: 8,
+                }}
+              >
+                Nice work! You're doing great today.
+              </Text>
+            </View>
+            <ChevronRight color="#22c55e" size={16} />
+          </View>
+        </View>
 
-                {/* Passenger Info */}
-                <View className="flex-row items-center gap-3.5">
+        {/* Incoming Request OR Search Section */}
+        <View style={{ marginTop: 8 }}>
+          {!isOnline ? (
+            /* Offline Warning Card */
+            <View
+              style={{
+                backgroundColor: "rgba(186, 26, 26, 0.05)",
+                borderWidth: 1,
+                borderColor: "rgba(186, 26, 26, 0.15)",
+                borderRadius: 24,
+                padding: 20,
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 12,
+              }}
+            >
+              <WifiOff color="#ba1a1a" size={32} />
+              <Text
+                style={{
+                  fontSize: 16,
+                  fontWeight: "700",
+                  color: "#ba1a1a",
+                  fontFamily: "Plus Jakarta Sans",
+                }}
+              >
+                You are currently offline
+              </Text>
+              <Text
+                style={{
+                  fontSize: 14,
+                  color: "#5b5e66",
+                  textAlign: "center",
+                  paddingHorizontal: 16,
+                  lineHeight: 20,
+                  fontFamily: "Plus Jakarta Sans",
+                }}
+              >
+                Go online to start receiving ride requests across campus. Toggle
+                the switch above to get started.
+              </Text>
+            </View>
+          ) : isRequestPending ? (
+            /* Incoming Request Panel */
+            <View style={{ gap: 12 }}>
+            <Text
+              style={{
+                color: "#5b5e66",
+                fontFamily: "Plus Jakarta Sans",
+                fontSize: 14,
+                fontWeight: "800",
+                letterSpacing: 0.3,
+                paddingHorizontal: 4,
+              }}
+            >
+              Incoming Request
+            </Text>
+
+            <View
+              style={{
+                backgroundColor: "#ffffff",
+                borderWidth: 1,
+                borderColor: "rgba(197, 197, 216, 0.05)",
+                borderRadius: 24,
+                padding: 20,
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.05,
+                shadowRadius: 3,
+                elevation: 1,
+              }}
+            >
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "flex-start",
+                  gap: 16,
+                }}
+              >
+                {/* Left Passenger Avatar Placeholder */}
+                <View
+                  style={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: 16,
+                    backgroundColor: "#eff4ff",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
                   <Image
                     source={{
                       uri: "https://lh3.googleusercontent.com/aida-public/AB6AXuCKv18St18L7X2vZAAMPrAWpe_RTK8EptXVp0FFMqsUDuP_GgeffQiG2BXUbeBK5fAppU3V1r1xiIbGeVUoaoTLduIBmWdC2WEHiVaf2hilbRU54kKuZ7O6ukr9iC-soO0wPXucYYRHL1OQTZr0q7bDRr1TZqfKpkpL290p2tVDrufDqbY7kxXIdHRNxOex755J1_4AtLe8z7qbpg1umUVPxW4tt5r_i6df9PbNJdOf5PFxcsnG6bDlUgGoGZnLt0vZSzW4H3KHhOMD",
                     }}
-                    className="w-12 h-12 rounded-full overflow-hidden border border-outline-variant/10"
+                    style={{ width: "100%", height: "100%", borderRadius: 16 }}
                   />
-                  <View>
-                    <Text className="text-body-md font-bold text-on-surface font-jakarta">Alex</Text>
-                    <View className="flex-row items-center gap-1 mt-0.5">
-                      <Star color="#eab308" fill="#eab308" size={14} />
-                      <Text className="text-body-sm text-secondary font-jakarta">4.9 • Student</Text>
-                    </View>
-                  </View>
                 </View>
 
-                {/* Route details */}
-                <View className="bg-surface rounded-2xl p-4 gap-3 border border-outline-variant/5">
-                  <View className="flex-row items-center gap-2">
-                    <MapPin color="#001caa" size={16} />
-                    <Text className="text-body-sm text-secondary font-jakarta">
-                      From: <Text className="font-bold text-on-surface">SOES Building</Text>
+                {/* Trip Info */}
+                <View style={{ flexGrow: 1, flex: 1 }}>
+                  <Text
+                    style={{
+                      fontFamily: "Plus Jakarta Sans",
+                      fontSize: 15,
+                      fontWeight: "700",
+                      color: "#0b1c30",
+                    }}
+                  >
+                    {activeTrip.pickup || "New Hall"}
+                  </Text>
+                  <Text
+                    style={{
+                      fontFamily: "Plus Jakarta Sans",
+                      fontSize: 13,
+                      color: "#5b5e66",
+                      marginTop: 2,
+                    }}
+                  >
+                    to{" "}
+                    <Text style={{ color: "#001caa", fontWeight: "700" }}>
+                      {activeTrip.destination || "Main Gate"}
                     </Text>
-                  </View>
-                  <View className="flex-row items-center gap-2">
-                    <MapPin color="#ba1a1a" size={16} />
-                    <Text className="text-body-sm text-secondary font-jakarta">
-                      To: <Text className="font-bold text-on-surface">Senate Building</Text>
-                    </Text>
-                  </View>
+                  </Text>
+                  <Text
+                    style={{
+                      fontFamily: "Plus Jakarta Sans",
+                      fontSize: 10,
+                      fontWeight: 600,
+                      color: "rgba(91, 94, 102, 0.7)",
+                      marginTop: 4,
+                    }}
+                  >
+                    1.2 km away • Est. ₦{activeTrip.price || "150.00"}
+                  </Text>
                 </View>
 
-                {/* Accept Button */}
+                {/* Countdown Progress Ring */}
+                <View
+                  style={{
+                    width: 56,
+                    height: 56,
+                    borderRadius: 28,
+                    borderWidth: 3,
+                    borderColor: "#001caa",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    position: "relative",
+                    display: "flex",
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 11,
+                      fontWeight: "700",
+                      color: "#0b1c30",
+                      fontFamily: "Plus Jakarta Sans",
+                      textAlign: "center",
+                      lineHeight: 12,
+                    }}
+                  >
+                    {countdown}
+                    {"\n"}
+                    <Text
+                      style={{
+                        fontSize: 8,
+                        color: "#5b5e66",
+                        fontWeight: "500",
+                        fontFamily: "Plus Jakarta Sans",
+                      }}
+                    >
+                      sec
+                    </Text>
+                  </Text>
+                </View>
+              </View>
+
+              {/* Decline / Accept Buttons */}
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 12,
+                  marginTop: 20,
+                }}
+              >
+                <Pressable
+                  onPress={handleDeclineRequest}
+                  className="flex-1 bg-[#EFF2FF] h-12 rounded-2xl flex-row items-center justify-center gap-1.5 active:opacity-75"
+                >
+                  <X color="#001caa" size={16} />
+                  <Text className="font-jakarta font-semibold text-[14px] text-primary">
+                    Decline
+                  </Text>
+                </Pressable>
+
                 <Pressable
                   onPress={handleAcceptRequest}
-                  className="w-full bg-[#0b1c30] h-14 rounded-full flex items-center justify-center shadow-md active:scale-[0.98]"
+                  className="flex-1 bg-primary h-12 rounded-2xl flex-row items-center justify-center gap-1.5 active:opacity-90 shadow-sm"
                 >
-                  <Text className="text-white text-action-lg font-bold font-jakarta">Accept Request</Text>
-                </Pressable>
-              </View>
-            ) : (
-              /* Finding Rides Panel */
-              <View className="bg-primary/5 border border-primary/10 rounded-3xl p-6 items-center justify-center gap-3 shadow-sm">
-                <Radar color="#001caa" size={32} />
-                <Text className="text-body-md font-bold text-primary font-jakarta">Finding rides...</Text>
-                <Text className="text-body-sm text-secondary text-center px-4 leading-5 font-jakarta">
-                  Stay near high-demand areas like SEET Head, Hall C or FUTO Gate.
-                </Text>
-
-                {/* Simulator Trigger */}
-                <Pressable
-                  onPress={triggerMockIncomingRequest}
-                  className="bg-white border border-outline-variant/15 w-full h-12 rounded-2xl flex items-center justify-center active:bg-surface mt-2 shadow-sm"
-                >
-                  <Text className="text-body-sm font-bold text-on-surface font-jakarta">
-                    Trigger Simulated Request
+                  <Check color="white" size={16} />
+                  <Text className="font-jakarta font-semibold text-[14px] text-white">
+                    Accept
                   </Text>
                 </Pressable>
               </View>
-            )}
+            </View>
+
+            {/* Go Offline Link Button */}
+            <Pressable
+              onPress={handleToggleOnline}
+              style={{ paddingVertical: 8 }}
+            >
+              <Text
+                style={{
+                  color: "#001caa",
+                  fontFamily: "Plus Jakarta Sans",
+                  fontWeight: "700",
+                  fontSize: 14,
+                  textAlign: "center",
+                }}
+              >
+                Go offline
+              </Text>
+            </Pressable>
           </View>
-        </ScrollView>
-      </View>
+          ) : (
+            /* Finding Rides Radar Panel */
+            <View
+              style={{
+                backgroundColor: "rgba(0, 28, 170, 0.05)",
+                borderWidth: 1,
+                borderColor: "rgba(0, 28, 170, 0.1)",
+                borderRadius: 24,
+                padding: 24,
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 12,
+                // shadowColor: "#000",
+                // shadowOffset: { width: 0, height: 1 },
+                // shadowOpacity: 0.05,
+                // shadowRadius: 2,
+                // elevation: 1,
+                marginTop: 2,
+              }}
+            >
+              <Radar color="#001caa" size={32} />
+              <Text
+                style={{
+                  fontSize: 16,
+                  fontWeight: "700",
+                  color: "#001caa",
+                  fontFamily: "Plus Jakarta Sans",
+                }}
+              >
+                Finding rides...
+              </Text>
+              <Text
+                style={{
+                  fontSize: 14,
+                  color: "#5b5e66",
+                  textAlign: "center",
+                  paddingHorizontal: 16,
+                  lineHeight: 20,
+                  fontFamily: "Plus Jakarta Sans",
+                }}
+              >
+                Stay near high-demand areas like SEET Head, Hall C or FUTO Gate.
+              </Text>
+
+              {/* Simulated Request developer button */}
+              <Pressable
+                onPress={triggerMockIncomingRequest}
+                style={({ pressed }) => ({
+                  backgroundColor: "#ffffff",
+                  borderWidth: 1,
+                  borderColor: "rgba(197, 197, 216, 0.15)",
+                  width: "100%",
+                  height: 48,
+                  borderRadius: 16,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginTop: 8,
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: 1 },
+                  shadowOpacity: 0.05,
+                  shadowRadius: 2,
+                  elevation: 1,
+                  opacity: pressed ? 0.75 : 1,
+                })}
+              >
+                <Text
+                  style={{
+                    fontSize: 14,
+                    fontWeight: "700",
+                    color: "#0b1c30",
+                    fontFamily: "Plus Jakarta Sans",
+                  }}
+                >
+                  Trigger Simulated Request
+                </Text>
+              </Pressable>
+            </View>
+          )}
+
+          <View style={{ gap: 12 }}>
+            <Text
+              style={{
+                color: "#5b5e66",
+                fontFamily: "Plus Jakarta Sans",
+                fontSize: 14,
+                fontWeight: "800",
+                letterSpacing: 0.3,
+                paddingHorizontal: 4,
+              }}
+            >
+              Incoming Request
+            </Text>
+
+            <View
+              style={{
+                backgroundColor: "#ffffff",
+                borderWidth: 1,
+                borderColor: "rgba(197, 197, 216, 0.05)",
+                borderRadius: 24,
+                padding: 20,
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.05,
+                shadowRadius: 3,
+                elevation: 1,
+              }}
+            >
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "flex-start",
+                  gap: 16,
+                }}
+              >
+                {/* Left Passenger Avatar Placeholder */}
+                <View
+                  style={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: 16,
+                    backgroundColor: "#eff4ff",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Image
+                    source={{
+                      uri: "https://lh3.googleusercontent.com/aida-public/AB6AXuCKv18St18L7X2vZAAMPrAWpe_RTK8EptXVp0FFMqsUDuP_GgeffQiG2BXUbeBK5fAppU3V1r1xiIbGeVUoaoTLduIBmWdC2WEHiVaf2hilbRU54kKuZ7O6ukr9iC-soO0wPXucYYRHL1OQTZr0q7bDRr1TZqfKpkpL290p2tVDrufDqbY7kxXIdHRNxOex755J1_4AtLe8z7qbpg1umUVPxW4tt5r_i6df9PbNJdOf5PFxcsnG6bDlUgGoGZnLt0vZSzW4H3KHhOMD",
+                    }}
+                    style={{ width: "100%", height: "100%", borderRadius: 16 }}
+                  />
+                </View>
+
+                {/* Trip Info */}
+                <View style={{ flexGrow: 1, flex: 1 }}>
+                  <Text
+                    style={{
+                      fontFamily: "Plus Jakarta Sans",
+                      fontSize: 15,
+                      fontWeight: "700",
+                      color: "#0b1c30",
+                    }}
+                  >
+                    {activeTrip.pickup || "New Hall"}
+                  </Text>
+                  <Text
+                    style={{
+                      fontFamily: "Plus Jakarta Sans",
+                      fontSize: 13,
+                      color: "#5b5e66",
+                      marginTop: 2,
+                    }}
+                  >
+                    to{" "}
+                    <Text style={{ color: "#001caa", fontWeight: "700" }}>
+                      {activeTrip.destination || "Main Gate"}
+                    </Text>
+                  </Text>
+                  <Text
+                    style={{
+                      fontFamily: "Plus Jakarta Sans",
+                      fontSize: 10,
+                      fontWeight: 600,
+                      color: "rgba(91, 94, 102, 0.7)",
+                      marginTop: 4,
+                    }}
+                  >
+                    1.2 km away • Est. ₦{activeTrip.price || "150.00"}
+                  </Text>
+                </View>
+
+                {/* Countdown Progress Ring */}
+                <View
+                  style={{
+                    width: 56,
+                    height: 56,
+                    borderRadius: 28,
+                    borderWidth: 3,
+                    borderColor: "#001caa",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    position: "relative",
+                    display: "flex",
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 11,
+                      fontWeight: "700",
+                      color: "#0b1c30",
+                      fontFamily: "Plus Jakarta Sans",
+                      textAlign: "center",
+                      lineHeight: 12,
+                    }}
+                  >
+                    {countdown}
+                    {"\n"}
+                    <Text
+                      style={{
+                        fontSize: 8,
+                        color: "#5b5e66",
+                        fontWeight: "500",
+                        fontFamily: "Plus Jakarta Sans",
+                      }}
+                    >
+                      sec
+                    </Text>
+                  </Text>
+                </View>
+              </View>
+
+              {/* Decline / Accept Buttons */}
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 12,
+                  marginTop: 20,
+                }}
+              >
+                <Pressable
+                  onPress={handleDeclineRequest}
+                  className="flex-1 bg-[#EFF2FF] h-12 rounded-2xl flex-row items-center justify-center gap-1.5 active:opacity-75"
+                >
+                  <X color="#001caa" size={16} />
+                  <Text className="font-jakarta font-semibold text-[14px] text-primary">
+                    Decline
+                  </Text>
+                </Pressable>
+
+                <Pressable
+                  onPress={handleAcceptRequest}
+                  className="flex-1 bg-primary h-12 rounded-2xl flex-row items-center justify-center gap-1.5 active:opacity-90 shadow-sm"
+                >
+                  <Check color="white" size={16} />
+                  <Text className="font-jakarta font-semibold text-[14px] text-white">
+                    Accept
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+
+            {/* Go Offline Link Button */}
+            <Pressable
+              onPress={handleToggleOnline}
+              style={{ paddingVertical: 8 }}
+            >
+              <Text
+                style={{
+                  color: "#001caa",
+                  fontFamily: "Plus Jakarta Sans",
+                  fontWeight: "700",
+                  fontSize: 14,
+                  textAlign: "center",
+                }}
+              >
+                Go offline
+              </Text>
+            </Pressable>
+          </View>
+
+          
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }

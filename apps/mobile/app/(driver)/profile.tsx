@@ -1,164 +1,255 @@
 import { useRouter } from "expo-router";
 import {
-  Bell,
-  CheckCircle2,
-  ChevronRight,
-  Edit2,
-  HelpCircle,
-  LogOut,
   ArrowLeft,
+  Bell,
+  ChevronRight,
+  Copy,
+  Landmark,
+  LogOut,
+  Send,
   Shield,
-  CreditCard,
-  User,
 } from "lucide-react-native";
 import React from "react";
-import { Image, Pressable, ScrollView, Text, View } from "react-native";
+import {
+  Alert,
+  Clipboard,
+  Image,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import KekeIcon from "../../components/KekeIcon";
 
 export default function DriverProfile() {
   const router = useRouter();
 
   const handleLogout = () => {
-    router.replace("/login");
+    Alert.alert("Log Out", "Are you sure you want to log out?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Log Out",
+        style: "destructive",
+        onPress: () => router.replace("/login"),
+      },
+    ]);
+  };
+
+  const handleCopyAccountNumber = () => {
+    Clipboard.setString("0123456789");
+    Alert.alert("Copied", "Account number copied to clipboard!");
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-bright" edges={["top", "bottom"]}>
+    <SafeAreaView className="flex-1 bg-surface" edges={["top"]}>
       {/* Top Header */}
-      <View className="flex-row items-center justify-between px-margin-mobile h-[64px] bg-white border-b border-outline-variant/10 z-20">
+      <View className="flex-row items-center justify-between px-margin-mobile h-[72px] bg-transparent">
         <Pressable
           onPress={() => router.back()}
-          className="w-12 h-12 rounded-2xl bg-white items-center justify-center border border-outline-variant/10 active:bg-surface-container"
+          className="w-12 h-12 rounded-2xl bg-white items-center justify-center border border-outline-variant/10 shadow-xs active:bg-slate-100"
         >
-          <ArrowLeft color="#0B1C30" size={24} />
+          <ArrowLeft color="#0B1C30" size={20} />
         </Pressable>
-        <Text className="text-headline-md font-bold text-on-surface font-jakarta">Profile</Text>
+
+        <Text className="text-lg font-bold text-on-surface font-jakarta">
+          Driver Profile
+        </Text>
+
         <View className="w-12" />
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 20, gap: 20, paddingBottom: 60 }} className="flex-1">
-        
-        {/* Profile Info Header */}
-        <View className="items-center mt-2 mb-4">
-          <View className="relative w-24 h-24 mb-4">
+      <ScrollView
+        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}
+        className="flex-1"
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Profile Info Card */}
+        <View className="bg-[#eff3ff] p-5 rounded-xl  flex-row items-center gap-4 mt-4 shadow-sm">
+          <View className="relative">
             <Image
               source={{
                 uri: "https://lh3.googleusercontent.com/aida-public/AB6AXuCjFSCFMbV7btYNBq5Z_NmptfAr1-8my1GvNRPgRRaOLLPEtqioVZ_2mjlIyJLLQ-ioQ4du4wFmsS6KnXMp2aSQZLLeQDRfId6gfO90HKV18JnRFc14-vwUWfgVzqp_O9q2fTdD4xoCrWVFrt24XLi9lmTNUKrlnSTxrGFEP9Neh75LbWKZStV1fz0IhdzbgCsD7BEvcl2HqdEwOMjtsiS4w1MHWeE2VzoZ4dv5ECAAb8wYva0TgLQY9k_FVIDFN-dv7uCj9XMJdlV7",
               }}
-              className="w-full h-full object-cover rounded-full border border-outline-variant/10 shadow-sm"
+              className="w-20 h-20 rounded-full border border-white/20"
             />
-            <Pressable className="absolute bottom-0 right-0 bg-primary text-on-primary w-8 h-8 rounded-full flex items-center justify-center shadow-md active:opacity-90">
-              <Edit2 color="#ffffff" size={14} />
-            </Pressable>
+            {/* Green Online status dot */}
+            <View className="w-5 h-5 bg-[#22c55e] border-[3px] border-white rounded-full absolute bottom-0 right-0" />
           </View>
-          <View className="flex-row items-center gap-1.5">
-            <Text className="text-headline-md font-bold text-on-surface font-jakarta">Kelechi Okafor</Text>
-            <CheckCircle2 color="#22c55e" size={16} fill="transparent" />
+
+          <View className="flex-1 justify-center">
+            <Text className="text-[18px] font-extrabold text-[#0B1C30] font-jakarta leading-tight">
+              Abubakar Usman
+            </Text>
+            <Text
+              className="text-secondary text-xs font-jakarta mt-1"
+              numberOfLines={1}
+            >
+              abubakar.usman@gmail.com
+            </Text>
+            <View className="bg-[#e2ebff] px-2.5 py-0.5 rounded-md mt-2.5 self-start">
+              <Text className="text-[#001caa] text-[10px] font-bold font-jakarta">
+                Driver Partner
+              </Text>
+            </View>
           </View>
-          <Text className="text-body-sm text-secondary font-jakarta mt-0.5">kelechi.okafor@futo.edu.ng</Text>
-          <Text className="text-body-sm text-secondary font-jakarta">+234 803 123 4567</Text>
         </View>
 
-        {/* Settings Bento Box */}
-        <View className="bg-white rounded-3xl border border-outline-variant/10 shadow-sm overflow-hidden">
-          {/* Edit Profile */}
-          <Pressable className="flex-row items-center justify-between p-4 border-b border-outline-variant/5 active:bg-surface">
-            <View className="flex-row items-center gap-3">
-              <View className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center border border-outline-variant/5">
-                <User color="#001caa" size={20} />
-              </View>
-              <View>
-                <Text className="text-body-md font-bold text-on-surface font-jakarta">Edit Profile</Text>
-                <Text className="text-body-sm text-secondary font-jakarta mt-0.5">Change name, email & phone</Text>
-              </View>
-            </View>
-            <ChevronRight color="#757687" size={18} />
-          </Pressable>
+        {/* Account & Settings Label */}
+        <Text className="text-[13px] font-bold text-secondary font-jakarta mt-6 mb-3">
+          Account & Settings
+        </Text>
 
-          {/* Vehicle Details */}
-          <Pressable className="flex-row items-center justify-between p-4 border-b border-outline-variant/5 active:bg-surface">
-            <View className="flex-row items-center gap-3">
-              <View className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center border border-outline-variant/5">
-                <KekeIcon size={20} color="#001caa" />
-              </View>
-              <View>
-                <Text className="text-body-md font-bold text-on-surface font-jakarta">Vehicle Details</Text>
-                <Text className="text-body-sm text-secondary font-jakarta mt-0.5">White Keke • Plate: IMO-123-AB</Text>
-              </View>
-            </View>
-            <ChevronRight color="#757687" size={18} />
-          </Pressable>
-
-          {/* Payout & Earnings */}
+        {/* 1. Payment Preference Card */}
+        <View className="bg-white rounded-3xl shadow-xs p-4">
           <Pressable
             onPress={() => router.push("/(driver)/earnings")}
-            className="flex-row items-center justify-between p-4 border-b border-outline-variant/5 active:bg-surface"
+            className="p-4.5 flex-row items-center justify-between active:bg-slate-50"
           >
-            <View className="flex-row items-center gap-3">
-              <View className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center border border-outline-variant/5">
-                <CreditCard color="#001caa" size={20} />
+            <View className="flex-row items-center flex-1 mr-2">
+              <View className="w-11 h-11 rounded-2xl bg-[#eff3ff] items-center justify-center">
+                <Landmark color="#001caa" size={18} />
               </View>
-              <View>
-                <Text className="text-body-md font-bold text-on-surface font-jakarta">Payout Settings</Text>
-                <Text className="text-body-sm text-secondary font-jakarta mt-0.5">cNGN Wallet and daily earnings</Text>
+              <View className="ml-3.5 flex-1">
+                <Text className="text-[14px] font-bold text-on-surface font-jakarta">
+                  Payment Preference
+                </Text>
+                <Text className="text-secondary text-xs font-jakarta mt-0.5">
+                  Manage your bank account details
+                </Text>
               </View>
             </View>
-            <ChevronRight color="#757687" size={18} />
+            <ChevronRight color="#c5c5d8" size={16} />
           </Pressable>
 
-          {/* Privacy & Security */}
-          <Pressable className="flex-row items-center justify-between p-4 border-b border-outline-variant/5 active:bg-surface">
-            <View className="flex-row items-center gap-3">
-              <View className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center border border-outline-variant/5">
-                <Shield color="#001caa" size={20} />
-              </View>
-              <View>
-                <Text className="text-body-md font-bold text-on-surface font-jakarta">Privacy & Security</Text>
-                <Text className="text-body-sm text-secondary font-jakarta mt-0.5">Manage permissions & security keys</Text>
-              </View>
-            </View>
-            <ChevronRight color="#757687" size={18} />
-          </Pressable>
+          <View className="h-[1px] bg-slate-100 mx-4.5" />
 
-          {/* Notifications Settings */}
-          <Pressable className="flex-row items-center justify-between p-4 border-b border-outline-variant/5 active:bg-surface">
-            <View className="flex-row items-center gap-3">
-              <View className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center border border-outline-variant/5">
-                <Bell color="#001caa" size={20} />
-              </View>
-              <View>
-                <Text className="text-body-md font-bold text-on-surface font-jakarta">Driver Alerts</Text>
-                <Text className="text-body-sm text-secondary font-jakarta mt-0.5">Notification and proximity settings</Text>
-              </View>
+          {/* Bank Account Details table */}
+          <View className="px-4.5 pb-4.5 pt-2 gap-3">
+            <View className="flex-row items-center justify-between">
+              <Text className="text-secondary text-[13px] font-medium font-jakarta">
+                Bank
+              </Text>
+              <Text className="text-[#001caa] font-bold text-[13px] font-jakarta">
+                Access Bank
+              </Text>
             </View>
-            <ChevronRight color="#757687" size={18} />
-          </Pressable>
 
-          {/* Help Center */}
-          <Pressable className="flex-row items-center justify-between p-4 active:bg-surface">
-            <View className="flex-row items-center gap-3">
-              <View className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center border border-outline-variant/5">
-                <HelpCircle color="#001caa" size={20} />
-              </View>
-              <View>
-                <Text className="text-body-md font-bold text-on-surface font-jakarta">Help Center</Text>
-                <Text className="text-body-sm text-secondary font-jakarta mt-0.5">FAQs, support tickets, file dispute</Text>
+            <View className="flex-row items-center justify-between">
+              <Text className="text-secondary text-[13px] font-medium font-jakarta">
+                Account Number
+              </Text>
+              <View className="flex-row items-center">
+                <Text className="text-on-surface font-bold text-[13px] font-jakarta mr-2">
+                  0123456789
+                </Text>
+                <Pressable
+                  onPress={handleCopyAccountNumber}
+                  className="w-7 h-7 rounded-lg items-center justify-center active:bg-slate-100"
+                >
+                  <Copy color="#5b5e66" size={13} />
+                </Pressable>
               </View>
             </View>
-            <ChevronRight color="#757687" size={18} />
-          </Pressable>
+          </View>
         </View>
 
-        {/* Log Out Button */}
+        {/* 2. Telegram Connection Card */}
         <Pressable
-          onPress={handleLogout}
-          className="w-full h-14 rounded-full bg-error-container/20 border border-error-container flex-row items-center justify-center gap-2 active:bg-error-container/35 mt-4"
+          onPress={() =>
+            Alert.alert("Telegram", "Open Telegram bot integration settings.")
+          }
+          className="bg-white p-2 rounded-lg shadow-xs flex-row items-center justify-between mt-3.5 active:bg-slate-50"
         >
-          <LogOut color="#ba1a1a" size={20} />
-          <Text className="text-error text-action-lg font-bold font-jakarta">Log Out</Text>
+          <View className="flex-row items-center flex-1 mr-2">
+            <View className="w-11 h-11 rounded-full bg-[#24A1DE] items-center justify-center">
+              <View className="rotate-[-25deg] mr-0.5">
+                <Send color="#ffffff" size={15} fill="#ffffff" />
+              </View>
+            </View>
+            <View className="ml-3.5 flex-1">
+              <Text className="text-[14px] font-bold text-on-surface font-jakarta">
+                Telegram Connection
+              </Text>
+              <Text className="text-secondary text-xs font-jakarta mt-0.5">
+                Stay connected for ride updates
+              </Text>
+            </View>
+          </View>
+
+          <View className="flex-row items-center gap-1.5">
+            <View className="bg-[#e6f9ed] px-2.5 py-0.5 rounded-full">
+              <Text className="text-[#22c55e] font-bold text-[10px] font-jakarta">
+                Connected
+              </Text>
+            </View>
+            <ChevronRight color="#c5c5d8" size={16} strokeWidth={4} />
+          </View>
         </Pressable>
 
+        {/* 3. Notification Preferences Card */}
+        <Pressable
+          onPress={() =>
+            Alert.alert("Notifications", "Open notification configuration.")
+          }
+          className="bg-white p-2 rounded-lg shadow-xs flex-row items-center justify-between mt-3.5 active:bg-slate-50"
+        >
+          <View className="flex-row items-center flex-1 mr-2">
+            <View className="w-11 h-11 rounded-2xl bg-[#eff3ff] items-center justify-center">
+              <Bell color="#001caa" size={18} />
+            </View>
+            <View className="ml-3.5 flex-1">
+              <Text className="text-[14px] font-bold text-on-surface font-jakarta">
+                Notification Preferences
+              </Text>
+              <Text className="text-secondary text-xs font-jakarta mt-0.5">
+                Manage how you receive updates
+              </Text>
+            </View>
+          </View>
+          <ChevronRight color="#c5c5d8" size={16} strokeWidth={4}/>
+        </Pressable>
+
+        {/* 4. Account & Security Card */}
+        <Pressable
+          onPress={() =>
+            Alert.alert(
+              "Security",
+              "Open password and cryptographic keys configuration.",
+            )
+          }
+          className="bg-white p-2 rounded-lg shadow-xs flex-row items-center justify-between mt-3.5 active:bg-slate-50"
+        >
+          <View className="flex-row items-center flex-1 mr-2">
+            <View className="w-11 h-11 rounded-2xl bg-[#eff3ff] items-center justify-center">
+              <Shield color="#001caa" size={18} />
+            </View>
+            <View className="ml-3.5 flex-1">
+              <Text className="text-[14px] font-bold text-on-surface font-jakarta">
+                Account & Security
+              </Text>
+              <Text className="text-secondary text-xs font-jakarta mt-0.5">
+                Change password and security settings
+              </Text>
+            </View>
+          </View>
+          <ChevronRight color="#c5c5d8" size={16} strokeWidth={4} />
+        </Pressable>
+
+        {/* Log Out Bento Card */}
+        <Pressable
+          onPress={handleLogout}
+          className="bg-[#fff2f2]  rounded-2xl p-5 items-center justify-center mt-6 mb-8 active:scale-[0.99] shadow-xs"
+        >
+          <View className="flex-row items-center gap-2">
+            <LogOut color="#ba1a1a" size={18} />
+            <Text className="text-[#ba1a1a] font-bold text-[15px] font-jakarta">
+              Log out
+            </Text>
+          </View>
+          <Text className="text-secondary text-[11px] font-medium font-jakarta mt-1.5">
+            You will be logged out from this device
+          </Text>
+        </Pressable>
       </ScrollView>
     </SafeAreaView>
   );

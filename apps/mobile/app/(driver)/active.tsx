@@ -1,18 +1,17 @@
 import { useRouter } from "expo-router";
 import {
+  ArrowLeft,
   CornerUpRight,
-  MapPin,
   MessageSquare,
   Phone,
   ShieldAlert,
   Star,
-  ArrowLeft,
 } from "lucide-react-native";
 import React, { useState } from "react";
 import { Image, Pressable, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useApp } from "../../context/AppContext";
 import KekeIcon from "../../components/KekeIcon";
+import { useApp } from "../../context/AppContext";
 
 export default function DriverActiveTrip() {
   const router = useRouter();
@@ -56,47 +55,159 @@ export default function DriverActiveTrip() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-bright" edges={["top", "bottom"]}>
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: "#f1f5f9" }}
+      edges={["top", "bottom"]}
+    >
       {/* Top Navigation Row */}
-      <View className="absolute top-4 left-margin-mobile right-margin-mobile flex-row items-center justify-between z-30">
+      <View
+        style={{
+          position: "absolute",
+          top: 16,
+          left: 20,
+          right: 20,
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+          zIndex: 30,
+        }}
+      >
         <Pressable
           onPress={() => router.back()}
-          className="w-12 h-12 rounded-2xl bg-white shadow-md shadow-black/5 items-center justify-center border border-outline-variant/10 active:bg-surface-container"
+          style={({ pressed }) => ({
+            width: 48,
+            height: 48,
+            borderRadius: 16,
+            backgroundColor: "#ffffff",
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.05,
+            shadowRadius: 3,
+            elevation: 2,
+            alignItems: "center",
+            justifyContent: "center",
+            borderWidth: 1,
+            borderColor: "rgba(197, 197, 216, 0.1)",
+            opacity: pressed ? 0.8 : 1,
+          })}
         >
           <ArrowLeft color="#0B1C30" size={24} />
         </Pressable>
-        <View className="bg-white/95 rounded-2xl border border-outline-variant/10 px-4 py-2.5 flex-row items-center gap-2 shadow-sm">
-          <View className="w-2 h-2 rounded-full bg-success animate-pulse" />
-          <Text className="text-body-sm font-bold text-on-surface font-jakarta">
+        <View
+          style={{
+            backgroundColor: "rgba(255, 255, 255, 0.95)",
+            borderRadius: 16,
+            borderWidth: 1,
+            borderColor: "rgba(197, 197, 216, 0.1)",
+            paddingHorizontal: 16,
+            paddingVertical: 10,
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 8,
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 1 },
+            shadowOpacity: 0.05,
+            shadowRadius: 2,
+            elevation: 1,
+          }}
+        >
+          <View
+            style={{
+              width: 8,
+              height: 8,
+              borderRadius: 4,
+              backgroundColor: "#22c55e",
+            }}
+          />
+          <Text
+            style={{
+              fontSize: 14,
+              fontWeight: "700",
+              color: "#0b1c30",
+              fontFamily: "Plus Jakarta Sans",
+            }}
+          >
             Navigating
           </Text>
         </View>
         <Pressable
           onPress={() => router.push("/sos")}
-          className="w-12 h-12 rounded-2xl bg-error items-center justify-center active:opacity-90 shadow-md"
+          style={({ pressed }) => ({
+            width: 48,
+            height: 48,
+            borderRadius: 16,
+            backgroundColor: "#ba1a1a",
+            alignItems: "center",
+            justifyContent: "center",
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 3,
+            elevation: 2,
+            opacity: pressed ? 0.9 : 1,
+          })}
         >
           <ShieldAlert color="#ffffff" size={24} />
         </Pressable>
       </View>
 
       {/* Main Map Area */}
-      <View className="flex-1 relative z-0">
+      <View style={{ flex: 1, position: "relative", zIndex: 0 }}>
         <Image
           source={{
             uri: "https://lh3.googleusercontent.com/aida-public/AB6AXuBhChECydpDyPgt27hlQrat9Rk2U89C00BRo9HxQfDmpSr4MRrxjAG1pGL6iwr1A__rTa5hkvxx5VNhyBHIwUrgEL1XAzRh3vdUsCbmpnjEWdd5tXIJyvuoNbsf17_pEryhtId0Y6snYs2mm-iQfYuoPK3Zrsg2EAG-XD5-Bq8QCQpcEyE5GcSDWhm7yhm20vy7oBcRqJFt0hbOoiU-LdxjqFg6qiW_P7A1aJmd6buI9IlGZRklUN8jk7Fl9tud8gafRai7G4XXH9hL",
           }}
-          className="w-full h-full object-cover"
+          style={{ width: "100%", height: "100%" }}
+          resizeMode="cover"
         />
 
         {/* Turn-by-Turn Instruction Card Overlay */}
-        <View className="absolute top-20 left-4 right-4 z-40">
-          <View className="bg-primary rounded-3xl shadow-md p-5 flex-row items-center gap-4 border border-outline-variant/10">
+        <View
+          style={{
+            position: "absolute",
+            top: 80,
+            left: 16,
+            right: 16,
+            zIndex: 40,
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: "#001caa",
+              borderRadius: 24,
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.1,
+              shadowRadius: 3,
+              elevation: 2,
+              padding: 20,
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 16,
+              borderWidth: 1,
+              borderColor: "rgba(197, 197, 216, 0.1)",
+            }}
+          >
             <CornerUpRight color="#ffffff" size={28} />
-            <View className="flex-1">
-              <Text className="text-headline-md font-bold text-white font-jakarta">
+            <View style={{ flex: 1 }}>
+              <Text
+                style={{
+                  fontSize: 24,
+                  fontWeight: "700",
+                  color: "#ffffff",
+                  fontFamily: "Plus Jakarta Sans",
+                }}
+              >
                 200m
               </Text>
-              <Text className="text-body-sm text-white/90 font-jakarta mt-0.5">
+              <Text
+                style={{
+                  fontSize: 14,
+                  color: "rgba(255, 255, 255, 0.9)",
+                  fontFamily: "Plus Jakarta Sans",
+                  marginTop: 2,
+                }}
+              >
                 Turn right onto Senate Drive
               </Text>
             </View>
@@ -104,83 +215,372 @@ export default function DriverActiveTrip() {
         </View>
 
         {/* Map Location markers */}
-        <View className="absolute top-[52%] left-[48%] -mt-3 -ml-3 w-6 h-6 items-center justify-center">
-          <View className="absolute w-5 h-5 rounded-full bg-primary/20 scale-125" />
-          <View className="w-3.5 h-3.5 bg-primary rounded-full border-2 border-white shadow-sm" />
+        <View
+          style={{
+            position: "absolute",
+            top: "52%",
+            left: "48%",
+            marginTop: -12,
+            marginLeft: -12,
+            width: 24,
+            height: 24,
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <View
+            style={{
+              position: "absolute",
+              width: 20,
+              height: 20,
+              borderRadius: 10,
+              backgroundColor: "rgba(0, 28, 170, 0.2)",
+              transform: [{ scale: 1.25 }],
+            }}
+          />
+          <View
+            style={{
+              width: 14,
+              height: 14,
+              backgroundColor: "#001caa",
+              borderRadius: 7,
+              borderWidth: 2,
+              borderColor: "#ffffff",
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 1 },
+              shadowOpacity: 0.1,
+              shadowRadius: 1,
+              elevation: 1,
+            }}
+          />
         </View>
-        <View className="absolute top-[42%] left-[32%] -mt-6 -ml-6 bg-white border border-outline-variant/10 w-12 h-12 rounded-2xl items-center justify-center shadow-md">
+        <View
+          style={{
+            position: "absolute",
+            top: "42%",
+            left: "32%",
+            marginTop: -24,
+            marginLeft: -24,
+            backgroundColor: "#ffffff",
+            borderWidth: 1,
+            borderColor: "rgba(197, 197, 216, 0.1)",
+            width: 48,
+            height: 48,
+            borderRadius: 16,
+            alignItems: "center",
+            justifyContent: "center",
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 3,
+            elevation: 2,
+          }}
+        >
           <KekeIcon size={28} color="#001caa" />
         </View>
       </View>
 
       {/* Bottom Sheet Passenger Info & Controls */}
-      <View className="bg-white rounded-t-[36px] shadow-xl shadow-black/15 border-t border-outline-variant/10 p-6 gap-5 z-10">
-        <View className="w-12 h-1.5 bg-outline-variant/20 rounded-full mx-auto" />
+      <View
+        style={{
+          backgroundColor: "#ffffff",
+          borderTopLeftRadius: 36,
+          borderTopRightRadius: 36,
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: -4 },
+          shadowOpacity: 0.15,
+          shadowRadius: 8,
+          elevation: 5,
+          borderTopWidth: 1,
+          borderTopColor: "rgba(197, 197, 216, 0.1)",
+          padding: 24,
+          gap: 20,
+          zIndex: 10,
+        }}
+      >
+        <View
+          style={{
+            width: 48,
+            height: 6,
+            backgroundColor: "rgba(197, 197, 216, 0.2)",
+            borderRadius: 3,
+            alignSelf: "center",
+          }}
+        />
 
         {/* Trip State Info Header */}
-        <View className="flex-col gap-1 pb-1">
-          <Text className="text-headline-lg font-bold text-on-surface font-jakarta">
+        <View style={{ gap: 4, paddingBottom: 4 }}>
+          <Text
+            style={{
+              fontSize: 28,
+              fontWeight: "700",
+              color: "#0b1c30",
+              fontFamily: "Plus Jakarta Sans",
+            }}
+          >
             {getStatusTitle()}
           </Text>
-          <Text className="text-body-sm text-secondary font-jakarta">
+          <Text
+            style={{
+              fontSize: 14,
+              color: "#5b5e66",
+              fontFamily: "Plus Jakarta Sans",
+            }}
+          >
             {getStatusSubtitle()}
           </Text>
         </View>
 
         {/* Passenger Profile Row */}
-        <View className="bg-surface rounded-3xl p-4 flex-row items-center justify-between border border-outline-variant/10 shadow-sm">
-          <View className="flex-row items-center gap-3.5 flex-1 pr-4">
-            <View className="relative w-12 h-12 rounded-full overflow-hidden border border-outline-variant/10 bg-white">
+        <View
+          style={{
+            backgroundColor: "#f8f9ff",
+            borderRadius: 24,
+            padding: 16,
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+            borderWidth: 1,
+            borderColor: "rgba(197, 197, 216, 0.1)",
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 1 },
+            shadowOpacity: 0.05,
+            shadowRadius: 2,
+            elevation: 1,
+          }}
+        >
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 14,
+              flex: 1,
+              paddingRight: 16,
+            }}
+          >
+            <View
+              style={{
+                width: 48,
+                height: 48,
+                borderRadius: 24,
+                overflow: "hidden",
+                borderWidth: 1,
+                borderColor: "rgba(197, 197, 216, 0.1)",
+                backgroundColor: "#ffffff",
+              }}
+            >
               <Image
                 source={{
                   uri: "https://lh3.googleusercontent.com/aida-public/AB6AXuCKv18St18L7X2vZAAMPrAWpe_RTK8EptXVp0FFMqsUDuP_GgeffQiG2BXUbeBK5fAppU3V1r1xiIbGeVUoaoTLduIBmWdC2WEHiVaf2hilbRU54kKuZ7O6ukr9iC-soO0wPXucYYRHL1OQTZr0q7bDRr1TZqfKpkpL290p2tVDrufDqbY7kxXIdHRNxOex755J1_4AtLe8z7qbpg1umUVPxW4tt5r_i6df9PbNJdOf5PFxcsnG6bDlUgGoGZnLt0vZSzW4H3KHhOMD",
                 }}
-                className="w-full h-full object-cover"
+                style={{ width: "100%", height: "100%" }}
+                resizeMode="cover"
               />
             </View>
-            <View className="flex-1">
-              <Text className="text-body-md font-bold text-on-surface font-jakarta">Alex</Text>
-              <View className="flex-row items-center gap-1.5 mt-0.5">
+            <View style={{ flex: 1 }}>
+              <Text
+                style={{
+                  fontSize: 16,
+                  fontWeight: "700",
+                  color: "#0b1c30",
+                  fontFamily: "Plus Jakarta Sans",
+                }}
+              >
+                Alex
+              </Text>
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 6,
+                  marginTop: 2,
+                }}
+              >
                 <Star color="#eab308" fill="#eab308" size={13} />
-                <Text className="text-body-sm text-secondary font-jakarta font-semibold">4.9 • Student</Text>
+                <Text
+                  style={{
+                    fontSize: 14,
+                    color: "#5b5e66",
+                    fontFamily: "Plus Jakarta Sans",
+                    fontWeight: "600",
+                  }}
+                >
+                  4.9 • Student
+                </Text>
               </View>
             </View>
           </View>
-          <View className="flex-row gap-2">
-            <Pressable className="bg-white w-11 h-11 rounded-2xl items-center justify-center border border-outline-variant/15 shadow-sm active:bg-surface-container">
+          <View style={{ flexDirection: "row", gap: 8 }}>
+            <Pressable
+              style={({ pressed }) => ({
+                backgroundColor: "#ffffff",
+                width: 44,
+                height: 44,
+                borderRadius: 16,
+                alignItems: "center",
+                justifyContent: "center",
+                borderWidth: 1,
+                borderColor: "rgba(197, 197, 216, 0.15)",
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 1 },
+                shadowOpacity: 0.05,
+                shadowRadius: 2,
+                elevation: 1,
+                opacity: pressed ? 0.75 : 1,
+              })}
+            >
               <MessageSquare color="#0B1C30" size={18} />
             </Pressable>
-            <Pressable className="bg-white w-11 h-11 rounded-2xl items-center justify-center border border-outline-variant/15 shadow-sm active:bg-surface-container">
+            <Pressable
+              style={({ pressed }) => ({
+                backgroundColor: "#ffffff",
+                width: 44,
+                height: 44,
+                borderRadius: 16,
+                alignItems: "center",
+                justifyContent: "center",
+                borderWidth: 1,
+                borderColor: "rgba(197, 197, 216, 0.15)",
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 1 },
+                shadowOpacity: 0.05,
+                shadowRadius: 2,
+                elevation: 1,
+                opacity: pressed ? 0.75 : 1,
+              })}
+            >
               <Phone color="#0B1C30" size={18} />
             </Pressable>
           </View>
         </View>
 
         {/* Route Details Connector Timeline */}
-        <View className="bg-surface rounded-3xl p-4 border border-outline-variant/10 shadow-sm relative">
-          <View className="absolute left-[25px] top-[26px] bottom-[26px] w-[1px] border-l border-dashed border-outline-variant/30" />
+        <View
+          style={{
+            backgroundColor: "#f8f9ff",
+            borderRadius: 24,
+            padding: 16,
+            borderWidth: 1,
+            borderColor: "rgba(197, 197, 216, 0.1)",
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 1 },
+            shadowOpacity: 0.05,
+            shadowRadius: 2,
+            elevation: 1,
+            position: "relative",
+          }}
+        >
+          <View
+            style={{
+              position: "absolute",
+              left: 25,
+              top: 26,
+              bottom: 26,
+              width: 1,
+              borderLeftWidth: 1,
+              borderStyle: "dashed",
+              borderColor: "rgba(197, 197, 216, 0.3)",
+            }}
+          />
 
           {/* Pickup */}
-          <View className="flex-row items-center gap-3.5 mb-3.5">
-            <View className="w-5 h-5 rounded-full bg-primary/15 items-center justify-center">
-              <View className="w-2 h-2 rounded-full bg-primary" />
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 14,
+              marginBottom: 14,
+            }}
+          >
+            <View
+              style={{
+                width: 20,
+                height: 20,
+                borderRadius: 10,
+                backgroundColor: "rgba(0, 28, 170, 0.15)",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <View
+                style={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: 4,
+                  backgroundColor: "#001caa",
+                }}
+              />
             </View>
             <View>
-              <Text className="text-[10px] uppercase font-bold text-secondary font-jakarta">Pickup Location</Text>
-              <Text className="text-body-sm font-bold text-on-surface font-jakarta mt-0.5">
+              <Text
+                style={{
+                  fontSize: 10,
+                  textTransform: "uppercase",
+                  fontWeight: "700",
+                  color: "#5b5e66",
+                  fontFamily: "Plus Jakarta Sans",
+                }}
+              >
+                Pickup Location
+              </Text>
+              <Text
+                style={{
+                  fontSize: 14,
+                  fontWeight: "700",
+                  color: "#0b1c30",
+                  fontFamily: "Plus Jakarta Sans",
+                  marginTop: 2,
+                }}
+              >
                 {activeTrip.pickup || "SOES Building"}
               </Text>
             </View>
           </View>
 
           {/* Dropoff */}
-          <View className="flex-row items-center gap-3.5">
-            <View className="w-5 h-5 rounded-full bg-primary/15 items-center justify-center">
-              <View className="w-2 h-2 rounded-full bg-primary border-2 border-white" />
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
+            <View
+              style={{
+                width: 20,
+                height: 20,
+                borderRadius: 10,
+                backgroundColor: "rgba(0, 28, 170, 0.15)",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <View
+                style={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: 4,
+                  backgroundColor: "#001caa",
+                  borderWidth: 2,
+                  borderColor: "#ffffff",
+                }}
+              />
             </View>
             <View>
-              <Text className="text-[10px] uppercase font-bold text-secondary font-jakarta">Destination</Text>
-              <Text className="text-body-sm font-bold text-on-surface font-jakarta mt-0.5">
+              <Text
+                style={{
+                  fontSize: 10,
+                  textTransform: "uppercase",
+                  fontWeight: "700",
+                  color: "#5b5e66",
+                  fontFamily: "Plus Jakarta Sans",
+                }}
+              >
+                Destination
+              </Text>
+              <Text
+                style={{
+                  fontSize: 14,
+                  fontWeight: "700",
+                  color: "#0b1c30",
+                  fontFamily: "Plus Jakarta Sans",
+                  marginTop: 2,
+                }}
+              >
                 {activeTrip.destination || "Senate Building"}
               </Text>
             </View>
@@ -189,8 +589,23 @@ export default function DriverActiveTrip() {
 
         {/* Boarding instruction detail for state start */}
         {tripState === "start" && (
-          <View className="bg-primary/5 border border-primary/10 rounded-2xl p-4">
-            <Text className="text-body-sm text-secondary font-jakarta text-center">
+          <View
+            style={{
+              backgroundColor: "rgba(0, 28, 170, 0.05)",
+              borderWidth: 1,
+              borderColor: "rgba(0, 28, 170, 0.1)",
+              borderRadius: 16,
+              padding: 16,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 14,
+                color: "#5b5e66",
+                fontFamily: "Plus Jakarta Sans",
+                textAlign: "center",
+              }}
+            >
               Verify boarding by checking payment option or scanning QR code.
             </Text>
           </View>
@@ -199,9 +614,29 @@ export default function DriverActiveTrip() {
         {/* Action Button */}
         <Pressable
           onPress={handleTripAction}
-          className="w-full h-14 bg-[#0b1c30] rounded-full flex items-center justify-center shadow-md active:scale-[0.98]"
+          style={({ pressed }) => ({
+            width: "100%",
+            height: 56,
+            backgroundColor: "#0b1c30",
+            borderRadius: 28,
+            alignItems: "center",
+            justifyContent: "center",
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 3,
+            elevation: 2,
+            transform: [{ scale: pressed ? 0.98 : 1 }],
+          })}
         >
-          <Text className="text-white text-action-lg font-bold font-jakarta">
+          <Text
+            style={{
+              color: "#ffffff",
+              fontSize: 16,
+              fontWeight: "700",
+              fontFamily: "Plus Jakarta Sans",
+            }}
+          >
             {getButtonText()}
           </Text>
         </Pressable>

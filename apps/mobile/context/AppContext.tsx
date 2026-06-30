@@ -19,6 +19,7 @@ export interface AlertNotification {
   timestamp: string;
   type: "proximity" | "general";
   read: boolean;
+  category?: "ride_arriving" | "trip_complete" | "queue_update" | "security_alert" | "reward" | "service_update";
 }
 
 export interface TripState {
@@ -48,7 +49,7 @@ interface AppContextType {
   cancelBooking: () => void;
   progressDriverTrip: () => void;
   completeTrip: () => void;
-  addNotification: (title: string, body: string, type?: "proximity" | "general") => void;
+  addNotification: (title: string, body: string, type?: "proximity" | "general", category?: AlertNotification["category"]) => void;
   clearActiveTrip: () => void;
   earnings: { daily: number; tripsCount: number; onlineTime: string };
   triggerMockIncomingRequest: () => void;
@@ -94,19 +95,57 @@ const INITIAL_RIDES: Ride[] = [
 const INITIAL_NOTIFICATIONS: AlertNotification[] = [
   {
     id: "notif-1",
-    title: "Proximity Alert",
-    body: "Your Keke driver Obinna is just 2 minutes away! Wait near SEET Head roundabout.",
-    timestamp: "2 hours ago",
+    title: "Your ride is arriving",
+    body: "Usman is 2 mins away.",
+    timestamp: "11:24 AM",
     type: "proximity",
     read: false,
+    category: "ride_arriving",
   },
   {
     id: "notif-2",
-    title: "System Update",
-    body: "New safety updates installed. Always verify driver identity before riding.",
-    timestamp: "1 day ago",
+    title: "Trip complete",
+    body: "Thanks for riding with KekeGo.",
+    timestamp: "10:18 AM",
     type: "general",
     read: true,
+    category: "trip_complete",
+  },
+  {
+    id: "notif-3",
+    title: "Queue update",
+    body: "Shorter wait times at New Hall stop.",
+    timestamp: "9:05 AM",
+    type: "general",
+    read: false,
+    category: "queue_update",
+  },
+  {
+    id: "notif-4",
+    title: "Security alert",
+    body: "Police check near Main Gate.",
+    timestamp: "8:12 AM",
+    type: "general",
+    read: true,
+    category: "security_alert",
+  },
+  {
+    id: "notif-5",
+    title: "You earned a reward!",
+    body: "₦100 credit has been added to your wallet.",
+    timestamp: "Yesterday",
+    type: "general",
+    read: true,
+    category: "reward",
+  },
+  {
+    id: "notif-6",
+    title: "Service update",
+    body: "Parañaque route updates this weekend.",
+    timestamp: "Yesterday",
+    type: "general",
+    read: true,
+    category: "service_update",
   },
 ];
 
@@ -242,7 +281,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }));
   };
 
-  const addNotification = (title: string, body: string, type: "proximity" | "general" = "general") => {
+  const addNotification = (title: string, body: string, type: "proximity" | "general" = "general", category?: AlertNotification["category"]) => {
     const newNotif: AlertNotification = {
       id: `notif-${Math.random().toString(36).substring(2, 9)}`,
       title,
@@ -250,6 +289,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       timestamp: "Just now",
       type,
       read: false,
+      category,
     };
     setNotifications((prev) => [newNotif, ...prev]);
   };

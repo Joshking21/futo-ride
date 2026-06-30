@@ -16,10 +16,10 @@ export default function RiderLayout() {
         tabBarInactiveTintColor: "#5b5e66",
         tabBarStyle: {
           backgroundColor: "#f8f9ff",
-          borderTopWidth: 1,
-          borderTopColor: "#c5c5d8",
-          height: 64,
-          paddingBottom: 8,
+          // borderTopWidth: 1,
+          // borderTopColor: "#c5c5d8",
+          height: 75,
+          paddingBottom: 1,
           paddingTop: 8,
         },
         tabBarLabelStyle: {
@@ -34,8 +34,10 @@ export default function RiderLayout() {
         options={{
           title: "Home",
           tabBarIcon: ({ color, focused }) => (
-            <View className={focused ? "bg-primary-container/10 rounded-full px-3 py-1" : "px-3 py-1"}>
-              <Home color={color} size={22} />
+            <View
+            //  className={focused ? "bg-primary-container/10 rounded-full px-3 py-1" : "px-3 py-1"}
+             >
+              <Home color={color} size={focused ? 25 : 22} strokeWidth={2}/>
             </View>
           ),
         }}
@@ -45,8 +47,10 @@ export default function RiderLayout() {
         options={{
           title: "Rides",
           tabBarIcon: ({ color, focused }) => (
-            <View className={focused ? "bg-primary-container/10 rounded-full px-3 py-1" : "px-3 py-1"}>
-              <History color={color} size={22} />
+            <View 
+            // className={focused ? "bg-primary-container/10 rounded-full px-3 py-1" : "px-3 py-1"}
+            >
+              <History color={color} size={focused ? 25 : 22} strokeWidth={2}/>
             </View>
           ),
         }}
@@ -56,8 +60,10 @@ export default function RiderLayout() {
         options={{
           title: "Alerts",
           tabBarIcon: ({ color, focused }) => (
-            <View className={focused ? "bg-primary-container/10 rounded-full px-3 py-1 relative" : "px-3 py-1 relative"}>
-              <Bell color={color} size={22} />
+            <View 
+            // className={focused ? "bg-primary-container/10 rounded-full px-3 py-1 relative" : "px-3 py-1 relative"}
+            >
+              <Bell color={color} size={focused ? 25 : 22} strokeWidth={2}/>
               {unreadCount > 0 && (
                 <View className="absolute top-0 right-1 w-2.5 h-2.5 bg-error rounded-full border border-surface" />
               )}
@@ -70,8 +76,10 @@ export default function RiderLayout() {
         options={{
           title: "Account",
           tabBarIcon: ({ color, focused }) => (
-            <View className={focused ? "bg-primary-container/10 rounded-full px-3 py-1" : "px-3 py-1"}>
-              <User color={color} size={22} />
+            <View 
+            // className={focused ? "bg-primary-container/10 rounded-full px-3 py-1" : "px-3 py-1"}
+            >
+              <User color={color} size={focused ? 25 : 22} strokeWidth={2}/>
             </View>
           ),
         }}
