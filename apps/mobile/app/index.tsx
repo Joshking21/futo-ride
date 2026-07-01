@@ -1,28 +1,72 @@
 import { useRouter } from "expo-router";
 import { ArrowRight, Compass, ShieldCheck } from "lucide-react-native";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { ActivityIndicator, Pressable, Text, View, Image } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useApp } from "../context/AppContext";
 import KekeIcon from "../components/KekeIcon";
 import "../global.css";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "@/config/firebaseConfig";
 
 export default function Splash() {
   const router = useRouter();
   const { setRole } = useApp();
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 1800);
-    return () => clearTimeout(timer);
-  }, []);
+  
+  // Track loading state for the visual UI components
+  const [showLoader, setShowLoader] = useState(true);
+  
+  // Keep standard refs/states to hold the auth instance response safely
+  const authChecked = useRef(false);
+  const foundUser = useRef<any>(null);
 
   const selectRole = (role: "rider" | "driver") => {
     setRole(role);
     router.push("/login");
   };
+
+  useEffect(() => {
+    // 1. Kick off the minimum 2-second presentation timer
+    const timer = setTimeout(() => {
+      // Once 2 seconds pass, check if Firebase has completed its storage check
+      if (authChecked.current) {
+        handleNavigationDecision();
+      } else {
+        // If Firebase is taking longer than 2 seconds, let it call navigation when ready
+        authChecked.current = true; 
+      }
+    }, 2000);
+
+    // 2. Listen to the background AsyncStorage token check
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      foundUser.current = firebaseUser;
+      console.log('Firebase storage check complete. User present:', !!firebaseUser);
+
+      if (authChecked.current) {
+        // If the 2-second screen timer already finished, route immediately
+        handleNavigationDecision();
+      } else {
+        // Mark that Firebase is done, wait for the 2-second timer block to complete
+        authChecked.current = true;
+      }
+    });
+
+    // Unified routing decision pipeline
+    const handleNavigationDecision = () => {
+      if (foundUser.current) {
+        // Token found! Route smoothly straight into the authenticated Home dashboard
+        router.replace('/(rider)/home');
+      } else {
+        // No token found! Drop the loading spinner so the selection buttons appear
+        setShowLoader(false);
+      }
+    };
+
+    return () => {
+      clearTimeout(timer);
+      unsubscribe();
+    };
+  }, []);
 
   return (
     <SafeAreaView className="flex-1 bg-surface-bright justify-between px-margin-mobile py-xl relative">
@@ -35,8 +79,8 @@ export default function Splash() {
         resizeMode="cover"
       />
 
+      {/* Center Group: Branding & Logo always stays visible */}
       <View className="flex-1 justify-center items-center">
-        {/* App Logo & Branding */}
         <View className="flex flex-col items-center justify-center">
           {/* Logo Container */}
           <View className="w-28 h-28 rounded-3xl bg-white shadow-xl shadow-black/5 flex items-center justify-center border border-outline-variant/20 mb-6">
@@ -55,9 +99,9 @@ export default function Splash() {
         </View>
       </View>
 
-      {/* Action phase or Loading spinner */}
-      {loading ? (
-        <View className="w-full justify-center items-center py-8">
+      {/* Bottom Group: Swaps smoothly between the Spinner or the Role Buttons */}
+      {showLoader ? (
+        <View className="w-full justify-center items-center py-12">
           <ActivityIndicator size="large" color="#001caa" className="scale-110" />
         </View>
       ) : (

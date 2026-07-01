@@ -1,14 +1,21 @@
 import { GluestackUIProvider } from '@/components/ui/gluestack-ui-provider';
 import '../global.css';
-import { Stack } from "expo-router";
-import React from "react";
+import { Stack, useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
 import { AppProvider } from '../context/AppContext';
+import { auth } from '@/config/firebaseConfig';
+import { User, onAuthStateChanged } from 'firebase/auth';
 
 export default function RootLayout() {
   return <RootLayoutNav />;
 }
 
 function RootLayoutNav() {
+
+  
+
+// Keep Splash Screen visible while checking storage
+
   return (
     <AppProvider>
       <GluestackUIProvider mode="light">
