@@ -3,5 +3,10 @@
   "version": "1.0.0",
   "description": "FUTO campus keke & bus app — Fastify backend + Expo mobile + Firebase",
   "private": true,
-  "packageManager": "pnpm@10.34.4"
+  "packageManager": "pnpm@10.34.4",
+  "dependencies": {
+    "@react-native-async-storage/async-storage": "^3.1.1",
+    "expo-linear-gradient": "^56.0.4",
+    "firebase": "^12.15.0"
+  }
 }

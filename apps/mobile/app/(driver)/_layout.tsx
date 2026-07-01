@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import { Home, Landmark, User } from "lucide-react-native";
+import { Home, Landmark, User, Wallet } from "lucide-react-native";
 import React from "react";
 import { Platform, View } from "react-native";
 
@@ -8,14 +8,14 @@ export default function DriverLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarShowLabel: false,
+        // tabBarShowLabel: false,
         tabBarActiveTintColor: "#001caa",
         tabBarInactiveTintColor: "#5b5e66",
         tabBarStyle: {
           backgroundColor: "#f8f9ff",
          
           
-          height: 64,
+          height: 70,
           paddingBottom: 8,
           paddingTop: 8,
           ...Platform.select({
@@ -66,7 +66,7 @@ export default function DriverLayout() {
                   : "px-3 py-1"
               }
             >
-              <Landmark color={color} size={focused ? 25 : 22} strokeWidth={2} />
+              <Wallet color={color} size={focused ? 25 : 22} strokeWidth={2} />
             </View>
           ),
         }}

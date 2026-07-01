@@ -1,181 +1,428 @@
-import React, { useState } from "react";
-import { View, Text, Pressable, ScrollView } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import {
+  ArrowLeft,
+  Bell,
+  Building2,
+  Check,
+  CheckCircle2,
+  ChevronDown,
+  Gift,
+  Lock,
+  Megaphone,
+  Send,
+  Settings,
+  ShieldAlert,
+} from "lucide-react-native";
+import React, { useEffect, useRef, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  Animated,
+  Modal,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import KekeIcon from "../../components/KekeIcon";
 import { useApp } from "../../context/AppContext";
-import { Bell, Radio, MessageSquare, AlertCircle, Info, Wallet, ChevronDown, Check, Bus, ArrowLeft } from "lucide-react-native";
 
-export default function RiderAlerts() {
+const CAMPUS_LOCATIONS = [
+  { name: "FUTO Main Gate", desc: "Campus main entrance shuttle park" },
+  {
+    name: "Senate Building",
+    desc: "University admin & vice chancellor office",
+  },
+  { name: "SEET Head", desc: "School of Engineering & Tech Complex" },
+  { name: "SOES Building", desc: "School of Environmental Sciences" },
+  { name: "Hall C Hostel", desc: "Student housing residential area" },
+  { name: "PGS Complex", desc: "Post Graduate School building" },
+  { name: "Health Centre", desc: "Campus medical clinic and emergency" },
+];
+
+export default function AlertsScreen() {
   const router = useRouter();
-  const { notifications, addNotification } = useApp();
-  const [primaryLocation, setPrimaryLocation] = useState("SEET Head");
-  const [showLocationSelect, setShowLocationSelect] = useState(false);
+  const { notifications: globalNotifications, addNotification } = useApp();
 
-  const locationsList = [
-    "SMAT Building",
-    "SEET Head",
-    "SOES Lecture Theatre",
-    "Main Library",
-    "Hostel A Junction",
-  ];
+  const [notificationsList, setNotificationsList] =
+    useState(globalNotifications);
+  const [selectedBuilding, setSelectedBuilding] = useState<string | null>(null);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [connecting, setConnecting] = useState(false);
+  const [connected, setConnected] = useState(false);
 
-  const handleMarkAllRead = () => {
-    notifications.forEach((n) => {
-      n.read = true;
-    });
-    addNotification("Alerts Marked Read", "All pending notifications have been marked as read.", "general");
+  // Sync with global notifications when added
+  useEffect(() => {
+    setNotificationsList(globalNotifications);
+  }, [globalNotifications]);
+
+  // Pulse animation for the concentric circles in Proximity alert card
+  const pulseValue1 = useRef(new Animated.Value(1)).current;
+  const pulseValue2 = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    // Outer circle pulse
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseValue1, {
+          toValue: 1.25,
+          duration: 1800,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseValue1, {
+          toValue: 1.0,
+          duration: 1800,
+          useNativeDriver: true,
+        }),
+      ]),
+    ).start();
+
+    // Inner circle pulse (staggered slightly)
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseValue2, {
+          toValue: 1.15,
+          duration: 1500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseValue2, {
+          toValue: 1.0,
+          duration: 1500,
+          useNativeDriver: true,
+        }),
+      ]),
+    ).start();
+  }, [pulseValue1, pulseValue2]);
+
+  const handleMarkAsRead = (id: string) => {
+    setNotificationsList((prev) =>
+      prev.map((notif) => (notif.id === id ? { ...notif, read: true } : notif)),
+    );
   };
 
-  const getNotifIcon = (type: string, title: string) => {
-    if (type === "proximity") return <Radio color="#001caa" size={20} />;
-    if (title.toLowerCase().includes("wallet")) return <Wallet color="#059669" size={20} fill="#10b98120" />;
-    if (title.toLowerCase().includes("route") || title.toLowerCase().includes("traffic") || title.toLowerCase().includes("delay")) {
-      return <AlertCircle color="#d97706" size={20} fill="#f59e0b20" />;
+  const handleConnectTelegram = () => {
+    if (!selectedBuilding) {
+      Alert.alert(
+        "Select Building",
+        "Please select a campus building to enable proximity alerts.",
+        [{ text: "OK" }],
+      );
+      return;
     }
-    return <Bus color="#001caa" size={20} fill="#354be220" />;
+
+    if (connected) return;
+
+    setConnecting(true);
+    setTimeout(() => {
+      setConnecting(false);
+      setConnected(true);
+
+      // Add a dynamic notification to the context list!
+      addNotification(
+        "Telegram Alert Active",
+        `Proximity alerts enabled for ${selectedBuilding}. You will receive alerts on Telegram.`,
+        "proximity",
+        "ride_arriving",
+      );
+
+      Alert.alert(
+        "Connected!",
+        `Proximity alerts for ${selectedBuilding} have been successfully linked to Telegram.`,
+        [{ text: "Great!" }],
+      );
+    }, 1800);
   };
 
-  const getNotifBg = (type: string, title: string) => {
-    if (type === "proximity") return "bg-primary/10";
-    if (title.toLowerCase().includes("wallet")) return "bg-[#10b981]/10";
-    if (title.toLowerCase().includes("route") || title.toLowerCase().includes("traffic") || title.toLowerCase().includes("delay")) {
-      return "bg-[#f59e0b]/10";
+  const renderNotificationIcon = (category: string | undefined) => {
+    const size = 20;
+    switch (category) {
+      case "ride_arriving":
+        return (
+          <View className="w-12 h-12 rounded-2xl bg-[#eff4ff] items-center justify-center shrink-0">
+            <KekeIcon size={24} color="#001caa" />
+          </View>
+        );
+      case "trip_complete":
+        return (
+          <View className="w-12 h-12 rounded-2xl bg-green-50 items-center justify-center shrink-0">
+            <CheckCircle2 color="#22c55e" size={size} />
+          </View>
+        );
+      case "queue_update":
+        return (
+          <View className="w-12 h-12 rounded-2xl bg-[#fef9c3] items-center justify-center shrink-0">
+            <Bell color="#eab308" size={size} />
+          </View>
+        );
+      case "security_alert":
+        return (
+          <View className="w-12 h-12 rounded-2xl bg-purple-50 items-center justify-center shrink-0">
+            <ShieldAlert color="#8b5cf6" size={size} />
+          </View>
+        );
+      case "reward":
+        return (
+          <View className="w-12 h-12 rounded-2xl bg-red-50 items-center justify-center shrink-0">
+            <Gift color="#ef4444" size={size} />
+          </View>
+        );
+      case "service_update":
+        return (
+          <View className="w-12 h-12 rounded-2xl bg-sky-50 items-center justify-center shrink-0">
+            <Megaphone color="#0ea5e9" size={size} />
+          </View>
+        );
+      default:
+        return (
+          <View className="w-12 h-12 rounded-2xl bg-slate-50 items-center justify-center shrink-0">
+            <Bell color="#5b5e66" size={size} />
+          </View>
+        );
     }
-    return "bg-surface-tint/10";
   };
 
   return (
     <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
       {/* Top Header */}
-      <View className="px-4 h-16 bg-surface border-b border-outline-variant flex-row items-center justify-between z-50">
-        <View className="flex-row items-center gap-2">
-          <Pressable onPress={() => router.back()} className="w-10 h-10 flex items-center justify-center rounded-full active:bg-surface-container-high transition-colors">
-            <ArrowLeft color="#001caa" size={24} />
-          </Pressable>
-          <Text className="text-headline-md font-bold text-primary font-jakarta">Alerts & Proximity</Text>
-        </View>
-        <Pressable onPress={handleMarkAllRead} className="active:opacity-75">
-          <Text className="text-label-sm text-primary font-bold uppercase font-jakarta">Mark Read</Text>
+      <View className="flex-row items-center justify-between px-margin-mobile h-[72px] bg-transparent">
+        <Pressable
+          onPress={() => router.back()}
+          className="w-12 h-12 rounded-2xl bg-white items-center justify-center border border-outline-variant/10 active:opacity-70 shadow-sm"
+        >
+          <ArrowLeft color="#0B1C30" size={24} />
+        </Pressable>
+        <Text className="text-headline-sm font-bold text-on-surface font-jakarta">
+          Notifications
+        </Text>
+        <Pressable className="w-12 h-12 rounded-2xl bg-white items-center justify-center border border-outline-variant/10 active:opacity-70 shadow-sm relative">
+          <Settings color="#0B1C30" size={20} />
+          <View className="absolute top-3 right-3 w-2 h-2 rounded-full bg-primary border border-white" />
         </Pressable>
       </View>
-
-      <ScrollView contentContainerStyle={{ paddingBottom: 100 }} className="flex-1 px-4 py-6 z-0">
-        
-        {/* Proximity Config Card (Bento Style) */}
-        <View className="bg-surface-container rounded-xl p-5 border border-outline-variant shadow-sm mb-6 relative overflow-hidden">
-          <View className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none" />
-          
-          <View className="flex-row justify-between items-start mb-4 relative z-10">
-            <View className="flex-1 pr-2">
-              <Text className="text-headline-md font-bold text-on-surface mb-1 font-jakarta">Proximity Alerts</Text>
-              <Text className="text-body-sm text-secondary font-jakarta">Get notified when a bus approaches your selected building.</Text>
-            </View>
-            <View className="bg-primary-container text-on-primary-container p-2.5 rounded-full">
-              <Radio color="#ffffff" size={20} />
+          <View className="flex bg-transparent p-5 pb-0">
+            <View className="bg-[#EEF2FF] rounded-[32px] p-6 border border-outline-variant/5 relative overflow-hidden">
+              <View className="flex-row items-start gap-4">
+                {/* Pulsing Bell Icon */}
+                <View className="w-14 h-14 items-center justify-center shrink-0 relative mr-2">
+                  {/* Outer pulsing ring */}
+                  <Animated.View
+                    style={{
+                      width: 56,
+                      height: 56,
+                      borderRadius: 28,
+                      backgroundColor: "rgba(0, 28, 170, 0.1)",
+                      position: "absolute",
+                      transform: [{ scale: pulseValue1 }],
+                      opacity: pulseValue1.interpolate({
+                        inputRange: [1, 1.25],
+                        outputRange: [0.6, 0],
+                      }),
+                    }}
+                  />
+                  {/* Inner pulsing ring */}
+                  <Animated.View
+                    style={{
+                      width: 44,
+                      height: 44,
+                      borderRadius: 22,
+                      backgroundColor: "rgba(0, 28, 170, 0.1)",
+                      position: "absolute",
+                      transform: [{ scale: pulseValue2 }],
+                      opacity: pulseValue2.interpolate({
+                        inputRange: [1, 1.15],
+                        outputRange: [0.8, 0],
+                      }),
+                    }}
+                  />
+                  {/* Static White Center */}
+                  <View className="w-10 h-10 rounded-full bg-white items-center justify-center shadow-sm z-10">
+                    <Bell color="#001caa" size={20} />
+                  </View>
+                </View>
+    
+                {/* Dynamic Banner Text */}
+                <View className="flex-grow flex-wrap">
+                  <Text className="font-jakarta text-[15px] font-bold text-on-surface leading-[22px]">
+                    Notify me when a{"\n"}keke or bus is{" "}
+                    <Text className="text-primary">
+                      {selectedBuilding
+                        ? `near ${selectedBuilding}`
+                        : "near [building]"}
+                    </Text>
+                  </Text>
+                  <Text className="font-jakarta text-[12px] text-secondary/90 leading-4">
+                    Get a Telegram alert when vehicles{"\n"}are near your selected
+                    building.
+                  </Text>
+                </View>
+              </View>
+    
+              {/* Select Building Dropdown Selector */}
+    
+              <Pressable
+                onPress={() => setShowDropdown(true)}
+                className="bg-white border border-outline-variant/5 rounded-2xl p-4 flex-row items-center justify-between mt-5 active:bg-slate-50"
+              >
+                <View className="flex-row items-center gap-3">
+                  <Building2 color="#5b5e66" size={20} />
+                  <Text
+                    className={`font-jakarta text-[14px] font-semibold ${
+                      selectedBuilding ? "text-on-surface" : "text-secondary"
+                    }`}
+                  >
+                    {selectedBuilding || "Select building"}
+                  </Text>
+                </View>
+                <ChevronDown color="#5b5e66" size={20} />
+              </Pressable>
+    
+              {/* Connect Telegram Primary Button */}
+              <Pressable
+                onPress={handleConnectTelegram}
+                disabled={connecting}
+                className={`flex-row items-center justify-center gap-2 rounded-2xl h-14 mt-4 shadow-sm active:opacity-90 ${
+                  connected ? "bg-green-600" : "bg-primary"
+                }`}
+              >
+                {connecting ? (
+                  <ActivityIndicator color="white" />
+                ) : connected ? (
+                  <>
+                    <Check color="white" size={18} />
+                    <Text className="text-white font-jakarta font-semibold text-[15px]">
+                      Connected to Telegram
+                    </Text>
+                  </>
+                ) : (
+                  <>
+                    <Send
+                      color="white"
+                      size={18}
+                      style={{ transform: [{ rotate: "-30deg" }] }}
+                    />
+                    <Text className="text-white font-jakarta font-semibold text-[15px]">
+                      Connect Telegram
+                    </Text>
+                  </>
+                )}
+              </Pressable>
+    
+              {/* Footer privacy text */}
+              <View className="flex-row items-center justify-center gap-1.5 mt-5">
+                <Lock color="#5b5e66" size={12} style={{ opacity: 0.6 }} />
+                <Text className="text-[11px] text-secondary font-medium font-jakarta opacity-80">
+                  We respect your privacy. No spam, ever.
+                </Text>
+              </View>
             </View>
           </View>
 
-          <View className="gap-4 relative z-10">
-            {/* Target Building Selector */}
-            <View>
-              <Text className="block text-label-sm font-bold text-on-surface-variant mb-1.5 font-jakarta">Select Target Building</Text>
-              <View className="relative">
-                <Pressable
-                  onPress={() => setShowLocationSelect(!showLocationSelect)}
-                  className="w-full h-12 px-4 border border-outline-variant rounded-lg bg-surface flex-row justify-between items-center active:bg-surface-container-low"
-                >
-                  <Text className="text-body-md text-on-surface font-medium font-jakarta">{primaryLocation}</Text>
-                  <ChevronDown color="#5b5e66" size={20} />
-                </Pressable>
+      <ScrollView
+        contentContainerStyle={{
+          paddingHorizontal: 20,
+          paddingBottom: 24,
+          gap: 16,
+        }}
+        className="flex-grow mt-2"
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Today Header */}
+        <Text className="text-secondary font-jakarta text-body-sm font-semibold tracking-wide px-1">
+          Today
+        </Text>
 
-                {showLocationSelect && (
-                  <View className="absolute top-13 left-0 right-0 border border-outline-variant bg-surface rounded-lg overflow-hidden shadow-md z-50">
-                    {locationsList.map((loc, idx) => (
-                      <Pressable
-                        key={idx}
-                        onPress={() => {
-                          setPrimaryLocation(loc);
-                          setShowLocationSelect(false);
-                          addNotification("Proximity Target Updated", `Target set to ${loc}. You will receive alerts when vehicles are within 500m.`, "proximity");
-                        }}
-                        className="px-4 py-3 border-b border-outline-variant/10 flex-row justify-between items-center active:bg-surface-container-low"
-                      >
-                        <Text className="text-body-md text-on-surface font-medium font-jakarta">{loc}</Text>
-                        {primaryLocation === loc && <Check color="#001caa" size={16} />}
-                      </Pressable>
-                    ))}
-                  </View>
+        {/* Notifications List */}
+        <View className="gap-3">
+          {notificationsList.map((notif) => (
+            <Pressable
+              key={notif.id}
+              onPress={() => handleMarkAsRead(notif.id)}
+              className="bg-white rounded-[24px] p-4 border border-outline-variant/5 shadow-sm flex-row items-center gap-4 relative active:opacity-90"
+            >
+              {/* Left visual icon badge */}
+              {renderNotificationIcon(notif.category)}
+
+              {/* Title & Body */}
+              <View className="flex-1 pr-6">
+                <Text className="text-[15px] font-bold text-on-surface font-jakarta">
+                  {notif.title}
+                </Text>
+                <Text className="text-[13px] text-secondary font-jakarta leading-4 mt-0.5">
+                  {notif.body}
+                </Text>
+              </View>
+
+              {/* Right time & unread indicator */}
+              <View className="items-end justify-between h-10 shrink-0">
+                <Text className="text-[11px] text-secondary/70 font-semibold font-jakarta">
+                  {notif.timestamp}
+                </Text>
+                {!notif.read && (
+                  <View className="w-2 h-2 rounded-full bg-primary" />
                 )}
               </View>
-            </View>
+            </Pressable>
+          ))}
+        </View>
 
-            {/* Telegram Link Action */}
-            <View className="mt-2 pt-4 border-t border-outline-variant flex-col gap-3">
-              <View className="flex-row items-center gap-3">
-                <View className="w-10 h-10 rounded-full bg-[#0088cc]/10 flex items-center justify-center">
-                  <MessageSquare color="#0088cc" size={20} />
-                </View>
-                <View className="flex-1">
-                  <Text className="text-label-md font-bold text-on-surface font-jakarta">Alerta Bot integration</Text>
-                  <Text className="text-label-sm text-secondary font-jakarta">Receive instant Telegram push notifications</Text>
-                </View>
-              </View>
-              
-              <Pressable className="w-full bg-primary h-12 rounded-lg flex-row items-center justify-center gap-2 shadow-sm active:scale-[0.98] transition-transform">
-                <MessageSquare color="#ffffff" size={18} />
-                <Text className="text-on-primary text-label-md font-bold font-jakarta">Connect Telegram via Alerta</Text>
+        {/* Proximity Alerts Dynamic Section */}
+      </ScrollView>
+
+      {/* Campus Locations Select Modal (Bottom Sheet styling) */}
+      <Modal
+        visible={showDropdown}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowDropdown(false)}
+      >
+        <View className="flex-1 bg-black/40 justify-end">
+          <View className="bg-white rounded-t-[32px] p-6 max-h-[70%] shadow-lg">
+            {/* Modal Header */}
+            <View className="flex-row items-center justify-between border-b border-outline-variant/10 pb-4 mb-4">
+              <Text className="text-[18px] font-bold text-on-surface font-jakarta">
+                Select Campus Building
+              </Text>
+              <Pressable
+                onPress={() => setShowDropdown(false)}
+                className="w-8 h-8 rounded-full bg-slate-100 items-center justify-center active:bg-slate-200"
+              >
+                <Text className="font-bold text-secondary font-jakarta text-[14px]">
+                  X
+                </Text>
               </Pressable>
             </View>
-          </View>
-        </View>
 
-        {/* Notifications Feed */}
-        <View className="flex flex-col gap-3">
-          <Text className="text-label-md font-bold text-on-surface uppercase tracking-wider pl-1 mb-1 font-jakarta">Recent Alerts</Text>
-          
-          <View className="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm overflow-hidden">
-            {notifications.length === 0 ? (
-              <View className="p-6 items-center justify-center">
-                <Text className="text-body-md text-secondary font-jakarta">No recent notifications</Text>
-              </View>
-            ) : (
-              notifications.map((notif) => (
+            {/* List of locations */}
+            <ScrollView showsVerticalScrollIndicator={false} className="mb-4">
+              {CAMPUS_LOCATIONS.map((loc) => (
                 <Pressable
-                  key={notif.id}
+                  key={loc.name}
                   onPress={() => {
-                    notif.read = true;
-                    // Mock interaction
-                    addNotification("Notification Opened", `Read details for: ${notif.title}`, "general");
+                    setSelectedBuilding(loc.name);
+                    setShowDropdown(false);
                   }}
-                  className={`flex-row items-start gap-4 p-4 border-b border-outline-variant last:border-b-0 active:bg-surface-container-low relative ${
-                    !notif.read ? "bg-surface-container-low/50" : ""
+                  className={`p-4 border-b border-outline-variant/5 rounded-2xl flex-row items-center justify-between active:bg-slate-50 ${
+                    selectedBuilding === loc.name ? "bg-primary/5" : ""
                   }`}
                 >
-                  <View className={`w-12 h-12 rounded-full flex items-center justify-center ${getNotifBg(notif.type, notif.title)}`}>
-                    {getNotifIcon(notif.type, notif.title)}
+                  <View className="flex-1 pr-4">
+                    <Text className="text-[15px] font-bold text-on-surface font-jakarta">
+                      {loc.name}
+                    </Text>
+                    <Text className="text-[12px] text-secondary font-jakarta leading-4 mt-0.5">
+                      {loc.desc}
+                    </Text>
                   </View>
-
-                  <View className="flex-1">
-                    <View className="flex-row justify-between items-start mb-0.5">
-                      <Text className={`text-body-md text-on-surface ${!notif.read ? "font-bold" : "font-semibold"} font-jakarta flex-1 pr-2`}>
-                        {notif.title}
-                      </Text>
-                      <Text className="text-label-sm text-secondary font-jakarta shrink-0">{notif.timestamp}</Text>
-                    </View>
-                    <Text className="text-body-sm text-on-surface-variant leading-snug font-jakarta">{notif.body}</Text>
-                  </View>
+                  {selectedBuilding === loc.name && (
+                    <CheckCircle2 color="#001caa" size={20} />
+                  )}
                 </Pressable>
-              ))
-            )}
+              ))}
+            </ScrollView>
           </View>
-          
-          <Pressable className="py-2 active:opacity-75 items-center">
-            <Text className="text-primary text-label-md font-bold font-jakarta">View All History</Text>
-          </Pressable>
         </View>
-
-      </ScrollView>
+      </Modal>
     </SafeAreaView>
   );
 }
-
