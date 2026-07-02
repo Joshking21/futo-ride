@@ -1,4 +1,7 @@
 import { useRouter } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { auth } from "@/config/firebaseConfig";
+import { signOut } from "firebase/auth";
 import {
   ArrowLeft,
   Bell,
@@ -9,11 +12,12 @@ import {
   Send,
   Shield,
 } from "lucide-react-native";
-import React from "react";
+import React, { useState } from "react";
 import {
   Alert,
   Clipboard,
   Image,
+  Modal,
   Pressable,
   ScrollView,
   Text,
@@ -23,16 +27,27 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function DriverProfile() {
   const router = useRouter();
+  const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleLogout = () => {
-    Alert.alert("Log Out", "Are you sure you want to log out?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Log Out",
-        style: "destructive",
-        onPress: () => router.replace("/login"),
-      },
-    ]);
+    setIsLogoutModalVisible(true);
+  };
+
+  const confirmLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      await AsyncStorage.clear();
+      await signOut(auth);
+      setIsLogoutModalVisible(false);
+      router.replace("/");
+    } catch (error) {
+      console.error("Error during driver logout:", error);
+      setIsLogoutModalVisible(false);
+      router.replace("/");
+    } finally {
+      setIsLoggingOut(false);
+    }
   };
 
   const handleCopyAccountNumber = () => {
@@ -251,6 +266,58 @@ export default function DriverProfile() {
           </Text>
         </Pressable>
       </ScrollView>
+
+      {/* Custom Logout Modal */}
+      <Modal
+        visible={isLogoutModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setIsLogoutModalVisible(false)}
+      >
+        <View className="flex-1 bg-black/60 justify-center items-center px-6">
+          <View className="bg-white w-full max-w-sm rounded-[32px] p-6 items-center shadow-2xl border border-outline-variant/10">
+            {/* Warning Icon Container */}
+            <View className="w-16 h-16 rounded-full bg-red-50 justify-center items-center mb-4">
+              <LogOut color="#ba1a1a" size={28} />
+            </View>
+
+            {/* Modal Title */}
+            <Text className="text-headline-sm font-extrabold text-[#0B1C30] font-jakarta text-center">
+              Log Out
+            </Text>
+
+            {/* Modal Description */}
+            <Text className="text-secondary text-[14px] font-medium leading-5 text-center mt-2 mb-6 font-jakarta px-2">
+              Are you sure you want to log out? You will be signed out of your account on this device.
+            </Text>
+
+            {/* Modal Actions */}
+            <View className="flex-row gap-3 w-full">
+              {/* Cancel Button */}
+              <Pressable
+                onPress={() => setIsLogoutModalVisible(false)}
+                disabled={isLoggingOut}
+                className="flex-1 border border-outline-variant/15 py-3.5 rounded-2xl items-center justify-center bg-white active:bg-slate-50"
+              >
+                <Text className="text-on-surface font-bold text-body-md font-jakarta">
+                  Cancel
+                </Text>
+              </Pressable>
+
+              {/* Confirm Logout Button */}
+              <Pressable
+                onPress={confirmLogout}
+                disabled={isLoggingOut}
+                className="flex-1 bg-[#ba1a1a] py-3.5 rounded-2xl items-center justify-center active:opacity-90 shadow-sm"
+              >
+                <Text className="text-white font-bold text-body-md font-jakarta">
+                  {isLoggingOut ? "Logging out..." : "Log Out"}
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }

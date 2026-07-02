@@ -1,4 +1,3 @@
-import LiveMapScreen from "@/components/liveMap";
 import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation, useRouter } from "expo-router";
 import {
@@ -19,6 +18,8 @@ import {
   ToastAndroid,
   View,
 } from "react-native";
+// import MapView, { UrlTile } from "react-native-maps";
+import { Image } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import KekeIcon from "../../components/KekeIcon";
 import { useApp } from "../../context/AppContext";
@@ -93,13 +94,19 @@ export default function RiderHome() {
       {/* Map Area */}
       <View className="flex-1 relative z-10 bg-surface-container-low">
         {/* Map Background */}
-        {/* <Image
+        <Image
           source={{
             uri: "https://lh3.googleusercontent.com/aida-public/AB6AXuBhChECydpDyPgt27hlQrat9Rk2U89C00BRo9HxQfDmpSr4MRrxjAG1pGL6iwr1A__rTa5hkvxx5VNhyBHIwUrgEL1XAzRh3vdUsCbmpnjEWdd5tXIJyvuoNbsf17_pEryhtId0Y6snYs2mm-iQfYuoPK3Zrsg2EAG-XD5-Bq8QCQpcEyE5GcSDWhm7yhm20vy7oBcRqJFt0hbOoiU-LdxjqFg6qiW_P7A1aJmd6buI9IlGZRklUN8jk7Fl9tud8gafRai7G4XXH9hL",
           }}
           className="w-full h-full object-cover"
-        /> */}
-        <LiveMapScreen />
+        />
+        {/* <LiveMapScreen /> */}
+        {/* <MapView style={{ flex: 1 }}>
+          <UrlTile
+            urlTemplate="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+            maximumZ={19}
+          />
+        </MapView> */}
 
         <LinearGradient
           colors={["transparent", "rgba(255, 255, 255, 0.6)", "#ffffff"]}

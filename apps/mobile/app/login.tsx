@@ -1,29 +1,28 @@
+import KekeIcon from "@/components/KekeIcon";
+import { auth } from "@/config/firebaseConfig";
 import { handleUserSignIn } from "@/config/userSignIn";
 import { useNavigation, useRouter } from "expo-router";
 import {
   ArrowLeft,
-  Compass,
+  CarFront,
+  CircleUserRound,
   Eye,
   EyeOff,
   Lock,
   Mail,
-  ShieldCheck,
+  User,
 } from "lucide-react-native";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import {
   ActivityIndicator,
-  BackHandler,
   Keyboard,
-  Platform,
   Pressable,
   ScrollView,
   Text,
   TextInput,
-  ToastAndroid,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import KekeIcon from "../components/KekeIcon";
 import { useApp } from "../context/AppContext";
 
 export default function Login() {
@@ -45,30 +44,54 @@ export default function Login() {
     setError("");
     setIsSubmitting(true);
 
-    // Simulate network authentication
     try {
+      // 1. Authenticate with Firebase Auth via your signIn helper
       const result = await handleUserSignIn(email, password);
+
       if (result.success) {
+        // 2. Extract the userType profile saved in your result payload
+        // (Ensure handleUserSignIn fetches this from the Firestore 'users' collection using user.uid)
+        const registeredUserType = result.userType?.toLowerCase().trim();
+        const currentAppRole = userRole?.toLowerCase().trim();
+
+        // 3. Role Validation Check
+        if (registeredUserType && registeredUserType !== currentAppRole) {
+          setIsSubmitting(false);
+
+          // Force an instant sign-out from Firebase Auth since the context is wrong
+          // This keeps their invalid token from automatically passing splash checks later
+          if (auth.currentUser) {
+            await auth.signOut();
+          }
+
+          // Trigger the specific warning to toggle interfaces
+          setError(
+            `This account is registered as a ${registeredUserType.toUpperCase()}. Please click the button below to switch your login mode.`,
+          );
+          return;
+        }
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+        if (!emailRegex.test(email)) {
+          setError("Please enter a valid email address");
+          return;
+        }
+        // 4. Success Navigation
         setIsSubmitting(false);
-        if (userRole === "driver") {
+        if (currentAppRole === "driver") {
           router.replace("/(driver)/home");
         } else {
           router.replace("/(rider)/home");
         }
+      } else {
+        setError(result.error || "Authentication failed");
+        setIsSubmitting(false);
       }
-      setIsSubmitting(false);
     } catch (error: any) {
-      setError(error.message);
+      setError(error.message || "An unexpected error occurred");
       setIsSubmitting(false);
     }
-    // setTimeout(() => {
-    //   setIsSubmitting(false);
-    //   if (userRole === "driver") {
-    //     router.replace("/(driver)/home");
-    //   } else {
-    //     router.replace("/(rider)/home");
-    //   }
-    // }, 1200);
   };
 
   const createAccount = () => {
@@ -80,45 +103,45 @@ export default function Login() {
   // Use a mutable ref to track the number of back button taps
   const backPressCount = useRef(0);
 
-  useEffect(() => {
-    // 1. Configure iOS Navigation Layout Safety
-    if (Platform.OS === "ios") {
-      navigation.setOptions({
-        gestureEnabled: false, // Prevents swipe-to-go-back to login screen
-        headerLeft: () => null, // Removes back arrows from top layouts
-      });
-      return; // Android-specific hardware back button logic skips iOS entirely
-    }
+  // useEffect(() => {
+  //   // 1. Configure iOS Navigation Layout Safety
+  //   if (Platform.OS === "ios") {
+  //     navigation.setOptions({
+  //       gestureEnabled: false, // Prevents swipe-to-go-back to login screen
+  //       headerLeft: () => null, // Removes back arrows from top layouts
+  //     });
+  //     return; // Android-specific hardware back button logic skips iOS entirely
+  //   }
 
-    // 2. Android Double-Tap Exit Logic
-    const onBackPress = () => {
-      if (backPressCount.current === 1) {
-        // Second tap within 2 seconds -> Completely shut down the app process
-        BackHandler.exitApp();
-        return true;
-      }
+  //   // 2. Android Double-Tap Exit Logic
+  //   const onBackPress = () => {
+  //     if (backPressCount.current === 1) {
+  //       // Second tap within 2 seconds -> Completely shut down the app process
+  //       BackHandler.exitApp();
+  //       return true;
+  //     }
 
-      // First tap -> Trigger a Toast reminder and bump count
-      backPressCount.current = 1;
-      ToastAndroid.show("Press back again to exit", ToastAndroid.SHORT);
+  //     // First tap -> Trigger a Toast reminder and bump count
+  //     backPressCount.current = 1;
+  //     ToastAndroid.show("Press back again to exit", ToastAndroid.SHORT);
 
-      // Reset the tap counter back to 0 if they don't tap again within 2 seconds
-      const timeout = setTimeout(() => {
-        backPressCount.current = 0;
-      }, 2000);
+  //     // Reset the tap counter back to 0 if they don't tap again within 2 seconds
+  //     const timeout = setTimeout(() => {
+  //       backPressCount.current = 0;
+  //     }, 2000);
 
-      return true; // Stop native navigation from pushing them back to login screen
-    };
+  //     return true; // Stop native navigation from pushing them back to login screen
+  //   };
 
-    const subscription = BackHandler.addEventListener(
-      "hardwareBackPress",
-      onBackPress,
-    );
+  //   const subscription = BackHandler.addEventListener(
+  //     "hardwareBackPress",
+  //     onBackPress,
+  //   );
 
-    return () => {
-      subscription.remove();
-    };
-  }, [navigation]);
+  //   return () => {
+  //     subscription.remove();
+  //   };
+  // }, [navigation]);
 
   return (
     <SafeAreaView
@@ -129,15 +152,15 @@ export default function Login() {
       <Pressable onPress={Keyboard.dismiss} className="absolute inset-0 z-0" />
 
       {/* Top Header with Back Button */}
-      {/* <View className="px-margin-mobile pt-4 flex-row items-center justify-between z-20">
+      <View className="px-margin-mobile pt-4 flex-row items-center justify-between z-20">
         <Pressable
-          onPress={() => router.back()}
+          onPress={() => router.replace("/")}
           className="w-12 h-12 rounded-2xl bg-white shadow-sm shadow-black/5 items-center justify-center border border-outline-variant/10 active:bg-surface-container"
         >
           <ArrowLeft color="#1A1A1A" size={24} />
         </Pressable>
         <View className="w-12" />
-      </View> */}
+      </View>
 
       <ScrollView
         contentContainerStyle={{ flexGrow: 1 }}
@@ -148,7 +171,11 @@ export default function Login() {
           {/* Logo Box */}
           <View className="items-center mb-6">
             <View className="w-20 h-20 rounded-2xl bg-white shadow-md shadow-black/5 flex items-center justify-center border border-outline-variant/10">
-              <KekeIcon size={54} color="#001caa" />
+              {userRole === "rider" ? (
+                <CircleUserRound size={54} color="#001caa" />
+              ) : (
+                <KekeIcon size={54} color="#001caa" />
+              )}
             </View>
           </View>
 
@@ -158,7 +185,13 @@ export default function Login() {
               Log <Text className="text-primary">In</Text>
             </Text>
             <Text className="font-jakarta text-body-sm text-secondary text-center mt-2 px-4 leading-5">
-              Welcome back! Please log in to continue riding with Futo Ride.
+              Welcome back{" "}
+              <Text className="text-primary uppercase font-extrabold tracking-wider">
+                {userRole}!
+              </Text>{" "}
+            </Text>
+            <Text className="font-jakarta text-body-sm text-secondary text-center mt-2 px-4 leading-5">
+              Please log in to continue riding with Futo Ride.
             </Text>
           </View>
 
@@ -305,14 +338,14 @@ export default function Login() {
             >
               {userRole === "rider" ? (
                 <>
-                  <ShieldCheck color="#001caa" size={14} />
+                  <CarFront color="#001caa" size={14} />
                   <Text className="text-[11px] text-primary font-bold uppercase tracking-wider font-jakarta">
                     Switch to Driver login
                   </Text>
                 </>
               ) : (
                 <>
-                  <Compass color="#001caa" size={14} />
+                  <User color="#001caa" size={14} />
                   <Text className="text-[11px] text-primary font-bold uppercase tracking-wider font-jakarta">
                     Switch to Rider login
                   </Text>

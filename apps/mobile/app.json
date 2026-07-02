@@ -34,7 +34,7 @@
       "package": "com.anonymous.futoride",
       "config": {
         "googleMaps": {
-          "apiKey": "AIzaSyDummyKeyPlaceholder___FutoRideTestingKey"
+          "apiKey": "AIzaSyCJvj_lnNQ1KySvk6AmpmAuxUph50LV2tM"
         }
       }
     },
@@ -62,6 +62,7 @@
       [
         "react-native-maps",
         {
+          "androidApiKey": "AIzaSyCJvj_lnNQ1KySvk6AmpmAuxUph50LV2tM",
           "isAndroidLocationServicesEnabled": true
         }
       ]

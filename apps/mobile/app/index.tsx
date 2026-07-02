@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import { ArrowRight, Compass, ShieldCheck } from "lucide-react-native";
+import { ArrowRight, CarFront, Compass, ShieldCheck, User } from "lucide-react-native";
 import React, { useEffect, useState, useRef } from "react";
 import { ActivityIndicator, Pressable, Text, View, Image } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -21,8 +21,9 @@ export default function Splash() {
   const foundUser = useRef<any>(null);
 
   const selectRole = (role: "rider" | "driver") => {
-    setRole(role);
-    router.push("/login");
+    // setRole(role);
+    router.push("/(driver)/home")
+    // router.replace("/login")
   };
 
   useEffect(() => {
@@ -115,7 +116,7 @@ export default function Splash() {
             onPress={() => selectRole("rider")}
             className="w-full bg-primary h-14 rounded-full flex-row items-center justify-center gap-2 shadow-md active:opacity-90 active:scale-[0.98]"
           >
-            <Compass color="#ffffff" size={20} />
+            <User color="#ffffff" size={20} />
             <Text className="text-on-primary text-action-lg font-bold">
               Ride as Student (Rider)
             </Text>
@@ -124,10 +125,13 @@ export default function Splash() {
 
           {/* Driver Button */}
           <Pressable
-            onPress={() => selectRole("driver")}
+            onPress={() => selectRole("driver")
+
+
+            }
             className="w-full bg-surface-container border border-outline-variant h-14 rounded-full flex-row items-center justify-center gap-2 active:opacity-85 active:scale-[0.98]"
           >
-            <ShieldCheck color="#001caa" size={20} />
+            <CarFront color="#001caa" size={20} />
             <Text className="text-primary text-action-lg font-bold">
               Drive Transit (Driver)
             </Text>
