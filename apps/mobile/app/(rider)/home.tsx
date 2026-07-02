@@ -1,27 +1,81 @@
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
+import { useNavigation, useRouter } from "expo-router";
 import {
-  Bus,
   Car,
+  CarFront,
   ChevronRight,
   Clock,
-  Compass,
   LocateFixed,
   Menu,
   Search,
   ShieldAlert,
 } from "lucide-react-native";
-import React, { useState } from "react";
-import { Image, Pressable, Text, View } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import {
+  BackHandler,
+  Platform,
+  Pressable,
+  Text,
+  ToastAndroid,
+  View,
+} from "react-native";
+import MapView, { UrlTile } from "react-native-maps";
+// import { Image } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import KekeIcon from "../../components/KekeIcon";
 import { useApp } from "../../context/AppContext";
+import LiveMapScreen from "@/components/liveMap";
 // import { LinearGradient } from "react-native-svg";
 
 export default function RiderHome() {
   const router = useRouter();
   const { activeTrip } = useApp();
   const [vehicleType, setVehicleType] = useState<"keke" | "bus">("keke");
+
+  const navigation = useNavigation();
+
+  // Use a mutable ref to track the number of back button taps
+  const backPressCount = useRef(0);
+
+  useEffect(() => {
+    // 1. Configure iOS Navigation Layout Safety
+    if (Platform.OS === "ios") {
+      navigation.setOptions({
+        gestureEnabled: false, // Prevents swipe-to-go-back to login screen
+        headerLeft: () => null, // Removes back arrows from top layouts
+      });
+      return; // Android-specific hardware back button logic skips iOS entirely
+    }
+
+    // 2. Android Double-Tap Exit Logic
+    const onBackPress = () => {
+      if (backPressCount.current === 1) {
+        // Second tap within 2 seconds -> Completely shut down the app process
+        BackHandler.exitApp();
+        return true;
+      }
+
+      // First tap -> Trigger a Toast reminder and bump count
+      backPressCount.current = 1;
+      ToastAndroid.show("Press back again to exit", ToastAndroid.SHORT);
+
+      // Reset the tap counter back to 0 if they don't tap again within 2 seconds
+      const timeout = setTimeout(() => {
+        backPressCount.current = 0;
+      }, 2000);
+
+      return true; // Stop native navigation from pushing them back to login screen
+    };
+
+    const subscription = BackHandler.addEventListener(
+      "hardwareBackPress",
+      onBackPress,
+    );
+
+    return () => {
+      subscription.remove();
+    };
+  }, [navigation]);
 
   return (
     <SafeAreaView className="flex-1 bg-surface-bright relative" edges={[]}>
@@ -42,12 +96,20 @@ export default function RiderHome() {
       {/* Map Area */}
       <View className="flex-1 relative z-10 bg-surface-container-low">
         {/* Map Background */}
-        <Image
+        {/* <Image
           source={{
             uri: "https://lh3.googleusercontent.com/aida-public/AB6AXuBhChECydpDyPgt27hlQrat9Rk2U89C00BRo9HxQfDmpSr4MRrxjAG1pGL6iwr1A__rTa5hkvxx5VNhyBHIwUrgEL1XAzRh3vdUsCbmpnjEWdd5tXIJyvuoNbsf17_pEryhtId0Y6snYs2mm-iQfYuoPK3Zrsg2EAG-XD5-Bq8QCQpcEyE5GcSDWhm7yhm20vy7oBcRqJFt0hbOoiU-LdxjqFg6qiW_P7A1aJmd6buI9IlGZRklUN8jk7Fl9tud8gafRai7G4XXH9hL",
           }}
           className="w-full h-full object-cover"
-        />
+        /> */}
+        <LiveMapScreen />
+        {/* <MapView style={{ flex: 1 }}>
+          <UrlTile
+            urlTemplate="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+            maximumZ={19}
+          />
+        </MapView> */}
+
         <LinearGradient
           colors={["transparent", "rgba(255, 255, 255, 0.6)", "#ffffff"]}
           locations={[0, 0.7, 1]}
@@ -62,7 +124,7 @@ export default function RiderHome() {
         </View>
 
         {/* Nearby vehicles drawn on map */}
-        <View className="absolute top-[35%] left-[25%] p-1 bg-white rounded-xl shadow-md border border-outline-variant/10">
+        {/* <View className="absolute top-[35%] left-[25%] p-1 bg-white rounded-xl shadow-md border border-outline-variant/10">
           <KekeIcon size={32} color="#001caa" />
         </View>
 
@@ -76,10 +138,9 @@ export default function RiderHome() {
 
         <View className="absolute top-[52%] left-[75%] p-1 bg-white rounded-xl shadow-md border border-outline-variant/10">
           <KekeIcon size={32} color="#001caa" />
-        </View>
+        </View> */}
 
         {/* Floating Actions Panel (Right Side above panel) */}
-       
 
         {/* Bottom Search & Toggle Sheet */}
         <View
@@ -103,64 +164,64 @@ export default function RiderHome() {
         >
           {/* Search bar input container */}
           <View className="flex flex-row  gap-4 align-bottom items-end justify-end">
-          <Pressable
-            onPress={() => router.push("/(rider)/book")}
-            style={{
-              // width: "100%",
-              flexDirection: "row",
-              alignItems: "center",
-              // backgroundColor: "#f8f9ff",
-              // borderWidth: 1,
-              // borderColor: "rgba(197, 197, 216, 0.15)",
-              height: 50,
-              borderRadius: 16,
-              paddingHorizontal: 16,
-              borderWidth: 1,
-              borderColor: "rgba(197, 197, 216, 0.15)",
-              shadowColor: "#000000",
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.05,
-              shadowRadius: 4,
-              // elevation: 1,
-              // marginBottom: 16,
-            }}
-            className="flex flex-1 bg-white"
-          >
-            <Search color="#757687" size={20} style={{ marginRight: 12 }} />
-            <Text
+            <Pressable
+              onPress={() => router.push("/(rider)/book")}
               style={{
-                fontSize: 14,
-                lineHeight: 24,
-                color: "#5b5e66",
-                fontWeight: "700",
-                fontFamily: "Plus Jakarta Sans",
-                flex: 1,
+                // width: "100%",
+                flexDirection: "row",
+                alignItems: "center",
+                // backgroundColor: "#f8f9ff",
+                // borderWidth: 1,
+                // borderColor: "rgba(197, 197, 216, 0.15)",
+                height: 50,
+                borderRadius: 16,
+                paddingHorizontal: 16,
+                borderWidth: 1,
+                borderColor: "rgba(197, 197, 216, 0.15)",
+                shadowColor: "#000000",
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.05,
+                shadowRadius: 4,
+                // elevation: 1,
+                // marginBottom: 16,
               }}
-              className=""
+              className="flex flex-1 bg-white"
             >
-              Where to?
-            </Text>
-          </Pressable>
-           <View className=" gap-3">
-          {/* Floating SOS Button */}
-          <Pressable
-            onPress={() => router.push("/sos")}
-            className=" bg-white w-14 h-14 rounded-full items-center justify-center shadow-lg border border-outline-variant/10 active:bg-error/5"
-          >
-            <ShieldAlert color="#ba1a1a" size={24} />
-            <Text className="text-[10px] font-bold text-error uppercase tracking-wider font-jakarta mt-0.5">
-              SOS
-            </Text>
-          </Pressable>
+              <Search color="#757687" size={20} style={{ marginRight: 12 }} />
+              <Text
+                style={{
+                  fontSize: 14,
+                  lineHeight: 24,
+                  color: "#5b5e66",
+                  fontWeight: "700",
+                  fontFamily: "Plus Jakarta Sans",
+                  flex: 1,
+                }}
+                className=""
+              >
+                Where to?
+              </Text>
+            </Pressable>
+            <View className=" gap-3">
+              {/* Floating SOS Button */}
+              <Pressable
+                onPress={() => router.push("/sos")}
+                className=" bg-error w-14 h-14 rounded-full items-center justify-center shadow-lg border border-outline-variant/10 active:bg-error/80"
+              >
+                <ShieldAlert color="#ffffff" size={24} />
+                <Text className="text-[10px] font-bold text-white uppercase tracking-wider font-jakarta mt-0.5">
+                  SOS
+                </Text>
+              </Pressable>
 
-          {/* Floating History/Clock Button */}
-          <Pressable
-            onPress={() => router.push("/(rider)/rides")}
-            className=" bg-white w-14 h-14 rounded-full items-center justify-center shadow-lg border border-outline-variant/10 active:bg-surface-container-high"
-          >
-            <Clock color="#0B1C30" size={24} />
-          </Pressable>
-        </View>
+              {/* Floating History/Clock Button */}
+              <Pressable
+                onPress={() => router.push("/(rider)/rides")}
+                className=" bg-white w-14 h-14 rounded-full items-center justify-center shadow-lg border border-outline-variant/10 active:bg-surface-container-high"
+              >
+                <Clock color="#0B1C30" size={24} />
+              </Pressable>
+            </View>
           </View>
 
           {/* Keke vs Bus toggle selection */}
@@ -233,7 +294,7 @@ export default function RiderHome() {
               }}
             >
               {/* Bus icon simulation */}
-              <Car
+              <CarFront
                 color={vehicleType === "bus" ? "#ffffff" : "#444655"}
                 size={18}
               />
@@ -261,7 +322,7 @@ export default function RiderHome() {
               padding: 9,
               borderWidth: 1,
               borderColor: "rgba(197, 197, 216, 0.15)",
-                shadowColor: "#000000",
+              shadowColor: "#000000",
               shadowOffset: { width: 0, height: 2 },
               shadowOpacity: 0.05,
               shadowRadius: 4,

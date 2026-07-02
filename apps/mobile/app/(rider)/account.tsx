@@ -1,34 +1,53 @@
-import React from "react";
-import { View, Text, Image, Pressable, ScrollView, Alert } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
+import { auth } from "@/config/firebaseConfig";
+import { signOut } from "firebase/auth";
 import {
   ArrowLeft,
-  Settings,
-  ChevronRight,
-  LogOut,
-  Edit2,
-  Wallet,
-  Send,
   Bell,
-  Shield,
-  HelpCircle,
+  ChevronRight,
+  Edit2,
   FileText,
+  HelpCircle,
+  LogOut,
+  Send,
+  Settings,
+  Shield,
+  Wallet,
 } from "lucide-react-native";
+import React from "react";
+import { Alert, Image, Pressable, ScrollView, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import KekeIcon from "../../components/KekeIcon";
 
 export default function RiderAccount() {
   const router = useRouter();
 
-  const handleLogout = () => {
-    router.replace("/login");
+  const handleLogout = async () => {
+    try {
+      // 1. Wipe out all locally cached keys (tokens, user profile data, state flags)
+      await AsyncStorage.clear();
+      // 2. Sign out from Firebase Auth to terminate the session
+      await signOut(auth);
+
+      console.log("AsyncStorage and Firebase Auth cleared successfully!");
+
+      // 3. Redirect the user back to the auth or login screen wrapper
+      router.replace("/");
+    } catch (error) {
+      console.error("Error during logout:", error);
+      Alert.alert(
+        "Logout Error",
+        "Something went wrong while logging out. Please try again.",
+      );
+    }
   };
 
   const handleFeatureNotImplemented = (featureName: string) => {
     Alert.alert(
       "Feature Coming Soon",
       `The ${featureName} settings page will be available in the next release.`,
-      [{ text: "OK" }]
+      [{ text: "OK" }],
     );
   };
 

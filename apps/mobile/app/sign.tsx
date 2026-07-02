@@ -1,14 +1,6 @@
 import { handleUserRegistration } from "@/config/userRegistration";
 import { useRouter } from "expo-router";
-import {
-  ArrowLeft,
-  Eye,
-  EyeOff,
-  Key,
-  Lock,
-  Mail,
-  User,
-} from "lucide-react-native";
+import { Eye, EyeOff, Key, Lock, Mail, User } from "lucide-react-native";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
@@ -87,6 +79,13 @@ export default function Sign() {
     // }, 1200);
   };
 
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  if (!emailRegex.test(email)) {
+    setError("Please enter a valid email address");
+    return;
+  }
+
   return (
     <SafeAreaView
       className="flex-1 bg-surface-bright"
@@ -94,12 +93,12 @@ export default function Sign() {
     >
       {/* Top Header with Back Button */}
       <View className="px-margin-mobile pt-4 flex-row items-center justify-between z-20">
-        <Pressable
+        {/* <Pressable
           onPress={() => router.back()}
           className="w-12 h-12 rounded-2xl bg-white shadow-sm shadow-black/5 items-center justify-center border border-outline-variant/10 active:bg-surface-container"
         >
           <ArrowLeft color="#1A1A1A" size={24} />
-        </Pressable>
+        </Pressable> */}
         <View className="w-12" />
       </View>
 
@@ -116,19 +115,22 @@ export default function Sign() {
 
         <View className="flex-1 justify-center px-margin-mobile pb-12 max-w-md w-full mx-auto">
           {/* Logo Box */}
-          <View className="items-center mb-6">
+          <View className="items-center mb-2">
             <View className="w-20 h-20 rounded-2xl bg-white shadow-md shadow-black/5 flex items-center justify-center border border-outline-variant/10">
               <KekeIcon size={54} color="#001caa" />
             </View>
           </View>
 
           {/* Welcome Headline */}
-          <View className="mb-8 items-center">
+          <View className="mb-6 items-center">
             <Text className="font-jakarta text-headline-lg text-on-surface font-bold text-center">
-              Sign <Text className="text-primary">Up</Text>
+              Sign <Text className="text-primary">Up</Text> as{" "}
+              <Text className="text-primary uppercase">{userRole}</Text>
             </Text>
             <Text className="font-jakarta text-body-sm text-secondary text-center mt-2 px-4 leading-5">
-              Create your account to start riding with Futo Ride.
+              Create your account to start{" "}
+              {userRole === "driver" ? "driving" : "requesting rides"} with Futo
+              Ride.
             </Text>
           </View>
 
@@ -286,7 +288,7 @@ export default function Sign() {
             <Pressable
               onPress={handleSignup}
               disabled={isSubmitting}
-              className={`w-full h-14 bg-primary rounded-full items-center justify-center shadow-md active:opacity-95 active:scale-[0.99] flex-row ${isSubmitting? "bg-primary/30":""}`}
+              className={`w-full h-14 bg-primary rounded-full items-center justify-center shadow-md active:opacity-95 active:scale-[0.99] flex-row ${isSubmitting ? "bg-primary/30" : ""}`}
             >
               <Text className="font-jakarta text-action-lg text-on-primary font-bold text-center mr-2">
                 Sign Up
@@ -318,7 +320,7 @@ export default function Sign() {
               <Text className="font-jakarta text-body-sm text-secondary">
                 Already have an account?{" "}
               </Text>
-              <Pressable onPress={() => router.replace("/login")}>
+              <Pressable onPress={() => router.back()}>
                 <Text className="font-jakarta text-body-sm text-primary font-bold">
                   Log in
                 </Text>

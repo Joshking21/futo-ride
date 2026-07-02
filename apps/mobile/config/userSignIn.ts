@@ -1,23 +1,26 @@
 import { signInWithEmailAndPassword } from "firebase/auth";
-// Make sure 'auth' is imported from your local firebaseConfig file
-import { auth } from "./firebaseConfig"; 
+import { doc, getDoc } from "firebase/firestore";
+import { auth, db } from "./firebaseConfig";
 
 export async function handleUserSignIn(email: string, password: string) {
   try {
-    // Pass credentials directly to Firebase Auth
-    const userCredential = await signInWithEmailAndPassword(
-      auth,
-      email.toLowerCase().trim(),
-      password
-    );
-    
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
-    console.log("User signed in successfully! UID:", user.uid);
+
+    // Fetch the user's specific role document from Firestore
+    const userDoc = await getDoc(doc(db, "users", user.uid));
     
-    // Return success status and the user token payload
-    return { success: true, user };
+    if (userDoc.exists()) {
+      const userData = userDoc.data();
+      return { 
+        success: true, 
+        uid: user.uid, 
+        userType: userData.userType // Passes 'driver' or 'rider' back to the UI
+      };
+    }
+    
+    return { success: false, error: "User profile document not found" };
   } catch (error: any) {
-    console.error("Sign in failed:", error.code, error.message);
-    throw new Error(error.message);
+    return { success: false, error: error.message };
   }
 }

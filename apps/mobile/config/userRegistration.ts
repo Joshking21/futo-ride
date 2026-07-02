@@ -1,6 +1,5 @@
-// import { useApp } from "@/context/AppContext";
-import { createUserWithEmailAndPassword } from "firebase/auth";
-import { doc, setDoc } from "firebase/firestore";
+import { createUserWithEmailAndPassword, User } from "firebase/auth";
+import { doc, setDoc, getDoc } from "firebase/firestore";
 import { auth, db } from "./firebaseConfig";
 
 interface SignUpData {
@@ -8,17 +7,22 @@ interface SignUpData {
   password: string;
   fullName: string;
   userRole: string;
-  //   username: string;
 }
 
-// const { userRole } = useApp();
+// 1. Explicitly type our return structure so TypeScript knows what fields are legal
+interface RegistrationResult {
+  success: boolean;
+  user?: User;
+  userType?: string;
+  error?: string;
+}
 
 export async function handleUserRegistration({
   email,
   password,
   fullName,
   userRole
-}: SignUpData) {
+}: SignUpData): Promise<RegistrationResult> {
   try {
     // Step 1: Create the secure authentication account in Firebase Auth
     const userCredential = await createUserWithEmailAndPassword(
@@ -28,80 +32,35 @@ export async function handleUserRegistration({
     );
     const user = userCredential.user;
 
-    // Step 2: Create a corresponding profile document in the Firestore 'users' collection
-    // We name the document exactly after the user's unique Auth UID to link them perfectly
+    const cleanRole = userRole.toLowerCase().trim();
+
+    // Step 2: Create corresponding profile document in Firestore
     await setDoc(doc(db, "users", user.uid), {
       uid: user.uid,
       email: email.toLowerCase().trim(),
       fullName: fullName.trim(),
-      //   username: username.toLowerCase().trim(),
-      userType: userRole.toLowerCase().trim(),
+      userType: cleanRole,
       createdAt: new Date().toISOString(),
-      walletBalance: 0, // Great baseline field for a ride app
-      rating: 5.0, // Great baseline field for drivers/riders
+      walletBalance: 0,
+      rating: 5.0,
     });
 
-    console.log(
-        "Account and Firestore profile created successfully for:",
-        //   user.uid,
-        //   user,
-        userCredential
-    );
-    return { success: true, user };
+    console.log("Account and Firestore profile created successfully.");
+    
+    // Explicitly return the type we just registered alongside success status
+    return { success: true, user, userType: cleanRole };
+
   } catch (error: any) {
-    console.error("Registration failed:", error.code, error.message, error);
-    throw new Error(error.message);
+    // Handle the explicit case where an account already exists in Firebase Auth
+    if (error.code === "auth/email-already-in-use") {
+      console.log("Email already in use. Checking associated user role metadata...");
+      return { 
+        success: false, 
+        error: "EMAIL_EXISTS" 
+      };
+    }
+
+    console.error("Registration failed:", error.code, error.message);
+    return { success: false, error: error.message };
   }
 }
-
-// export async function handleSignIn(email: string, password: string) {
-//   try {
-//     const userCredential = await signInWithEmailAndPassword(auth, email, password);
-//     const user = userCredential.user;
-//     console.log("Signed in user UID:", user.uid);
-//   } catch (error:any) {
-//     console.error("Sign in error code:", error.code, error.message);
-//   }
-// }
-
-// export async function handleSignOut() {
-//   try {
-//     await signOut(auth);
-//     console.log("Signed out successfully");
-//   } catch (error:any) {
-//     console.error("Sign out error code:", error.code, error.message);
-//   }
-// }
-
-// export async function handleResetPassword(email: string) {
-//   try {
-//     await sendPasswordResetEmail(auth, email);
-//     console.log("Password reset email sent");
-//   } catch (error:any) {
-//     console.error("Password reset error code:", error.code, error.message);
-//   }
-// }
-
-// export async function handleUpdatePassword(password: string) {
-//   try {
-//     const user = auth.currentUser;
-//     if (user) {
-//       await updatePassword(user, password);
-//       console.log("Password updated successfully");
-//     }
-//   } catch (error:any) {
-//     console.error("Password update error code:", error.code, error.message);
-//   }
-// }
-
-// export async function handleUpdateEmail(email: string) {
-//   try {
-//     const user = auth.currentUser;
-//     if (user) {
-//       await updateEmail(user, email);
-//       console.log("Email updated successfully");
-//     }
-//   } catch (error:any) {
-//     console.error("Email update error code:", error.code, error.message);
-//   }
-// }

@@ -1,13 +1,8 @@
 import { useRouter } from "expo-router";
 import {
-  ArrowLeft,
-  Bell,
   ChevronRight,
-  Clock,
-  HelpCircle,
   Info,
   Landmark,
-  Menu,
   Send,
   Shield,
   Wallet,
@@ -96,10 +91,7 @@ const COMPLETED_TRIPS_MOCK: Trip[] = [
 export default function DriverEarnings() {
   const router = useRouter();
   const [balance, setBalance] = useState(12750.0);
-  const [showCashout, setShowCashout] = useState(false);
-  const [activeTab, setActiveTab] = useState<
-    "Today" | "This Week" | "This Month" | "Custom"
-  >("Today");
+  // const [showCashout, setShowCashout] = useState(false);
   const [payoutMethod, setPayoutMethod] = useState<"bank" | "wallet">("bank");
   const [withdrawAmount, setWithdrawAmount] = useState("12750.00");
   const [isWithdrawing, setIsWithdrawing] = useState(false);
@@ -154,7 +146,7 @@ export default function DriverEarnings() {
             onPress: () => {
               setBalance((prev) => Math.max(0, prev - parsedWithdrawAmount));
               setWithdrawAmount("0.00");
-              setShowCashout(false);
+              // setShowCashout(false);
             },
           },
         ],
@@ -164,10 +156,10 @@ export default function DriverEarnings() {
 
   // Main Earnings View
   const renderEarningsView = () => (
-    <ScrollView
-      contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}
-      className="flex-1"
-      showsVerticalScrollIndicator={false}
+    <View
+      // contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}
+      className="flex-1 "
+      
     >
       {/* Available Balance Card */}
       <View className="bg-[#eff3ff] p-6 rounded-[28px]  mt-4 shadow-sm">
@@ -199,10 +191,10 @@ export default function DriverEarnings() {
             </Text>
           </View>
 
-          <Pressable
+          {/* <Pressable
             onPress={() => {
               setWithdrawAmount(balance > 0 ? balance.toFixed(2) : "0.00");
-              setShowCashout(true);
+              // setShowCashout(true);
             }}
             className="bg-[#001caa] px-5 py-2.5 rounded-2xl flex-row items-center gap-1 active:scale-[0.98] shadow-sm"
           >
@@ -210,119 +202,14 @@ export default function DriverEarnings() {
               Cashout
             </Text>
             <ChevronRight color="#ffffff" size={14} />
-          </Pressable>
+          </Pressable> */}
         </View>
       </View>
 
-      {/* Tabs Selector */}
-      <View className="bg-[#f0f2f5] p-1 rounded-2xl border-4 border-white flex-row items-center mt-6">
-        {(["Today", "This Week", "This Month", "Custom"] as const).map(
-          (tab) => {
-            const isActive = activeTab === tab;
-            return (
-              <Pressable
-                key={tab}
-                onPress={() => setActiveTab(tab)}
-                className={`flex-1 py-3 rounded-xl items-center justify-center ${
-                  isActive ? "bg-white shadow-xs" : "bg-transparent"
-                }`}
-              >
-                <Text
-                  className={`text-xs font-jakarta ${
-                    isActive
-                      ? "text-[#001caa] font-bold"
-                      : "text-secondary font-medium"
-                  }`}
-                >
-                  {tab}
-                </Text>
-              </Pressable>
-            );
-          },
-        )}
-      </View>
-
-      {/* Header List */}
-      <View className="flex-row items-center justify-between mt-6 mb-3">
-        <Text className="text-[15px] font-extrabold text-on-surface font-jakarta">
-          Today, May 16
-        </Text>
-        <Text className="text-[15px] font-extrabold text-success font-jakarta">
-          Total: ₦6,350.00
-        </Text>
-      </View>
-
-      {/* Trips list */}
-      <View className="gap-3">
-        {COMPLETED_TRIPS_MOCK.map((trip) => (
-          <View
-            key={trip.id}
-            className="bg-white p-4 rounded-3xl border border-outline-variant/10 shadow-xs flex-row items-center justify-between"
-          >
-            <View className="flex-row items-center flex-1 mr-2">
-              {/* Route Indicator pill */}
-              <View className="bg-[#f0fcf4] border border-[#dcfce7] w-8 h-[64px] rounded-2xl items-center justify-between py-2.5">
-                <View className="w-2 h-2 rounded-full bg-success" />
-                <View className="w-[1px] border-l border-dashed border-slate-300 flex-1 my-1" />
-                <View className="w-2 h-2 rounded-full bg-[#001caa]" />
-              </View>
-
-              {/* Texts */}
-              <View className="ml-3.5 flex-1">
-                <Text
-                  className="text-[12px] font-bold text-on-surface font-jakarta"
-                  numberOfLines={1}
-                >
-                  {trip.pickup}
-                </Text>
-                <Text
-                  className="text-[10px] text-secondary font-medium font-jakarta mt-0.5"
-                  numberOfLines={1}
-                >
-                  to {trip.destination}
-                </Text>
-                <View className="flex-row items-center mt-1.5">
-                  <Clock color="#5b5e66" size={12} />
-                  <Text className="text-secondary font-medium text-[11px] font-jakarta ml-1">
-                    {trip.time}
-                  </Text>
-                </View>
-              </View>
-            </View>
-
-            {/* Right pricing & chevron */}
-            <View className="flex-row items-center gap-2">
-              <View className="items-end mr-1">
-                <Text className="text-success font-extrabold text-[15px] font-jakarta">
-                  {formatCurrency(trip.price)}
-                </Text>
-                <View className="bg-[#e6f9ed] px-2 py-0.5 rounded-md mt-1">
-                  <Text className="text-success font-bold text-[10px] font-jakarta">
-                    Paid
-                  </Text>
-                </View>
-              </View>
-              <ChevronRight color="#c5c5d8" size={16} />
-            </View>
-          </View>
-        ))}
-      </View>
-
-      {/* Transfer Information Card */}
-      <View className="bg-[#f0f4ff] border border-[#dce9ff] p-4 rounded-3xl flex-row items-center gap-3.5 mt-6 shadow-xs">
-        <View className="w-10 h-10 rounded-2xl bg-white items-center justify-center border border-[#e5eeff]">
-          <Shield color="#001caa" size={18} />
-        </View>
-        <View className="flex-1">
-          <Text className="text-on-surface text-xs font-bold font-jakarta">
-            Earnings are transferred to your balance.
-          </Text>
-          <Text className="text-secondary text-[11px] font-medium font-jakarta mt-0.5">
-            Cash out anytime you want.
-          </Text>
-        </View>
-      </View>
-    </ScrollView>
+    
+      {renderCashoutView()}
+      
+    </View>
   );
 
   // Cashout Flow View
@@ -333,7 +220,7 @@ export default function DriverEarnings() {
       showsVerticalScrollIndicator={false}
     >
       {/* Available Balance Card */}
-      <View className="bg-[#eff3ff] p-6 rounded-[28px] border border-[#e2e8f0] mt-4 shadow-sm">
+      {/* <View className="bg-[#eff3ff] p-6 rounded-[28px] border border-[#e2e8f0] mt-4 shadow-sm">
         <View className="flex-row items-center justify-between">
           <View>
             <View className="flex-row items-center gap-1.5">
@@ -360,7 +247,7 @@ export default function DriverEarnings() {
             <Wallet color="#001caa" size={20} />
           </View>
         </View>
-      </View>
+      </View> */}
 
       {/* Selector Label */}
       <Text className="text-[13px] font-bold text-secondary font-jakarta mt-6 mb-3">
@@ -459,7 +346,10 @@ export default function DriverEarnings() {
           </Pressable>
         </View>
       ) : (
-        <View className="bg-white rounded-lg  shadow-xs p-3 pb-0 mt-4"style={{elevation:1}}>
+        <View
+          className="bg-white rounded-lg  shadow-xs p-3 pb-0 mt-4"
+          style={{ elevation: 1 }}
+        >
           <View className="p-4.5 flex-row items-center justify-between">
             <View className="flex-row items-center flex-1 mr-2">
               <View className="w-12 h-12 rounded-full bg-[#eff3ff] items-center justify-center border border-[#bcc2ff]">
@@ -585,22 +475,7 @@ export default function DriverEarnings() {
         </View>
       </View>
 
-      {/* Secure card */}
-      <View className="bg-[#f0f4ff] border border-[#dce9ff] p-4 rounded-3xl flex-row items-center gap-3.5 mt-6 shadow-xs">
-        <View className="w-10 h-10 rounded-2xl bg-white items-center justify-center border border-[#e5eeff]">
-          <Shield color="#001caa" size={18} />
-        </View>
-        <View className="flex-1">
-          <Text className="text-on-surface text-xs font-bold font-jakarta">
-            Secure & Fast
-          </Text>
-          <Text className="text-secondary text-[11px] font-medium font-jakarta mt-0.5">
-            {payoutMethod === "bank"
-              ? "Your cashout will be processed securely and sent to your account."
-              : "Your cashout will be processed securely and sent to your e-wallet instantly."}
-          </Text>
-        </View>
-      </View>
+      
 
       {/* Cashout button */}
       <View className="mt-6 mb-8">
@@ -629,6 +504,20 @@ export default function DriverEarnings() {
           )}
         </Pressable>
 
+        <View className="bg-[#f0f4ff] border border-[#dce9ff] p-4 rounded-3xl flex-row items-center gap-3.5 mt-6 shadow-xs">
+        <View className="w-10 h-10 rounded-2xl bg-white items-center justify-center border border-[#e5eeff]">
+          <Shield color="#001caa" size={18} />
+        </View>
+        <View className="flex-1">
+          <Text className="text-on-surface text-xs font-bold font-jakarta">
+            Earnings are transferred to your balance.
+          </Text>
+          <Text className="text-secondary text-[11px] font-medium font-jakarta mt-0.5">
+            Cash out anytime you want.
+          </Text>
+        </View>
+      </View>
+
         <View className="flex-row items-center justify-center gap-1.5 mt-3.5">
           <Info color="#5b5e66" size={12} />
           <Text className="text-secondary font-medium text-[11px] font-jakarta">
@@ -646,7 +535,7 @@ export default function DriverEarnings() {
         className="flex-1"
       >
         {/* Top Header */}
-        {!showCashout ? (
+        {/* {!showCashout ? (
           <View className="flex-row items-center justify-between px-margin-mobile h-[72px] bg-transparent">
             <Pressable
               onPress={() => Alert.alert("Menu", "Driver settings menu.")}
@@ -666,7 +555,7 @@ export default function DriverEarnings() {
               className="w-12 h-12 rounded-2xl bg-white items-center justify-center border border-outline-variant/10 shadow-xs active:bg-slate-100 relative"
             >
               <Bell color="#0B1C30" size={22} />
-              {/* Blue notification badge matching mockup */}
+              
               <View className="w-2.5 h-2.5 rounded-full bg-[#001caa] absolute top-3.5 right-3.5 border-2 border-white" />
             </Pressable>
           </View>
@@ -695,10 +584,10 @@ export default function DriverEarnings() {
               <HelpCircle color="#0B1C30" size={20} />
             </Pressable>
           </View>
-        )}
-
+        )} */}
         {/* Dynamic content rendering based on showCashout state */}
-        {!showCashout ? renderEarningsView() : renderCashoutView()}
+        {renderEarningsView()}
+        
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
