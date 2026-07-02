@@ -2,6 +2,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation, useRouter } from "expo-router";
 import {
   Car,
+  CarFront,
   ChevronRight,
   Clock,
   LocateFixed,
@@ -18,11 +19,12 @@ import {
   ToastAndroid,
   View,
 } from "react-native";
-// import MapView, { UrlTile } from "react-native-maps";
-import { Image } from "react-native";
+import MapView, { UrlTile } from "react-native-maps";
+// import { Image } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import KekeIcon from "../../components/KekeIcon";
 import { useApp } from "../../context/AppContext";
+import LiveMapScreen from "@/components/liveMap";
 // import { LinearGradient } from "react-native-svg";
 
 export default function RiderHome() {
@@ -94,13 +96,13 @@ export default function RiderHome() {
       {/* Map Area */}
       <View className="flex-1 relative z-10 bg-surface-container-low">
         {/* Map Background */}
-        <Image
+        {/* <Image
           source={{
             uri: "https://lh3.googleusercontent.com/aida-public/AB6AXuBhChECydpDyPgt27hlQrat9Rk2U89C00BRo9HxQfDmpSr4MRrxjAG1pGL6iwr1A__rTa5hkvxx5VNhyBHIwUrgEL1XAzRh3vdUsCbmpnjEWdd5tXIJyvuoNbsf17_pEryhtId0Y6snYs2mm-iQfYuoPK3Zrsg2EAG-XD5-Bq8QCQpcEyE5GcSDWhm7yhm20vy7oBcRqJFt0hbOoiU-LdxjqFg6qiW_P7A1aJmd6buI9IlGZRklUN8jk7Fl9tud8gafRai7G4XXH9hL",
           }}
           className="w-full h-full object-cover"
-        />
-        {/* <LiveMapScreen /> */}
+        /> */}
+        <LiveMapScreen />
         {/* <MapView style={{ flex: 1 }}>
           <UrlTile
             urlTemplate="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -122,7 +124,7 @@ export default function RiderHome() {
         </View>
 
         {/* Nearby vehicles drawn on map */}
-        <View className="absolute top-[35%] left-[25%] p-1 bg-white rounded-xl shadow-md border border-outline-variant/10">
+        {/* <View className="absolute top-[35%] left-[25%] p-1 bg-white rounded-xl shadow-md border border-outline-variant/10">
           <KekeIcon size={32} color="#001caa" />
         </View>
 
@@ -136,7 +138,7 @@ export default function RiderHome() {
 
         <View className="absolute top-[52%] left-[75%] p-1 bg-white rounded-xl shadow-md border border-outline-variant/10">
           <KekeIcon size={32} color="#001caa" />
-        </View>
+        </View> */}
 
         {/* Floating Actions Panel (Right Side above panel) */}
 
@@ -204,10 +206,10 @@ export default function RiderHome() {
               {/* Floating SOS Button */}
               <Pressable
                 onPress={() => router.push("/sos")}
-                className=" bg-white w-14 h-14 rounded-full items-center justify-center shadow-lg border border-outline-variant/10 active:bg-error/5"
+                className=" bg-error w-14 h-14 rounded-full items-center justify-center shadow-lg border border-outline-variant/10 active:bg-error/80"
               >
-                <ShieldAlert color="#ba1a1a" size={24} />
-                <Text className="text-[10px] font-bold text-error uppercase tracking-wider font-jakarta mt-0.5">
+                <ShieldAlert color="#ffffff" size={24} />
+                <Text className="text-[10px] font-bold text-white uppercase tracking-wider font-jakarta mt-0.5">
                   SOS
                 </Text>
               </Pressable>
@@ -292,7 +294,7 @@ export default function RiderHome() {
               }}
             >
               {/* Bus icon simulation */}
-              <Car
+              <CarFront
                 color={vehicleType === "bus" ? "#ffffff" : "#444655"}
                 size={18}
               />

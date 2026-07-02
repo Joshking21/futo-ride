@@ -21,9 +21,9 @@ export default function Splash() {
   const foundUser = useRef<any>(null);
 
   const selectRole = (role: "rider" | "driver") => {
-    // setRole(role);
-    router.push("/(driver)/home")
-    // router.replace("/login")
+    setRole(role);
+    // router.push("/(driver)/home")
+    router.replace("/login")
   };
 
   useEffect(() => {
