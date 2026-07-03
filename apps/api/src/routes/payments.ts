@@ -23,22 +23,26 @@ export default async function paymentRoutes(app: FastifyInstance) {
     const redirectUrl = process.env.MONNIFY_REDIRECT_URL;
     if (!redirectUrl) throw new HttpError("Payment not configured", 500);
 
+    // Our payment doc id doubles as the unique paymentReference Monnify requires.
+    const ref = db.collection("payments").doc();
+    const paymentReference = `futoride-${ref.id}`;
+
     const { checkoutUrl, transactionReference } = await initTransaction({
       amount: koboToNaira(ride.fare), // Monnify expects naira
       customerEmail: user.email ?? "rider@futo-ride.app",
-      customerName: user.uid,
-      paymentDescription: `Keke ride ${ride.fromStop}→${ride.toStop}`,
+      customerName: user.email ?? user.uid,
+      paymentReference,
+      paymentDescription: `Keke ride ${ride.fromStop} to ${ride.toStop}`,
       redirectUrl,
     });
 
-    const ref = db.collection("payments").doc();
     const payment: Payment = {
       id: ref.id,
       rideId: ride.id,
       method: "naira",
       amount: ride.fare, // kobo
       status: "pending",
-      ref: transactionReference,
+      ref: transactionReference, // Monnify's transactionReference — used by /verify
     };
     await ref.set(payment);
 

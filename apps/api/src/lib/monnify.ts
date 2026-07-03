@@ -26,7 +26,10 @@ export async function getAccessToken(): Promise<string> {
     method: "POST",
     headers: { Authorization: `Basic ${credentials}` },
   });
-  if (!res.ok) throw new Error(`Monnify auth failed: ${res.status}`);
+  if (!res.ok) {
+    const detail = await res.text().catch(() => "");
+    throw new Error(`Monnify auth failed: ${res.status} ${detail}`);
+  }
 
   const json = (await res.json()) as {
     responseBody: { accessToken: string; expiresIn: number };
@@ -41,6 +44,7 @@ export async function initTransaction(params: {
   amount: number;
   customerEmail: string;
   customerName: string;
+  paymentReference: string; // unique merchant-side reference (Monnify requires this)
   paymentDescription: string;
   redirectUrl: string;
 }): Promise<{ checkoutUrl: string; transactionReference: string }> {
@@ -60,7 +64,10 @@ export async function initTransaction(params: {
       paymentMethods: ["CARD", "ACCOUNT_TRANSFER"],
     }),
   });
-  if (!res.ok) throw new Error(`Monnify init-transaction failed: ${res.status}`);
+  if (!res.ok) {
+    const detail = await res.text().catch(() => "");
+    throw new Error(`Monnify init-transaction failed: ${res.status} ${detail}`);
+  }
 
   const json = (await res.json()) as {
     responseBody: { checkoutUrl: string; transactionReference: string };
@@ -79,7 +86,10 @@ export async function verifyTransaction(
     `${baseUrl}/api/v2/transactions/${encodeURIComponent(transactionReference)}`,
     { headers: { Authorization: `Bearer ${token}` } },
   );
-  if (!res.ok) throw new Error(`Monnify verify failed: ${res.status}`);
+  if (!res.ok) {
+    const detail = await res.text().catch(() => "");
+    throw new Error(`Monnify verify failed: ${res.status} ${detail}`);
+  }
 
   const json = (await res.json()) as {
     responseBody: { paymentStatus: string; amountPaid: number };
