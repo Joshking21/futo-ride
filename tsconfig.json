@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    "jsx": "react-native",
+    "skipLibCheck": true,
+    "moduleResolution": "bundler",
+    "module": "preserve",
+    "target": "ESNext"
+  }
+}

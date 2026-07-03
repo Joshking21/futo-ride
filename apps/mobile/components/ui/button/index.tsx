@@ -7,7 +7,7 @@ import {
   useStyleContext,
   type VariantProps,
 } from '@gluestack-ui/utils/nativewind-utils';
-import { cssInterop } from 'nativewind';
+import { cssInterop } from 'react-native-css-interop';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { PrimitiveIcon, UIIcon } from '@gluestack-ui/core/icon/creator';
 

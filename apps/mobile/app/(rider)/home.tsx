@@ -1,138 +1,365 @@
-import React, { useState } from "react";
-import { View, Text, Image, Pressable } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { useNavigation, useRouter } from "expo-router";
+import {
+  Car,
+  CarFront,
+  ChevronRight,
+  Clock,
+  LocateFixed,
+  Menu,
+  Search,
+  ShieldAlert,
+} from "lucide-react-native";
+import React, { useEffect, useRef, useState } from "react";
+import {
+  BackHandler,
+  Platform,
+  Pressable,
+  Text,
+  ToastAndroid,
+  View,
+} from "react-native";
+import MapView, { UrlTile } from "react-native-maps";
+// import { Image } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import KekeIcon from "../../components/KekeIcon";
 import { useApp } from "../../context/AppContext";
-import { Compass, ShieldCheck, MapPin, Search, Navigation, AlertTriangle, Wallet, Menu } from "lucide-react-native";
+import LiveMapScreen from "@/components/liveMap";
+// import { LinearGradient } from "react-native-svg";
 
 export default function RiderHome() {
   const router = useRouter();
   const { activeTrip } = useApp();
   const [vehicleType, setVehicleType] = useState<"keke" | "bus">("keke");
 
-  const recentLocations = [
-    { name: "SEET Head", desc: "Engineering & Tech Complex" },
-    { name: "FUTO Main Gate", desc: "Campus entrance/shuttle park" },
-  ];
+  const navigation = useNavigation();
+
+  // Use a mutable ref to track the number of back button taps
+  const backPressCount = useRef(0);
+
+  useEffect(() => {
+    // 1. Configure iOS Navigation Layout Safety
+    if (Platform.OS === "ios") {
+      navigation.setOptions({
+        gestureEnabled: false, // Prevents swipe-to-go-back to login screen
+        headerLeft: () => null, // Removes back arrows from top layouts
+      });
+      return; // Android-specific hardware back button logic skips iOS entirely
+    }
+
+    // 2. Android Double-Tap Exit Logic
+    const onBackPress = () => {
+      if (backPressCount.current === 1) {
+        // Second tap within 2 seconds -> Completely shut down the app process
+        BackHandler.exitApp();
+        return true;
+      }
+
+      // First tap -> Trigger a Toast reminder and bump count
+      backPressCount.current = 1;
+      ToastAndroid.show("Press back again to exit", ToastAndroid.SHORT);
+
+      // Reset the tap counter back to 0 if they don't tap again within 2 seconds
+      const timeout = setTimeout(() => {
+        backPressCount.current = 0;
+      }, 2000);
+
+      return true; // Stop native navigation from pushing them back to login screen
+    };
+
+    const subscription = BackHandler.addEventListener(
+      "hardwareBackPress",
+      onBackPress,
+    );
+
+    return () => {
+      subscription.remove();
+    };
+  }, [navigation]);
 
   return (
-    <SafeAreaView className="flex-1 bg-background relative" edges={["top"]}>
+    <SafeAreaView className="flex-1 bg-surface-bright relative" edges={[]}>
       {/* Top Overlay Menu */}
-      <View className="absolute top-4 left-margin-mobile z-[60] md:hidden">
-        <Pressable className="bg-surface text-on-surface p-3 rounded-full shadow-lg flex items-center justify-center border border-outline-variant/30 active:bg-surface-container-low">
-          <Menu color="#001caa" size={24} />
+      <View className="absolute top-4 left-margin-mobile z-50">
+        <Pressable className="bg-white p-3.5 rounded-full shadow-md border border-outline-variant/10 active:bg-surface-container flex items-center justify-center">
+          <Menu color="#0B1C30" size={22} />
         </Pressable>
       </View>
 
-      {/* Top App Bar Balance */}
-      <View className="absolute top-4 right-margin-mobile z-[60] flex flex-row gap-md">
-        <Pressable
-          onPress={() => router.push("/(rider)/payment")}
-          className="flex-row items-center gap-1.5 bg-surface px-4 py-2.5 rounded-full border border-outline-variant/30 shadow-lg active:opacity-75"
-        >
-          <Wallet color="#001caa" size={16} />
-          <Text className="text-label-sm text-primary font-bold">₦ 1,850</Text>
+      {/* Top Locator Button */}
+      <View className="absolute top-4 right-margin-mobile z-50">
+        <Pressable className="bg-white p-3.5 rounded-full shadow-md border border-outline-variant/10 active:bg-surface-container flex items-center justify-center">
+          <LocateFixed color="#0B1C30" size={22} className="rotate-45" />
         </Pressable>
       </View>
 
       {/* Map Area */}
       <View className="flex-1 relative z-10 bg-surface-container-low">
-        {/* Mock Map Image */}
-        <Image
+        {/* Map Background */}
+        {/* <Image
           source={{
             uri: "https://lh3.googleusercontent.com/aida-public/AB6AXuBhChECydpDyPgt27hlQrat9Rk2U89C00BRo9HxQfDmpSr4MRrxjAG1pGL6iwr1A__rTa5hkvxx5VNhyBHIwUrgEL1XAzRh3vdUsCbmpnjEWdd5tXIJyvuoNbsf17_pEryhtId0Y6snYs2mm-iQfYuoPK3Zrsg2EAG-XD5-Bq8QCQpcEyE5GcSDWhm7yhm20vy7oBcRqJFt0hbOoiU-LdxjqFg6qiW_P7A1aJmd6buI9IlGZRklUN8jk7Fl9tud8gafRai7G4XXH9hL",
           }}
           className="w-full h-full object-cover"
+        /> */}
+        <LiveMapScreen />
+        {/* <MapView style={{ flex: 1 }}>
+          <UrlTile
+            urlTemplate="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+            maximumZ={19}
+          />
+        </MapView> */}
+
+        <LinearGradient
+          colors={["transparent", "rgba(255, 255, 255, 0.6)", "#ffffff"]}
+          locations={[0, 0.7, 1]}
+          className="absolute top-0 left-0 w-full h-full"
         />
 
         {/* User Location pulsing dot */}
-        <View className="absolute top-[52%] left-[48%] -mt-2 -ml-2 w-4 h-4 bg-primary rounded-full border-2 border-white shadow-md" />
-
-        {/* Driver Keke 1 */}
-        <View className="absolute top-[40%] left-[32%] -mt-4 -ml-4 bg-surface border-2 border-primary w-9 h-9 rounded-lg items-center justify-center shadow-md">
-          <Text className="text-lg">🛺</Text>
+        <View className="absolute top-[48%] left-[50%] -ml-6 -mt-6 w-12 h-12 items-center justify-center">
+          <View className="absolute w-10 h-10 rounded-full bg-primary/10 scale-125" />
+          <View className="absolute w-8 h-8 rounded-full bg-primary/20" />
+          <View className="w-4.5 h-4.5 rounded-full bg-primary border-2 border-white shadow-md shadow-primary/20" />
         </View>
 
-        {/* Driver Keke 2 */}
-        <View className="absolute top-[62%] left-[68%] -mt-4 -ml-4 bg-surface border-2 border-primary w-9 h-9 rounded-lg items-center justify-center shadow-md">
-          <Text className="text-lg">🛺</Text>
+        {/* Nearby vehicles drawn on map */}
+        {/* <View className="absolute top-[35%] left-[25%] p-1 bg-white rounded-xl shadow-md border border-outline-variant/10">
+          <KekeIcon size={32} color="#001caa" />
         </View>
 
-        {/* Floating Actions (Right Side) */}
-        <View className="absolute bottom-[280px] right-margin-mobile z-20 gap-3">
-          {/* Target Location Button */}
-          <Pressable className="bg-surface border border-outline-variant/30 text-primary w-12 h-12 rounded-full items-center justify-center shadow-lg active:scale-95">
-            <Navigation color="#001caa" size={20} />
-          </Pressable>
-          {/* Floating SOS Button */}
-          <Pressable
-            onPress={() => router.push("/sos")}
-            className="bg-error-container text-on-error-container w-16 h-16 rounded-full items-center justify-center shadow-lg border border-error/20 active:bg-error active:scale-95"
-          >
-            <AlertTriangle color="#ba1a1a" size={24} />
-            <Text className="font-label-sm text-[10px] font-bold text-error uppercase mt-0.5">SOS</Text>
-          </Pressable>
+        <View className="absolute top-[28%] left-[60%] p-1 bg-white rounded-xl shadow-md border border-outline-variant/10">
+          <KekeIcon size={32} color="#001caa" />
         </View>
 
-        {/* Search & Toggle Panel (Bottom Sheet) */}
-        <View className="absolute bottom-4 left-margin-mobile right-margin-mobile bg-surface rounded-2xl p-4 shadow-xl border border-surface-container-highest z-20">
-          {/* Where to Search Bar */}
-          <View className="flex flex-row gap-2 mb-3">
+        <View className="absolute top-[60%] left-[30%] p-1 bg-white rounded-xl shadow-md border border-outline-variant/10">
+          <KekeIcon size={32} color="#001caa" />
+        </View>
+
+        <View className="absolute top-[52%] left-[75%] p-1 bg-white rounded-xl shadow-md border border-outline-variant/10">
+          <KekeIcon size={32} color="#001caa" />
+        </View> */}
+
+        {/* Floating Actions Panel (Right Side above panel) */}
+
+        {/* Bottom Search & Toggle Sheet */}
+        <View
+          style={{
+            position: "absolute",
+            bottom: 60,
+            left: 20,
+            right: 20,
+            borderRadius: 24,
+            // padding: 20,
+            // borderWidth: 1,
+            // borderColor: "rgba(197, 197, 216, 0.1)",
+            zIndex: 25,
+            // shadowColor: "#000000",
+            // shadowOffset: { width: 0, height: 10 },
+            // shadowOpacity: 0.1,
+            // shadowRadius: 20,
+            // elevation: 10,
+          }}
+          className="flex gap-4"
+        >
+          {/* Search bar input container */}
+          <View className="flex flex-row  gap-4 align-bottom items-end justify-end">
             <Pressable
               onPress={() => router.push("/(rider)/book")}
-              className="flex-1 flex-row items-center bg-surface-container-low border border-outline-variant rounded-full px-4 py-3 gap-3 active:bg-surface-container-high transition-colors"
+              style={{
+                // width: "100%",
+                flexDirection: "row",
+                alignItems: "center",
+                // backgroundColor: "#f8f9ff",
+                // borderWidth: 1,
+                // borderColor: "rgba(197, 197, 216, 0.15)",
+                height: 50,
+                borderRadius: 16,
+                paddingHorizontal: 16,
+                borderWidth: 1,
+                borderColor: "rgba(197, 197, 216, 0.15)",
+                shadowColor: "#000000",
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.05,
+                shadowRadius: 4,
+                // elevation: 1,
+                // marginBottom: 16,
+              }}
+              className="flex flex-1 bg-white"
             >
-              <Search color="#444655" size={20} />
-              <Text className="text-body-md text-secondary font-medium flex-1">Where to?</Text>
+              <Search color="#757687" size={20} style={{ marginRight: 12 }} />
+              <Text
+                style={{
+                  fontSize: 14,
+                  lineHeight: 24,
+                  color: "#5b5e66",
+                  fontWeight: "700",
+                  fontFamily: "Plus Jakarta Sans",
+                  flex: 1,
+                }}
+                className=""
+              >
+                Where to?
+              </Text>
             </Pressable>
+            <View className=" gap-3">
+              {/* Floating SOS Button */}
+              <Pressable
+                onPress={() => router.push("/sos")}
+                className=" bg-error w-14 h-14 rounded-full items-center justify-center shadow-lg border border-outline-variant/10 active:bg-error/80"
+              >
+                <ShieldAlert color="#ffffff" size={24} />
+                <Text className="text-[10px] font-bold text-white uppercase tracking-wider font-jakarta mt-0.5">
+                  SOS
+                </Text>
+              </Pressable>
+
+              {/* Floating History/Clock Button */}
+              <Pressable
+                onPress={() => router.push("/(rider)/rides")}
+                className=" bg-white w-14 h-14 rounded-full items-center justify-center shadow-lg border border-outline-variant/10 active:bg-surface-container-high"
+              >
+                <Clock color="#0B1C30" size={24} />
+              </Pressable>
+            </View>
           </View>
 
-          {/* Vehicle Type Toggle */}
-          <View className="flex flex-row bg-surface-container-low rounded-lg p-1 mb-3">
+          {/* Keke vs Bus toggle selection */}
+          <View
+            style={{
+              flexDirection: "row",
+              backgroundColor: "#f8f9ff",
+              borderWidth: 1,
+              borderColor: "rgba(197, 197, 216, 0.10)",
+              borderRadius: 16,
+              // padding: 4,
+              marginBottom: 16,
+            }}
+          >
             <Pressable
               onPress={() => setVehicleType("keke")}
-              className={`flex-1 py-2 px-3 rounded-md flex-row items-center justify-center gap-2 ${
-                vehicleType === "keke" ? "bg-primary shadow-sm" : "bg-transparent"
-              }`}
+              style={{
+                flex: 1,
+                flexDirection: "row",
+                height: 40,
+                borderRadius: 15,
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+                backgroundColor:
+                  vehicleType === "keke" ? "#001caa" : "transparent",
+                shadowColor: vehicleType === "keke" ? "#001caa" : undefined,
+                shadowOffset:
+                  vehicleType === "keke" ? { width: 0, height: 2 } : undefined,
+                shadowOpacity: vehicleType === "keke" ? 0.2 : undefined,
+                shadowRadius: vehicleType === "keke" ? 4 : undefined,
+                elevation: vehicleType === "keke" ? 3 : 0,
+              }}
             >
-              <Compass color={vehicleType === "keke" ? "#ffffff" : "#444655"} size={16} />
-              <Text className={`font-label-md text-label-md font-bold ${
-                vehicleType === "keke" ? "text-on-primary" : "text-on-surface-variant"
-              }`}>Keke</Text>
+              <KekeIcon
+                size={20}
+                color={vehicleType === "keke" ? "#ffffff" : "#444655"}
+              />
+              <Text
+                style={{
+                  fontFamily: "Plus Jakarta Sans",
+                  fontSize: 14,
+                  lineHeight: 20,
+                  fontWeight: "700",
+                  color: vehicleType === "keke" ? "#ffffff" : "#444655",
+                }}
+              >
+                Keke
+              </Text>
             </Pressable>
 
             <Pressable
               onPress={() => setVehicleType("bus")}
-              className={`flex-1 py-2 px-3 rounded-md flex-row items-center justify-center gap-2 ${
-                vehicleType === "bus" ? "bg-primary shadow-sm" : "bg-transparent"
-              }`}
+              style={{
+                flex: 1,
+                flexDirection: "row",
+                height: 40,
+                borderRadius: 15,
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+                backgroundColor:
+                  vehicleType === "bus" ? "#001caa" : "transparent",
+                shadowColor: vehicleType === "bus" ? "#001caa" : undefined,
+                shadowOffset:
+                  vehicleType === "bus" ? { width: 0, height: 2 } : undefined,
+                shadowOpacity: vehicleType === "bus" ? 0.2 : undefined,
+                shadowRadius: vehicleType === "bus" ? 4 : undefined,
+                elevation: vehicleType === "bus" ? 3 : 0,
+              }}
             >
-              <Compass color={vehicleType === "bus" ? "#ffffff" : "#444655"} size={16} />
-              <Text className={`font-label-md text-label-md font-bold ${
-                vehicleType === "bus" ? "text-on-primary" : "text-on-surface-variant"
-              }`}>Bus</Text>
+              {/* Bus icon simulation */}
+              <CarFront
+                color={vehicleType === "bus" ? "#ffffff" : "#444655"}
+                size={18}
+              />
+              <Text
+                style={{
+                  fontFamily: "Plus Jakarta Sans",
+                  fontSize: 14,
+                  lineHeight: 20,
+                  fontWeight: "700",
+                  color: vehicleType === "bus" ? "#ffffff" : "#444655",
+                }}
+              >
+                Bus
+              </Text>
             </Pressable>
           </View>
 
-          {/* Nearby Status Row */}
+          {/* Nearby status bar */}
           <Pressable
             onPress={() => router.push("/(rider)/book")}
-            className="w-full flex-row items-center justify-between pt-3 border-t border-surface-container-highest active:opacity-75"
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: 9,
+              borderWidth: 1,
+              borderColor: "rgba(197, 197, 216, 0.15)",
+              shadowColor: "#000000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.05,
+              shadowRadius: 4,
+              elevation: 1,
+            }}
+            className=" rounded-2xl px-5 bg-white"
           >
-            <View className="flex-row items-center gap-2">
-              <View className="w-2.5 h-2.5 rounded-full bg-green-500" />
-              <Text className="font-body-md text-body-md text-on-surface">
-                <Text className="font-bold">
-                  {vehicleType === "keke" ? "8" : "3"}
+            <View
+              style={{ flexDirection: "row", alignItems: "center", gap: 10 }}
+              className=""
+            >
+              <View
+                style={{
+                  width: 10,
+                  height: 10,
+                  borderRadius: 5,
+                  backgroundColor: "#22c55e",
+                }}
+              />
+              <Text
+                style={{
+                  fontFamily: "Plus Jakarta Sans",
+                  fontSize: 14,
+                  lineHeight: 20,
+                  color: "#0b1c30",
+                }}
+              >
+                <Text style={{ fontWeight: "700" }}>
+                  {vehicleType === "keke" ? "12" : "4"}
                 </Text>{" "}
-                {vehicleType === "keke" ? "Kekes" : "Campus Shuttle buses"} nearby
+                {vehicleType === "keke" ? "kekes nearby" : "buses nearby"}
               </Text>
             </View>
-            <Text className="text-secondary">➔</Text>
+            <ChevronRight color="#757687" size={18} />
           </Pressable>
         </View>
       </View>
     </SafeAreaView>
   );
 }
-

@@ -1,129 +1,120 @@
 import React, { useState } from "react";
-import { View, Text, Pressable, Image, TextInput, ScrollView } from "react-native";
+import { View, Text, Pressable, ScrollView, TextInput } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useApp } from "../../context/AppContext";
-import { CheckCircle2, Wallet, Route, Clock, Star, ArrowRight, X } from "lucide-react-native";
+import { X, Check, Star } from "lucide-react-native";
 
 export default function TripReceipt() {
   const router = useRouter();
-  const { activeTrip, clearActiveTrip } = useApp();
-  const [rating, setRating] = useState(5);
-  const [comment, setComment] = useState("");
+  const { activeTrip } = useApp();
+  const [rating, setRating] = useState<number>(0);
+  const [feedback, setFeedback] = useState<string>("");
 
   const handleDone = () => {
-    clearActiveTrip();
     router.replace("/(rider)/home");
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-background" edges={["top", "bottom"]}>
-      {/* Top Header */}
-      <View className="flex-row justify-between items-center px-4 h-16 bg-surface border-b border-outline-variant">
-        <Pressable onPress={handleDone} className="p-2 -ml-2 rounded-full active:bg-surface-container-high transition-colors">
-          <X color="#001caa" size={24} />
+    <SafeAreaView className="flex-1 bg-surface-bright" edges={["top", "bottom"]}>
+      {/* Top Header Row with Close Button */}
+      <View className="flex-row items-center justify-between px-margin-mobile h-[64px] bg-white border-b border-outline-variant/10 z-20">
+        <Pressable
+          onPress={handleDone}
+          className="w-12 h-12 rounded-2xl bg-white items-center justify-center border border-outline-variant/10 active:bg-surface-container"
+        >
+          <X color="#0B1C30" size={24} />
         </Pressable>
-        <Text className="text-headline-sm font-bold text-primary font-jakarta">Futo Ride</Text>
-        <View className="w-10" />
+        <Text className="text-headline-md font-bold text-on-surface font-jakarta">Trip Receipt</Text>
+        <View className="w-12" />
       </View>
 
-      <ScrollView className="flex-1 px-4 py-6" contentContainerStyle={{ paddingBottom: 100 }}>
-        {/* Success Header */}
-        <View className="items-center text-center mb-8 pt-2">
-          <View className="w-20 h-20 bg-primary-container rounded-full flex items-center justify-center mb-4 shadow-lg shadow-primary-container/20">
-            <CheckCircle2 color="#ffffff" size={40} fill="#1d35d1" />
+      <ScrollView contentContainerStyle={{ padding: 20, gap: 20, paddingBottom: 60 }} className="flex-1">
+        {/* Success checkmark banner */}
+        <View className="items-center py-4">
+          <View className="w-16 h-16 bg-success/10 rounded-full flex items-center justify-center mb-3">
+            <Check color="#22c55e" size={32} strokeWidth={3} />
           </View>
-          <Text className="text-headline-md font-bold text-on-background mb-2 font-jakarta">Trip Complete</Text>
-          <Text className="text-body-md text-secondary font-jakarta text-center">Hope you enjoyed your ride across campus.</Text>
+          <Text className="text-headline-lg font-bold text-on-surface text-center font-jakarta">
+            Trip Completed!
+          </Text>
+          <Text className="text-body-sm text-secondary text-center font-jakarta mt-1">
+            Thank you for riding with Futo Ride
+          </Text>
         </View>
 
-        {/* Receipt Card */}
-        <View className="bg-surface-container rounded-xl p-5 border border-outline-variant shadow-sm mb-6">
-          <View className="flex-row justify-between items-end border-b border-outline-variant pb-4 mb-4">
-            <View>
-              <Text className="text-label-md text-secondary mb-1 font-jakarta">Total Fare</Text>
-              <Text className="text-headline-xl font-bold text-primary font-jakarta">₦{activeTrip.price || 400}</Text>
-            </View>
-            <View className="bg-surface-container-high px-3 py-1 rounded-full border border-outline-variant">
-              <Text className="text-label-sm text-on-surface font-jakarta">Naira Cash</Text>
-            </View>
-          </View>
-          
-          <View className="flex-row justify-between pt-1">
-            <View className="flex-row items-center gap-3 flex-1">
-              <View className="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center">
-                <Route color="#001caa" size={18} />
-              </View>
-              <View>
-                <Text className="text-label-sm text-secondary font-jakarta">Distance</Text>
-                <Text className="text-body-md text-on-surface font-medium font-jakarta">2.4 km</Text>
-              </View>
-            </View>
+        {/* Total Paid box */}
+        <View className="bg-primary/5 rounded-3xl p-5 border border-primary/10 items-center justify-center gap-1">
+          <Text className="text-body-sm text-secondary font-jakarta">Total Paid</Text>
+          <Text className="text-headline-xl font-bold text-primary font-jakarta">₦950.00</Text>
+          <Text className="text-body-sm text-secondary font-jakarta font-semibold mt-1">
+            Paid with cNGN Wallet
+          </Text>
+          <Text className="text-[11px] text-secondary font-jakarta font-mono">0xA3f5...9bC1d</Text>
+        </View>
 
-            <View className="flex-row items-center gap-3 flex-1">
-              <View className="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center">
-                <Clock color="#001caa" size={18} />
-              </View>
-              <View>
-                <Text className="text-label-sm text-secondary font-jakarta">Duration</Text>
-                <Text className="text-body-md text-on-surface font-medium font-jakarta">12 mins</Text>
-              </View>
-            </View>
+        {/* Receipt Details Box */}
+        <View className="bg-white rounded-3xl p-5 border border-outline-variant/10 shadow-sm gap-4">
+          <Text className="text-label-sm font-bold text-secondary uppercase tracking-wider font-jakarta">Receipt Details</Text>
+          
+          <View className="flex-row justify-between items-center pb-2 border-b border-outline-variant/5">
+            <Text className="text-body-sm text-secondary font-jakarta">Trip ID</Text>
+            <Text className="text-body-sm text-on-surface font-mono font-bold">FUTO-984-KLX</Text>
+          </View>
+
+          <View className="flex-row justify-between items-center pb-2 border-b border-outline-variant/5">
+            <Text className="text-body-sm text-secondary font-jakarta">Date & Time</Text>
+            <Text className="text-body-sm text-on-surface font-jakarta font-bold">27 June 2026, 04:32 PM</Text>
+          </View>
+
+          <View className="flex-col gap-1 pb-2 border-b border-outline-variant/5">
+            <Text className="text-[10px] uppercase font-bold text-secondary font-jakarta">Pickup</Text>
+            <Text className="text-body-sm text-on-surface font-jakarta font-bold">{activeTrip.pickup || "SEET Roundabout, FUTO"}</Text>
+          </View>
+
+          <View className="flex-col gap-1">
+            <Text className="text-[10px] uppercase font-bold text-secondary font-jakarta">Destination</Text>
+            <Text className="text-body-sm text-on-surface font-jakarta font-bold">{activeTrip.destination || "Senate Building, FUTO"}</Text>
           </View>
         </View>
 
-        {/* Rating Section */}
-        <View className="bg-surface-container-lowest rounded-xl p-5 border border-outline-variant shadow-sm mb-6">
-          <Text className="text-headline-sm font-bold text-on-background mb-4 text-center font-jakarta">How was your driver?</Text>
+        {/* Rate Driver Section */}
+        <View className="bg-white rounded-3xl p-5 border border-outline-variant/10 shadow-sm gap-4">
+          <Text className="text-label-sm font-bold text-secondary uppercase tracking-wider font-jakarta text-center">Rate your driver</Text>
           
-          <View className="flex-col items-center mb-4">
-            <Image
-              source={{
-                uri: "https://lh3.googleusercontent.com/aida-public/AB6AXuCjFSCFMbV7btYNBq5Z_NmptfAr1-8my1GvNRPgRRaOLLPEtqioVZ_2mjlIyJLLQ-ioQ4du4wFmsS6KnXMp2aSQZLLeQDRfId6gfO90HKV18JnRFc14-vwUWfgVzqp_O9q2fTdD4xoCrWVFrt24XLi9lmTNUKrlnSTxrGFEP9Neh75LbWKZStV1fz0IhdzbgCsD7BEvcl2HqdEwOMjtsiS4w1MHWeE2VzoZ4dv5ECAAb8wYva0TgLQY9k_FVIDFN-dv7uCj9XMJdlV7",
-              }}
-              className="w-16 h-16 rounded-full object-cover border-2 border-primary-container mb-2"
-            />
-            <Text className="text-body-lg font-bold text-on-surface font-jakarta">Chukwuemeka O.</Text>
-            <Text className="text-label-sm text-secondary font-jakarta">Keke Napep • FTO-492-XA</Text>
-          </View>
-
-          {/* Stars Row */}
-          <View className="flex-row justify-center gap-2 mb-4">
+          {/* Star selector */}
+          <View className="flex-row items-center justify-center gap-2">
             {[1, 2, 3, 4, 5].map((star) => (
-              <Pressable key={star} onPress={() => setRating(star)} className="p-1">
+              <Pressable key={star} onPress={() => setRating(star)} className="p-1 active:scale-110">
                 <Star
-                  color={star <= rating ? "#001caa" : "#757687"}
-                  fill={star <= rating ? "#001caa" : "transparent"}
+                  color={star <= rating ? "#f59e0b" : "#c5c5d8"}
+                  fill={star <= rating ? "#f59e0b" : "transparent"}
                   size={32}
                 />
               </Pressable>
             ))}
           </View>
 
-          {/* Comment/Compliment Input */}
+          {/* Optional comments input */}
           <TextInput
+            placeholder="Write feedback (optional)"
+            placeholderTextColor="#c5c5d8"
+            value={feedback}
+            onChangeText={setFeedback}
             multiline
             numberOfLines={3}
-            placeholder="Leave a compliment or comment (optional)"
-            placeholderTextColor="#757687"
-            value={comment}
-            onChangeText={setComment}
-            className="w-full bg-surface rounded-lg border border-outline-variant p-4 text-body-md text-on-surface font-jakarta"
-            style={{ textAlignVertical: "top", minHeight: 80 }}
+            className="w-full bg-surface border border-outline-variant/10 rounded-2xl p-4 text-body-md text-on-surface font-jakarta"
           />
         </View>
-      </ScrollView>
 
-      {/* Fixed Bottom Action */}
-      <View className="absolute bottom-0 left-0 right-0 bg-surface-container-lowest p-4 border-t border-outline-variant z-40">
+        {/* Done Button */}
         <Pressable
           onPress={handleDone}
-          className="w-full h-12 bg-primary rounded-lg flex items-center justify-center shadow-md active:scale-[0.98] transition-all"
+          className="w-full bg-[#0b1c30] h-14 rounded-full flex items-center justify-center shadow-md active:scale-[0.98] mt-2"
         >
-          <Text className="text-on-primary text-label-md font-bold font-jakarta">Done</Text>
+          <Text className="text-white text-action-lg font-bold font-jakarta">Done</Text>
         </Pressable>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
-
