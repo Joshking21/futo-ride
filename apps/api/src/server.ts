@@ -1,6 +1,14 @@
 import Fastify from "fastify";
 import cors from "@fastify/cors";
-import { HttpError, mapError } from "./lib/http.js";
+import { mapError } from "./lib/http.js";
+import driverRoutes from "./routes/drivers.js";
+import rideRoutes from "./routes/rides.js";
+import paymentRoutes from "./routes/payments.js";
+import incidentRoutes from "./routes/incidents.js";
+import busRoutes from "./routes/buses.js";
+import surgeRoutes from "./routes/surge.js";
+import stopRoutes from "./routes/stops.js";
+import telegramRoutes from "./routes/telegram.js";
 
 const app = Fastify({ logger: true });
 
@@ -15,11 +23,14 @@ app.setErrorHandler((error, _request, reply) => {
 /** Health check — no auth required. */
 app.get("/health", async () => ({ ok: true, data: { status: "ok" } }));
 
-// TODO: register route modules as they land
-// await app.register(rideRoutes);
-// await app.register(driverRoutes);
-// await app.register(incidentRoutes);
-// await app.register(paymentRoutes);
+await app.register(driverRoutes);
+await app.register(rideRoutes);
+await app.register(paymentRoutes);
+await app.register(incidentRoutes);
+await app.register(busRoutes);
+await app.register(surgeRoutes);
+await app.register(stopRoutes);
+await app.register(telegramRoutes);
 
 const port = Number(process.env.PORT) || 3001;
 

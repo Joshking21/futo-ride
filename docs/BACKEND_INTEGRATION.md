@@ -68,6 +68,14 @@ return json.data;                             // typed payload
 
 **Status codes:** `200` ok · `400` bad input · `401` missing/invalid token · `403` not allowed · `404` not found · `409` conflict · `500` server error.
 
+### 💰 Money is always in **kobo**
+
+Every money value the backend sends or accepts is an **integer in kobo** (1 naira = 100 kobo). So `fare`, `priorityFee`, `amount`, etc. are kobo.
+
+- **Display:** divide by 100 to show naira → `₦${(fare / 100).toLocaleString()}`. e.g. `fare: 25000` → **₦250.00**.
+- **Sending:** send kobo back (e.g. a `priorityFee` of ₦50 → `5000`).
+- You never deal with naira on the wire — the backend converts to naira internally only when it talks to Monnify. Treat kobo as the single unit across the whole API.
+
 ---
 
 ## 5. A tiny client helper (adapt to your style)
@@ -104,22 +112,52 @@ async function apiPost<T>(path: string, body: unknown): Promise<T> {
 
 > The **live, authoritative list is `docs/API.md`** (the backend dev keeps it current). Below is the shape to expect. Right now only the health check exists; the rest land as the backend is built — check `API.md` before wiring each.
 
-**Available now**
+**Live now** (full request/response detail in `docs/API.md`; money is kobo):
 ```
-GET /health
-Auth: none
-200: { ok: true, data: { status: "ok" } }
+GET  /health                 health check                  → { status }
+GET  /stops                  campus stops (keke pickers)   → { stops }
+
+POST /drivers/online         driver go on/off (+ position) → { online }
+POST /drivers/location       driver position update        → { ok }
+GET  /drivers/:id/rating     driver avg rating + count     → { average, count }
+
+POST /rides                  book a keke (FCFS nearest)    → { rideId, driverId, etaMin, fare }
+POST /rides/:id/cancel       cancel a ride                 → { ok }
+POST /rides/:id/status       driver: arriving / started    → { status }
+POST /rides/:id/complete     rider confirms via QR token   → { ok, fare }
+GET  /rides/:id/qr           driver fetches the trip QR    → { qrToken }
+POST /rides/:id/rate         rider rates the driver        → { ok }
+
+POST /payments/init          start a Monnify payment       → { checkoutUrl, reference }
+POST /payments/verify        confirm a payment             → { status, amount }
+
+POST /sos                    raise an SOS (AI→Alerta)      → { incidentId }
+POST /incidents/report       report accident/off-route     → { incidentId }
+
+GET  /buses/routes           list routes + ordered stops   → { routes }
+GET  /buses/routes/:id/eta   ETA to each stop from a pos   → { routeId, stops }
+POST /buses/location         bus driver posts position     → { ok }
+POST /buses/proximity        opt-in "notify near my stop"  → { enabled }
+
+GET  /surge/:zone            surge state for a pickup stop → { zone, surge }
 ```
 
-**Planned (confirm in API.md before using)**
+**Surge & the priority button (rider):** call `GET /surge/:zone` (zone = the pickup stop id) — if `surge: "on"`, show the optional priority-fee control on Ride Options; otherwise hide it. Send `priorityFee` (kobo) in `POST /rides` only when it's on; the backend ignores it off-surge. When set, half goes to the driver as a bonus and half is the platform service fee.
+
+**Bus tracking:** subscribe to live bus positions from RTDB as usual. To show ETAs, pass the bus's current `lat`/`lng` to `GET /buses/routes/:id/eta` and you get cumulative ETA to each stop ahead. `GET /buses/routes` (no auth) gives you the route list + stops to populate pickers. `POST /buses/proximity` registers a Telegram proximity alert (needs the Telegram connect step first).
+
+**Connecting Telegram (for personal pings):** your only job is a "Connect Telegram" button that deep-links the user to the bot with their uid:
+```ts
+import { Linking } from "react-native";
+import auth from "@react-native-firebase/auth";
+const uid = auth().currentUser!.uid;
+Linking.openURL(`https://t.me/<YourBotUsername>?start=${uid}`);
 ```
-POST /rides              book a keke      → { rideId, driverId, etaMin, fare }
-POST /rides/:id/cancel   cancel a ride    → { ok }
-POST /rides/:id/complete confirm via QR   → { ok }
-POST /sos                raise an incident→ { incidentId }
-POST /drivers/online     driver go on/off → { online }
-POST /payments/init      start a payment  → { reference, ... }
-```
+The user presses Start in Telegram; the backend captures their chat id automatically (via its own `/telegram/webhook`, which you do NOT call). You can reflect "connected" by watching `users/{uid}.chatId` appear in your Firestore subscription. Until this is done, bus-proximity and dispatch pings are silently skipped.
+
+**Ride lifecycle (driver-driven):** the driver advances the trip with `POST /rides/:id/status { status }` — `"arriving"` when en route to pickup, then `"started"` at pickup. Transitions are ordered (`assigned → arriving → started`); an out-of-order call returns `409`. Completion is separate (rider scans QR, below). The rider app doesn't call this — it just watches `rides/{id}.status` change via its Firestore subscription and updates the tracking UI.
+
+**QR completion flow:** the driver app calls `GET /rides/:id/qr` and renders the `qrToken` as a QR code; the rider scans it and posts it to `POST /rides/:id/complete`. The backend verifies the token matches before completing — so a stranger with just the rideId can't close the trip.
 
 ---
 
@@ -134,14 +172,14 @@ type BookRideRequest = {
   fromStop: string;        // a campus stop id
   toStop: string;          // a campus stop id (≠ fromStop)
   payMethod: PayMethod;
-  priorityFee?: number;    // only when surge is active
+  priorityFee?: number;    // kobo — only when surge is active
 };
 
 type BookRideResponse = {
   rideId: string;
   driverId: string;
   etaMin: number;
-  fare: number;
+  fare: number;            // kobo (divide by 100 to show naira)
 };
 
 type RideStatus =
