@@ -9,12 +9,20 @@ export interface AlertPayload {
   meta?: Record<string, unknown>;
 }
 
-/** Sends an incident alert to SUG Security Telegram via Alerta. */
-export async function sendTelegramAlert(payload: AlertPayload): Promise<void> {
+/**
+ * Sends a Telegram alert via Alerta.
+ * @param payload  title / severity / message / meta
+ * @param target   recipient override (e.g. a rider's chat_id); defaults to the
+ *                 SUG Security group from ALERTA_TELEGRAM_TARGET.
+ */
+export async function sendTelegramAlert(
+  payload: AlertPayload,
+  target?: string,
+): Promise<void> {
   const apiKey = process.env.ALERTA_API_KEY;
   const apiSecret = process.env.ALERTA_API_SECRET;
-  const target = process.env.ALERTA_TELEGRAM_TARGET;
-  if (!apiKey || !apiSecret || !target) {
+  const resolvedTarget = target ?? process.env.ALERTA_TELEGRAM_TARGET;
+  if (!apiKey || !apiSecret || !resolvedTarget) {
     throw new Error("Missing Alerta credentials");
   }
 
@@ -25,7 +33,7 @@ export async function sendTelegramAlert(payload: AlertPayload): Promise<void> {
       "x-api-key": apiKey,
       "x-api-secret": apiSecret,
     },
-    body: JSON.stringify({ ...payload, target }),
+    body: JSON.stringify({ ...payload, target: resolvedTarget }),
   });
 
   if (!res.ok) {
