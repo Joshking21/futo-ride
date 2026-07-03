@@ -342,8 +342,11 @@ THE QR / "CODE" FLOW (keke only) — how it actually works:
     5. If a keke is found: creates the ride as "assigned", mints the QR token,
        and DISPATCHES the assignment to the driver on Telegram (driver sees only
        pickup→dropoff, never who paid). Returns rideId/driverId/etaMin/fare.
-    6. If NO keke is found: still records the request (status "requested") so the
-       "stranded student" safety layer can act, and returns 409.
+    6. If NO keke is found: still records the request (status "requested"), then
+       raises a HIGH "stranded" incident (AI triage → Alerta → SUG Security
+       Telegram) so security is aware — especially at night — and returns 409.
+       The alert is best-effort: if triage/Alerta fails, the rider still gets the
+       409 (the safety alert never masks or blocks the booking response).
   Scenario: Ride Options screen → user confirms From/To + pay method (+ priority
     if surge) → call this → on success go to Payment with the returned fare.
   AFTER this: subscribe to Firestore rides/{rideId} to watch status change
@@ -357,6 +360,24 @@ THE QR / "CODE" FLOW (keke only) — how it actually works:
   Returns: { ok: true }
   Errors: 403 not your ride · 404 not found · 409 already completed/cancelled
   Scenario: Live Tracking "Cancel ride" button.
+
+........................................................................
+ POST /rides/:id/status                        (the assigned DRIVER)
+........................................................................
+  Auth: yes (must be the driver on that ride)
+  Send: { status: "arriving" | "started" }
+  Returns: { status: "arriving" | "started" }
+  Errors: 403 not your ride · 404 not found · 409 already closed OR illegal move
+  What it does: the DRIVER drives the trip forward through its mid-ride states.
+    The order is fixed:  assigned → arriving → started  → (then completed via QR).
+      • "arriving" = driver is on the way to the pickup.
+      • "started"  = rider is on board, trip underway.
+    An out-of-order call (e.g. assigned → started, or repeating a state) → 409.
+    Completion is NOT done here — the rider scans the QR (POST /rides/:id/complete).
+  Scenario: Driver active-trip screen → "I'm arriving" button sends
+    { status:"arriving" }; "Start trip" button sends { status:"started" }. The
+    RIDER app does NOT call this — it just watches rides/{id}.status change in its
+    Firestore subscription and updates the tracking UI (assigned→arriving→started).
 
 ........................................................................
  GET /rides/:id/qr                             (the assigned DRIVER)
@@ -635,8 +656,11 @@ B) DRIVER (keke):
    3. While online: POST /drivers/location { lat, lng } periodically (+ RTDB).
    4. Get a Telegram dispatch "📍 New pickup: SEET → Main Library" (+ surge bonus
       line if any). Open the active trip in the app.
-   5. At dropoff: GET /rides/:id/qr → render qrToken as a QR → rider scans it.
-   6. Rider completes → payout released. Repeat.
+   5. En route to pickup: POST /rides/:id/status { status:"arriving" }.
+      At pickup, rider on board: POST /rides/:id/status { status:"started" }.
+      (The rider's app sees these via its Firestore rides/{id} subscription.)
+   6. At dropoff: GET /rides/:id/qr → render qrToken as a QR → rider scans it.
+   7. Rider completes → payout released (conceptually). Repeat.
 
 C) RIDER tracks a bus:
    1. Bus tab → GET /buses/routes → pick route "town-a" and a stop.

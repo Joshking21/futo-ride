@@ -9,8 +9,9 @@ import { baseFareKobo } from "../lib/fare.js";
 import { evaluateSurge, driverPriorityBonusKobo } from "../lib/surge.js";
 import { mintQrToken, verifyQrToken } from "../lib/qr.js";
 import { sendTelegramAlert } from "../lib/alerta.js";
-import { BookRide, CompleteRide, RateRide, RideId } from "../schemas/rides.js";
-import type { Ride } from "../types/index.js";
+import { raiseIncident } from "../lib/incidents.js";
+import { BookRide, CompleteRide, RateRide, RideId, UpdateRideStatus } from "../schemas/rides.js";
+import type { Ride, RideStatus } from "../types/index.js";
 
 type OnlineKeke = { id: string; lat: number; lng: number };
 
@@ -84,7 +85,9 @@ export default async function rideRoutes(app: FastifyInstance) {
     const now = Date.now();
 
     if (!match) {
-      // Stranded student: no keke available. Record the request; Phase 2 fires Alerta.
+      // Stranded student: no keke available. Record the request, then raise a HIGH
+      // incident so SUG Security is aware (esp. at night). Best-effort: a triage/
+      // Alerta failure must never mask the 409 the rider needs to see.
       const ref = db.collection("rides").doc();
       const ride: Ride = {
         id: ref.id,
@@ -100,6 +103,15 @@ export default async function rideRoutes(app: FastifyInstance) {
         createdAt: now,
       };
       await ref.set(ride);
+
+      await raiseIncident({
+        riderId: user.uid,
+        type: "stranded",
+        message: `No keke available for a rider requesting ${from.name} → ${to.name}.`,
+        location: `${from.name} (${from.lat},${from.lng})`,
+        rideId: ref.id,
+      }).catch((err) => req.log.error({ err }, "stranded-student alert failed"));
+
       throw new HttpError("No keke available right now", 409);
     }
 
@@ -148,6 +160,39 @@ export default async function rideRoutes(app: FastifyInstance) {
 
     await ref.update({ status: "cancelled" });
     return ok({ ok: true });
+  });
+
+  // Legal forward transitions the driver can drive the trip through.
+  const NEXT_STATUS: Record<string, RideStatus> = {
+    assigned: "arriving",
+    arriving: "started",
+  };
+
+  app.post("/rides/:id/status", async (req) => {
+    const user = await verifyRequest(req);
+    const { id } = RideId.parse(req.params);
+    const body = UpdateRideStatus.parse(req.body);
+
+    const ref = adminDb().collection("rides").doc(id);
+    const snap = await ref.get();
+    if (!snap.exists) throw new HttpError("Ride not found", 404);
+
+    const ride = snap.data() as Ride;
+    if (ride.driverId !== user.uid) throw new HttpError("Not your ride", 403);
+    if (ride.status === "completed" || ride.status === "cancelled") {
+      throw new HttpError("Ride already closed", 409);
+    }
+
+    // Enforce ordered progression: assigned→arriving→started only.
+    if (NEXT_STATUS[ride.status] !== body.status) {
+      throw new HttpError(
+        `Cannot move from ${ride.status} to ${body.status}`,
+        409,
+      );
+    }
+
+    await ref.update({ status: body.status });
+    return ok({ status: body.status });
   });
 
   app.post("/rides/:id/complete", async (req) => {

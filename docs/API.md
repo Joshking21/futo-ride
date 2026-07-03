@@ -57,12 +57,19 @@ Auth:  required (Firebase ID token, rider)
 Body:  { fromStop: string, toStop: string, payMethod: "naira" | "cngn", priorityFee?: number /*kobo*/ }
 200:   { ok: true, data: { rideId, driverId, etaMin, fare /*kobo*/ } }
 4xx:   400 from===to or unknown stop · 409 no keke available
-Notes: assigns nearest ONLINE keke (FCFS). Surge is evaluated live per zone (= fromStop) over a 2-min window; priorityFee is only honored (added to fare) when surge is active. On assignment the driver gets a Telegram dispatch (pickup→dropoff, blind to bidding) including a surge bonus = 50% of the priority fee when one applies. Mints a per-trip qrToken.
+Notes: assigns nearest ONLINE keke (FCFS). Surge is evaluated live per zone (= fromStop) over a 2-min window; priorityFee is only honored (added to fare) when surge is active. On assignment the driver gets a Telegram dispatch (pickup→dropoff, blind to bidding) including a surge bonus = 50% of the priority fee when one applies. Mints a per-trip qrToken. On the 409 no-keke path the request is still recorded (status "requested") and a HIGH "stranded" incident is raised (AI triage → Alerta → SUG Security), best-effort.
 
 ### POST /rides/:id/cancel
 Auth:  required (rider or driver on the ride)
 200:   { ok: true, data: { ok: true } }
 4xx:   403 not your ride · 404 not found · 409 already closed
+
+### POST /rides/:id/status
+Auth:  required (driver on the ride)
+Body:  { status: "arriving" | "started" }
+200:   { ok: true, data: { status: "arriving" | "started" } }
+4xx:   403 not your ride · 404 not found · 409 already closed OR illegal transition
+Notes: driver advances the trip through the mid-ride states. Ordered only: assigned→arriving→started. Any out-of-order move (e.g. assigned→started, or re-setting the same state) returns 409. completion is a separate endpoint (rider scans QR).
 
 ### POST /rides/:id/complete
 Auth:  required (rider on the ride)

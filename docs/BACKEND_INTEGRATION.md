@@ -123,6 +123,7 @@ GET  /drivers/:id/rating     driver avg rating + count     → { average, count 
 
 POST /rides                  book a keke (FCFS nearest)    → { rideId, driverId, etaMin, fare }
 POST /rides/:id/cancel       cancel a ride                 → { ok }
+POST /rides/:id/status       driver: arriving / started    → { status }
 POST /rides/:id/complete     rider confirms via QR token   → { ok, fare }
 GET  /rides/:id/qr           driver fetches the trip QR    → { qrToken }
 POST /rides/:id/rate         rider rates the driver        → { ok }
@@ -153,6 +154,8 @@ const uid = auth().currentUser!.uid;
 Linking.openURL(`https://t.me/<YourBotUsername>?start=${uid}`);
 ```
 The user presses Start in Telegram; the backend captures their chat id automatically (via its own `/telegram/webhook`, which you do NOT call). You can reflect "connected" by watching `users/{uid}.chatId` appear in your Firestore subscription. Until this is done, bus-proximity and dispatch pings are silently skipped.
+
+**Ride lifecycle (driver-driven):** the driver advances the trip with `POST /rides/:id/status { status }` — `"arriving"` when en route to pickup, then `"started"` at pickup. Transitions are ordered (`assigned → arriving → started`); an out-of-order call returns `409`. Completion is separate (rider scans QR, below). The rider app doesn't call this — it just watches `rides/{id}.status` change via its Firestore subscription and updates the tracking UI.
 
 **QR completion flow:** the driver app calls `GET /rides/:id/qr` and renders the `qrToken` as a QR code; the rider scans it and posts it to `POST /rides/:id/complete`. The backend verifies the token matches before completing — so a stranger with just the rideId can't close the trip.
 

@@ -16,6 +16,11 @@ export const CompleteRide = z.object({
   qrToken: z.string().min(1),
 });
 
+/** Driver advances the trip through the mid-ride states (assigned→arriving→started). */
+export const UpdateRideStatus = z.object({
+  status: z.enum(["arriving", "started"]),
+});
+
 export const RateRide = z.object({
   stars: z.number().int().min(1).max(5),
   comment: z.string().max(500).optional(),
