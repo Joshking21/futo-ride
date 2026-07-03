@@ -94,6 +94,37 @@ futo-ride/
 
 This split keeps each mode simple and is itself a differentiator.
 
+### 6a. Keke seat pooling (shared rides) — v5 addition
+
+Real campus kekes carry **up to 4 students sharing a destination**, not one private rider.
+The keke model is therefore **shared-seat pooling**, decided as follows (locked):
+
+- **Capacity:** every keke has **4 seats** (`capacity: 4`, `seatsTaken: 0..4`).
+- **Pool by destination:** riders are pooled onto the same keke **only when they share the
+  same `toStop`** (e.g. everyone heading to Town). No directional/along-the-way matching —
+  same destination keeps matching and fare-split simple and correct.
+- **On-demand dispatch:** the **first** rider to a destination is assigned the nearest online
+  keke with a free seat, opening a *pool* for that `toStop`. Later riders to the **same
+  `toStop`** **join that same keke** (seat by seat) until it is full (4). When full, the keke
+  is no longer offered; a new rider opens a fresh pool on the next available keke. No waiting
+  timer — the keke is dispatched immediately on the first booking.
+- **Flat per-seat fare:** each rider pays a **flat fare per seat** (`SEAT_FARE_KOBO`,
+  distance-independent) — this is how campus kekes actually charge ("₦X to Town").
+  `fare = seats × SEAT_FARE_KOBO`.
+- **Charter (rare):** a rider may book **all 4 seats** (`seats: 4`) to take the whole keke —
+  the "private ride" case — paying 4× the seat fare. No special path; just seats = 4.
+- **Per-rider lifecycle:** the keke trip carries **multiple independent rides**. Each rider
+  has **their own ride doc, their own QR, and their own completion** — the driver scans each
+  rider out individually at their (shared) dropoff. A seat frees on each rider's
+  complete/cancel; the keke is fully free when all its riders are done.
+- **Surge:** unchanged in spirit — still evaluated per pickup zone; "available seats" (online
+  kekes × free seats) replaces "available kekes" in the pending/available comparison.
+
+> **Impact:** this changes keke **matching, fare, and the ride lifecycle** (all previously
+> one-rider-per-keke). Bus, Alerta/AI/safety, payments-at-the-Monnify-edge, and the response
+> envelope are unaffected. The API stays additive: `seats` is a new optional field on
+> `POST /rides` (default 1); responses gain `seats` + `seatsTaken`.
+
 ---
 
 ## 7. Geo Model

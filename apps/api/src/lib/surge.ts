@@ -12,14 +12,28 @@ const WINDOW_MS = 2 * 60 * 1000;
 /** Driver's cut of the priority fee — the rest is the platform service fee (§8). */
 export const DRIVER_PRIORITY_SHARE = 0.5;
 
-/** Count of online kekes available for matching. */
+const DEFAULT_CAPACITY = 4;
+
+/**
+ * Count of available keke SEATS across online kekes (§6a) — pooling means a keke
+ * with free seats is still "available" capacity, so surge compares demand against
+ * open seats, not vehicle count.
+ */
 async function availableKekes(): Promise<number> {
   const snap = await adminDb()
     .collection("drivers")
     .where("online", "==", true)
     .where("vehicleType", "==", "keke")
     .get();
-  return snap.size;
+
+  let seats = 0;
+  for (const doc of snap.docs) {
+    const d = doc.data();
+    const capacity = typeof d.capacity === "number" ? d.capacity : DEFAULT_CAPACITY;
+    const seatsTaken = typeof d.seatsTaken === "number" ? d.seatsTaken : 0;
+    seats += Math.max(0, capacity - seatsTaken);
+  }
+  return seats;
 }
 
 /** Pending ride requests from this zone within the rolling window. */

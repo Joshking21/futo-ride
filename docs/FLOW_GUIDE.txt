@@ -223,10 +223,14 @@ File: apps/api/src/lib/routes.ts
 
 These are two DIFFERENT models. Do not mix them.
 
-  KEKE  = ON-DEMAND. Rider picks From → To (building to building). The backend
-          matches the nearest ONLINE keke (first-come-first-served), gives a
-          fare + ETA, the rider pays, rides, and SCANS THE DRIVER'S QR at dropoff
-          to complete + release payment. There IS dispatch (a driver is assigned).
+  KEKE  = ON-DEMAND, SHARED SEATS (up to 4). Rider picks From → To (building to
+          building) and how many SEATS (default 1). The backend pools riders
+          heading to the SAME destination onto one keke: it either JOINS the rider
+          to an existing keke already going to that toStop (if it has room) or
+          dispatches a fresh nearest ONLINE keke. Fare is FLAT PER SEAT. The rider
+          pays, rides, and SCANS THE DRIVER'S QR at dropoff to complete their seat.
+          Booking 4 seats = charter the whole keke (rare "private ride").
+          See section 6a for the full pooling rules.
 
   BUS   = FIXED ROUTE TRACKER. No assignment, no QR, no per-trip payment in MVP.
           Buses run a set route ending in town. The rider just watches the live
@@ -236,16 +240,47 @@ These are two DIFFERENT models. Do not mix them.
   FEATURE                | KEKE                       | BUS
   -----------------------|----------------------------|---------------------------
   How it moves           | building → building        | fixed route → town
-  Matching/assignment    | YES (nearest online keke)  | NO
-  Fare in app            | YES (Monnify)              | NO (flat/on-board, later)
-  QR completion          | YES (rider scans driver)   | NO
+  Seats                  | SHARED, 4 seats, pooled    | n/a (just board)
+  Matching/assignment    | YES (pool by destination)  | NO
+  Fare in app            | YES, FLAT PER SEAT (Monnify)| NO (flat/on-board, later)
+  QR completion          | YES (per rider, per seat)  | NO
   Live position source   | Firebase RTDB              | Firebase RTDB
   ETA                    | from booking response      | GET /buses/routes/:id/eta
-  Telegram proximity     | (dispatch to driver)       | opt-in ping to rider
+  Telegram proximity     | (dispatch on new pool)     | opt-in ping to rider
   Driver posts location  | POST /drivers/location     | POST /buses/location
 
   In the data model both keke and bus drivers are "drivers" docs with a
-  `vehicleType` of "keke" or "bus". A bus driver also has a `routeId`.
+  `vehicleType` of "keke" or "bus". A keke driver also has `capacity` (4) and
+  `seatsTaken` (0..4); a bus driver has a `routeId`.
+
+.......................................................................
+ 6a. KEKE SEAT POOLING — how sharing works (READ THIS for the booking UI)
+.......................................................................
+  A keke seats 4. Riders SHARE a keke when they're going to the SAME toStop.
+
+  WHEN A RIDER BOOKS (POST /rides with fromStop, toStop, seats):
+    • The backend looks for a keke ALREADY heading to that toStop with enough
+      free seats. If found → the rider JOINS it (response pooled=true).
+    • Otherwise → the nearest fully-free keke is dispatched as a NEW pool for
+      that toStop (response pooled=false, driver gets the Telegram dispatch).
+    • If nothing has room → 409 (stranded path, same as before).
+    • Seats are claimed atomically, so two riders can't overfill the same keke;
+      if a keke fills up between your read and your booking you may get a 409
+      "Keke just filled up, try again" — just retry (a new pool opens).
+
+  FARE = FLAT PER SEAT: fare = seats × seat fare. Booking 2 seats costs 2×.
+    Booking 4 seats = you've chartered the whole keke (the rare private ride).
+    Distance does NOT change the pooled fare (that's how campus kekes charge).
+
+  EACH SEAT = ITS OWN RIDE: every rider on a shared keke has their own rideId,
+    own QR, and own completion. The driver scans each rider out individually at
+    the shared dropoff. A seat frees the moment that rider completes or cancels.
+
+  FRONTEND UI HINTS:
+    • Let the rider pick seats (1–4); show "you'll share this keke" when seats<4.
+    • After booking, use `pooled`: true → "You're sharing a keke" ; false →
+      "Your keke is on the way".
+    • Show fare = seats × seat-fare so the number is obvious before they confirm.
 
 THE QR / "CODE" FLOW (keke only) — how it actually works:
   1. When a keke is assigned (POST /rides), the backend MINTS a random secret
@@ -329,20 +364,25 @@ THE QR / "CODE" FLOW (keke only) — how it actually works:
           fromStop: string,        // a stop id, e.g. "seet"
           toStop:   string,        // a stop id, must differ from fromStop
           payMethod: "naira" | "cngn",
+          seats?:    number,       // 1..4, default 1 — seats to book; 4 = charter
           priorityFee?: number     // KOBO, only if surge is on (see section 9)
         }
-  Returns (success): { rideId, driverId, etaMin, fare }   // fare in KOBO
+  Returns (success): { rideId, driverId, etaMin, fare, seats, pooled }  // fare KOBO
   Errors: 400 if from===to or an unknown stop · 409 "No keke available right now"
+          · 409 "Keke just filled up, try again" (a race filled the last seats)
   What it does, step by step:
     1. Verifies you (rider) from the token.
-    2. Checks both stops exist and differ.
-    3. Finds the nearest ONLINE keke (FCFS) and evaluates surge for the pickup zone.
-    4. Computes fare = base fare (from distance, in kobo) + priorityFee (only if
-       surge is on; ignored otherwise).
-    5. If a keke is found: creates the ride as "assigned", mints the QR token,
-       and DISPATCHES the assignment to the driver on Telegram (driver sees only
-       pickup→dropoff, never who paid). Returns rideId/driverId/etaMin/fare.
-    6. If NO keke is found: still records the request (status "requested"), then
+    2. Checks both stops exist and differ; reads seats (default 1).
+    3. SEAT-AWARE MATCH (section 6a): tries to JOIN a keke already going to your
+       toStop with enough free seats (nearest to pickup); else picks the nearest
+       fully-free keke for a NEW pool. Evaluates surge (against free SEATS).
+    4. fare = seats × flat seat-fare + priorityFee (priorityFee only if surge on).
+    5. If a keke is found: atomically claims your seats on that keke, creates YOUR
+       ride as "assigned" with YOUR own QR token. If it's a NEW pool, dispatches
+       the driver on Telegram (pickup→dropoff, blind to who paid); a JOIN doesn't
+       re-ping. Returns rideId/driverId/etaMin/fare/seats/pooled.
+       (pooled=true → you joined an existing keke; pooled=false → fresh keke.)
+    6. If NO keke has room: still records the request (status "requested"), then
        raises a HIGH "stranded" incident (AI triage → Alerta → SUG Security
        Telegram) so security is aware — especially at night — and returns 409.
        The alert is best-effort: if triage/Alerta fails, the rider still gets the
@@ -554,12 +594,14 @@ lets a rider "skip the queue", and half of it becomes a bonus that pulls more
 drivers online. Base FCFS always still works — non-payers are never stranded.
 
 HOW SURGE TURNS ON/OFF (evaluated per pickup zone over a rolling 2-minute window):
-  • Turns ON  when: pending_requests >= 3  AND  pending_requests > online_kekes * 1.5
-  • Turns OFF when: pending_requests <= online_kekes * 1.2
+  • Turns ON  when: pending_requests >= 3  AND  pending_requests > available_seats * 1.5
+  • Turns OFF when: pending_requests <= available_seats * 1.2
   • Between those two bands it HOLDS its previous state (hysteresis — stops it
     flickering on/off). The state is stored per zone so it persists between checks.
   "pending_requests" = rides from that pickup stop in "requested"/"assigned" in the
-  last 2 minutes. "online_kekes" = currently online keke drivers.
+  last 2 minutes. "available_seats" = sum of FREE seats across online kekes
+  (capacity − seatsTaken) — pooling means an online keke with open seats still
+  counts as available capacity, not just as one vehicle.
 
 FRONTEND behaviour:
   • On Ride Options, call GET /surge/<fromStop>.
@@ -637,10 +679,13 @@ WHAT THE FRONTEND DOES for the handshake (the "Connect Telegram" step):
 A) RIDER books a keke (the happy path):
    1. Splash → has Firebase session? → Home/Map.
    2. Home: subscribe to RTDB for live keke markers (Firebase, not us).
-   3. Tap Book → pick From "seet", To "library", payMethod "naira".
-   4. Ride Options: GET /surge/seet. If "on", show priority stepper.
-   5. Confirm → POST /rides { fromStop, toStop, payMethod, priorityFee? }
-        → get { rideId, driverId, etaMin, fare }.  (Driver gets Telegram dispatch.)
+   3. Tap Book → pick From "seet", To "library", seats (1–4), payMethod "naira".
+   4. Ride Options: GET /surge/seet. If "on", show priority stepper. Show
+        fare = seats × seat-fare so the total is clear before confirming.
+   5. Confirm → POST /rides { fromStop, toStop, seats, payMethod, priorityFee? }
+        → get { rideId, driverId, etaMin, fare, seats, pooled }.
+        pooled=true → "you're sharing this keke"; false → "your keke is on the way"
+        (a NEW pool also triggers the driver's Telegram dispatch).
    6. Payment: POST /payments/init { rideId } → open checkoutUrl → user pays →
         POST /payments/verify { reference } → status "PAID".
    7. Live Tracking: subscribe to Firestore rides/{rideId} for status; subscribe
