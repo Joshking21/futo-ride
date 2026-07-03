@@ -5,7 +5,7 @@ import { adminDb } from "../lib/firestore.js";
 import { ok, HttpError } from "../lib/http.js";
 import { CAMPUS_STOPS } from "../lib/campus-stops.js";
 import { findNearest } from "../lib/geo.js";
-import { baseFareKobo } from "../lib/fare.js";
+import { seatFareKobo } from "../lib/fare.js";
 import { evaluateSurge, driverPriorityBonusKobo } from "../lib/surge.js";
 import { mintQrToken, verifyQrToken } from "../lib/qr.js";
 import { sendTelegramAlert } from "../lib/alerta.js";
@@ -13,13 +13,49 @@ import { raiseIncident } from "../lib/incidents.js";
 import { BookRide, CompleteRide, RateRide, RideId, UpdateRideStatus } from "../schemas/rides.js";
 import type { Ride, RideStatus } from "../types/index.js";
 
-type OnlineKeke = { id: string; lat: number; lng: number };
+const DEFAULT_CAPACITY = 4;
+
+type Stop = { id: string; name: string; lat: number; lng: number };
+
+/** An online keke with its live seat state, for pooling (§6a). */
+type OnlineKeke = {
+  id: string;
+  lat: number;
+  lng: number;
+  capacity: number;
+  seatsTaken: number;
+  poolToStop?: string;
+};
 
 function stopById(id: string) {
   return CAMPUS_STOPS.find((s) => s.id === id);
 }
 
-/** Online kekes as geo points for matching. */
+/**
+ * Releases a ride's seats back to its keke when the ride ends (complete/cancel).
+ * Decrements `seatsTaken` transactionally, flooring at 0, and clears `poolToStop`
+ * once the keke is empty so it's free to open a new pool to a different stop.
+ * No-op for the stranded/unassigned case (no driver).
+ */
+async function freeSeats(ride: Ride): Promise<void> {
+  if (!ride.driverId) return;
+  const db = adminDb();
+  const driverRef = db.collection("drivers").doc(ride.driverId);
+  await db.runTransaction(async (tx) => {
+    const snap = await tx.get(driverRef);
+    if (!snap.exists) return;
+    const d = snap.data() ?? {};
+    const seatsTaken = typeof d.seatsTaken === "number" ? d.seatsTaken : 0;
+    const seats = typeof ride.seats === "number" ? ride.seats : 1;
+    const next = Math.max(0, seatsTaken - seats);
+    tx.update(driverRef, {
+      seatsTaken: next,
+      ...(next === 0 ? { poolToStop: FieldValue.delete() } : {}),
+    });
+  });
+}
+
+/** Online kekes with seat state, for seat-aware matching. */
 async function onlineKekes(): Promise<OnlineKeke[]> {
   const snap = await adminDb()
     .collection("drivers")
@@ -31,10 +67,46 @@ async function onlineKekes(): Promise<OnlineKeke[]> {
   for (const doc of snap.docs) {
     const d = doc.data();
     if (typeof d.currentLat === "number" && typeof d.currentLng === "number") {
-      kekes.push({ id: doc.id, lat: d.currentLat, lng: d.currentLng });
+      kekes.push({
+        id: doc.id,
+        lat: d.currentLat,
+        lng: d.currentLng,
+        capacity: typeof d.capacity === "number" ? d.capacity : DEFAULT_CAPACITY,
+        seatsTaken: typeof d.seatsTaken === "number" ? d.seatsTaken : 0,
+        poolToStop: d.poolToStop as string | undefined,
+      });
     }
   }
   return kekes;
+}
+
+/**
+ * Seat-aware keke matcher (§6a). Prefers JOINING an existing pool already heading
+ * to `toStop` with enough free seats (nearest to pickup); otherwise opens a NEW
+ * pool on the nearest fully-free keke that can seat the party. Returns the chosen
+ * keke + distance/ETA, or null when nothing can seat the request.
+ */
+function matchKeke(
+  from: Stop,
+  toStop: string,
+  seats: number,
+  kekes: OnlineKeke[],
+): (OnlineKeke & { distKm: number; etaMin: number; joining: boolean }) | null {
+  const freeSeats = (k: OnlineKeke) => k.capacity - k.seatsTaken;
+
+  // 1) Existing pools to the same destination with room — nearest wins.
+  const pools = kekes.filter(
+    (k) => k.seatsTaken > 0 && k.poolToStop === toStop && freeSeats(k) >= seats,
+  );
+  const joinable = findNearest(from, pools);
+  if (joinable) return { ...joinable, joining: true };
+
+  // 2) Otherwise a fully-free keke that can seat the party — nearest wins.
+  const idle = kekes.filter((k) => k.seatsTaken === 0 && freeSeats(k) >= seats);
+  const fresh = findNearest(from, idle);
+  if (fresh) return { ...fresh, joining: false };
+
+  return null;
 }
 
 /**
@@ -75,19 +147,17 @@ export default async function rideRoutes(app: FastifyInstance) {
     if (!from || !to) throw new HttpError("Unknown stop", 400);
 
     const db = adminDb();
-    const [match, surge] = await Promise.all([
-      onlineKekes().then((kekes) => findNearest(from, kekes)),
-      evaluateSurge(body.fromStop),
-    ]);
+    const [kekes, surge] = await Promise.all([onlineKekes(), evaluateSurge(body.fromStop)]);
 
+    const match = matchKeke(from, body.toStop, body.seats, kekes);
     const priorityFee = surge === "on" ? (body.priorityFee ?? 0) : 0;
-    const fare = baseFareKobo(match?.distKm ?? 0) + priorityFee;
+    const fare = seatFareKobo(body.seats) + priorityFee;
     const now = Date.now();
 
     if (!match) {
-      // Stranded student: no keke available. Record the request, then raise a HIGH
-      // incident so SUG Security is aware (esp. at night). Best-effort: a triage/
-      // Alerta failure must never mask the 409 the rider needs to see.
+      // Stranded student: no keke can seat the party. Record the request, then raise
+      // a HIGH incident so SUG Security is aware (esp. at night). Best-effort: a
+      // triage/Alerta failure must never mask the 409 the rider needs to see.
       const ref = db.collection("rides").doc();
       const ride: Ride = {
         id: ref.id,
@@ -101,13 +171,14 @@ export default async function rideRoutes(app: FastifyInstance) {
         payMethod: body.payMethod,
         qrToken: "",
         createdAt: now,
+        seats: body.seats,
       };
       await ref.set(ride);
 
       await raiseIncident({
         riderId: user.uid,
         type: "stranded",
-        message: `No keke available for a rider requesting ${from.name} → ${to.name}.`,
+        message: `No keke seat available for a rider requesting ${from.name} → ${to.name} (${body.seats} seat(s)).`,
         location: `${from.name} (${from.lat},${from.lng})`,
         rideId: ref.id,
       }).catch((err) => req.log.error({ err }, "stranded-student alert failed"));
@@ -115,31 +186,71 @@ export default async function rideRoutes(app: FastifyInstance) {
       throw new HttpError("No keke available right now", 409);
     }
 
-    const ref = db.collection("rides").doc();
-    const ride: Ride = {
-      id: ref.id,
-      riderId: user.uid,
+    // Claim the seats atomically on the driver doc so two riders can't overfill the
+    // same keke. Re-check free seats inside the transaction against live state.
+    const rideRef = db.collection("rides").doc();
+    const driverRef = db.collection("drivers").doc(match.id);
+    try {
+      await db.runTransaction(async (tx) => {
+        const dSnap = await tx.get(driverRef);
+        const d = dSnap.data() ?? {};
+        const capacity = typeof d.capacity === "number" ? d.capacity : DEFAULT_CAPACITY;
+        const seatsTaken = typeof d.seatsTaken === "number" ? d.seatsTaken : 0;
+        const currentPool = d.poolToStop as string | undefined;
+
+        // If this keke already has a pool, it must be to the same destination.
+        if (seatsTaken > 0 && currentPool && currentPool !== body.toStop) {
+          throw new HttpError("Keke just filled up, try again", 409);
+        }
+        if (capacity - seatsTaken < body.seats) {
+          throw new HttpError("Keke just filled up, try again", 409);
+        }
+
+        tx.update(driverRef, {
+          seatsTaken: seatsTaken + body.seats,
+          poolToStop: body.toStop,
+        });
+
+        const ride: Ride = {
+          id: rideRef.id,
+          riderId: user.uid,
+          driverId: match.id,
+          fromStop: body.fromStop,
+          toStop: body.toStop,
+          status: "assigned",
+          fare,
+          priorityFee,
+          payMethod: body.payMethod,
+          qrToken: mintQrToken(),
+          createdAt: now,
+          seats: body.seats,
+        };
+        tx.set(rideRef, ride);
+      });
+    } catch (err) {
+      if (err instanceof HttpError) throw err;
+      throw err;
+    }
+
+    // Best-effort: a Telegram failure must not fail a successful booking. Only ping
+    // the driver when a NEW pool opens (not on every join) to avoid spamming.
+    if (!match.joining) {
+      await dispatchToDriver({
+        driverId: match.id,
+        fromName: from.name,
+        toName: to.name,
+        driverBonusKobo: driverPriorityBonusKobo(priorityFee),
+      }).catch((err) => req.log.error({ err }, "driver dispatch failed"));
+    }
+
+    return ok({
+      rideId: rideRef.id,
       driverId: match.id,
-      fromStop: body.fromStop,
-      toStop: body.toStop,
-      status: "assigned",
+      etaMin: match.etaMin,
       fare,
-      priorityFee,
-      payMethod: body.payMethod,
-      qrToken: mintQrToken(),
-      createdAt: now,
-    };
-    await ref.set(ride);
-
-    // Best-effort: a Telegram failure must not fail a successful booking.
-    await dispatchToDriver({
-      driverId: match.id,
-      fromName: from.name,
-      toName: to.name,
-      driverBonusKobo: driverPriorityBonusKobo(priorityFee),
-    }).catch((err) => req.log.error({ err }, "driver dispatch failed"));
-
-    return ok({ rideId: ride.id, driverId: ride.driverId, etaMin: match.etaMin, fare });
+      seats: body.seats,
+      pooled: match.joining,
+    });
   });
 
   app.post("/rides/:id/cancel", async (req) => {
@@ -159,6 +270,7 @@ export default async function rideRoutes(app: FastifyInstance) {
     }
 
     await ref.update({ status: "cancelled" });
+    await freeSeats(ride);
     return ok({ ok: true });
   });
 
@@ -212,6 +324,7 @@ export default async function rideRoutes(app: FastifyInstance) {
     }
 
     await ref.update({ status: "completed" });
+    await freeSeats(ride);
     return ok({ ok: true, fare: ride.fare });
   });
 

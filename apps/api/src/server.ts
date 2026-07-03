@@ -12,6 +12,22 @@ import telegramRoutes from "./routes/telegram.js";
 
 const app = Fastify({ logger: true });
 
+// Treat an empty JSON body as {} instead of erroring. No-body POSTs (e.g.
+// /rides/:id/cancel) sent with `Content-Type: application/json` would otherwise
+// 500 with FST_ERR_CTP_EMPTY_JSON_BODY. Routes still Zod-validate their bodies.
+app.addContentTypeParser(
+  "application/json",
+  { parseAs: "string" },
+  (_req, body: string, done) => {
+    if (!body || body.trim() === "") return done(null, {});
+    try {
+      done(null, JSON.parse(body));
+    } catch (err) {
+      done(err as Error, undefined);
+    }
+  },
+);
+
 await app.register(cors, { origin: true });
 
 /** Global error handler — maps HttpError, ZodError to the standard envelope. */

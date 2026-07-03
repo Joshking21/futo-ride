@@ -54,10 +54,10 @@ Notes: average stars (1 dp) + number of ratings, maintained as a running aggrega
 
 ### POST /rides
 Auth:  required (Firebase ID token, rider)
-Body:  { fromStop: string, toStop: string, payMethod: "naira" | "cngn", priorityFee?: number /*kobo*/ }
-200:   { ok: true, data: { rideId, driverId, etaMin, fare /*kobo*/ } }
+Body:  { fromStop: string, toStop: string, payMethod: "naira" | "cngn", seats?: 1..4 /*default 1*/, priorityFee?: number /*kobo*/ }
+200:   { ok: true, data: { rideId, driverId, etaMin, fare /*kobo*/, seats, pooled /*bool*/ } }
 4xx:   400 from===to or unknown stop · 409 no keke available
-Notes: assigns nearest ONLINE keke (FCFS). Surge is evaluated live per zone (= fromStop) over a 2-min window; priorityFee is only honored (added to fare) when surge is active. On assignment the driver gets a Telegram dispatch (pickup→dropoff, blind to bidding) including a surge bonus = 50% of the priority fee when one applies. Mints a per-trip qrToken. On the 409 no-keke path the request is still recorded (status "requested") and a HIGH "stranded" incident is raised (AI triage → Alerta → SUG Security), best-effort.
+Notes: SHARED-SEAT POOLING (§6a). Riders are pooled onto the same keke only when they share the same toStop. The matcher first tries to JOIN an existing pool to that toStop with enough free seats (nearest to pickup); otherwise it opens a NEW pool on the nearest fully-free keke. `pooled:true` means the rider joined an existing keke; `pooled:false` means a fresh keke was dispatched. Seats are claimed atomically (a keke can't be overfilled). Fare is FLAT PER SEAT: fare = seats × SEAT_FARE_KOBO (+ priorityFee when surge active). seats=4 charters the whole keke. Surge is evaluated live per zone (= fromStop) over a 2-min window against available SEATS; priorityFee is only honored when surge is active. On a NEW pool the driver gets a Telegram dispatch (pickup→dropoff, blind to bidding, + surge bonus when applicable); joins don't re-ping. Mints a per-rider qrToken. On the 409 no-seat path the request is still recorded (status "requested") and a HIGH "stranded" incident is raised (AI triage → Alerta → SUG Security), best-effort.
 
 ### POST /rides/:id/cancel
 Auth:  required (rider or driver on the ride)

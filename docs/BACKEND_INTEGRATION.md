@@ -121,7 +121,7 @@ POST /drivers/online         driver go on/off (+ position) → { online }
 POST /drivers/location       driver position update        → { ok }
 GET  /drivers/:id/rating     driver avg rating + count     → { average, count }
 
-POST /rides                  book a keke (FCFS nearest)    → { rideId, driverId, etaMin, fare }
+POST /rides                  book keke seat(s), pooled     → { rideId, driverId, etaMin, fare, seats, pooled }
 POST /rides/:id/cancel       cancel a ride                 → { ok }
 POST /rides/:id/status       driver: arriving / started    → { status }
 POST /rides/:id/complete     rider confirms via QR token   → { ok, fare }
@@ -155,6 +155,8 @@ Linking.openURL(`https://t.me/<YourBotUsername>?start=${uid}`);
 ```
 The user presses Start in Telegram; the backend captures their chat id automatically (via its own `/telegram/webhook`, which you do NOT call). You can reflect "connected" by watching `users/{uid}.chatId` appear in your Firestore subscription. Until this is done, bus-proximity and dispatch pings are silently skipped.
 
+**Shared-seat pooling (keke):** a keke has 4 seats and pools riders **going to the same `toStop`**. In `POST /rides`, send `seats` (1–4, default 1). The response's `pooled` tells you whether the rider joined an existing keke (`true`) or got a fresh one (`false`) — you can show "you're sharing this keke" vs "your keke is on the way". Fare is **flat per seat** (`seats × seat fare`), so 2 seats costs 2×. `seats: 4` = charter the whole keke (the rare "private ride"). Each rider on a shared keke has their **own ride, own QR, own completion** — they scan out individually at the shared dropoff. If no keke has room, you get `409` (same as before). Seats free automatically when a rider completes or cancels.
+
 **Ride lifecycle (driver-driven):** the driver advances the trip with `POST /rides/:id/status { status }` — `"arriving"` when en route to pickup, then `"started"` at pickup. Transitions are ordered (`assigned → arriving → started`); an out-of-order call returns `409`. Completion is separate (rider scans QR, below). The rider app doesn't call this — it just watches `rides/{id}.status` change via its Firestore subscription and updates the tracking UI.
 
 **QR completion flow:** the driver app calls `GET /rides/:id/qr` and renders the `qrToken` as a QR code; the rider scans it and posts it to `POST /rides/:id/complete`. The backend verifies the token matches before completing — so a stranger with just the rideId can't close the trip.
@@ -172,6 +174,7 @@ type BookRideRequest = {
   fromStop: string;        // a campus stop id
   toStop: string;          // a campus stop id (≠ fromStop)
   payMethod: PayMethod;
+  seats?: number;          // 1..4, default 1 — seats to book; 4 charters the keke
   priorityFee?: number;    // kobo — only when surge is active
 };
 
@@ -179,7 +182,9 @@ type BookRideResponse = {
   rideId: string;
   driverId: string;
   etaMin: number;
-  fare: number;            // kobo (divide by 100 to show naira)
+  fare: number;            // kobo (divide by 100 to show naira) = seats × seat fare
+  seats: number;           // seats booked on this shared keke
+  pooled: boolean;         // true = joined an existing keke; false = fresh keke dispatched
 };
 
 type RideStatus =

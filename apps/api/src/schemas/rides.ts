@@ -6,6 +6,7 @@ export const BookRide = z
     toStop: z.string().min(1),
     payMethod: z.enum(["naira", "cngn"]),
     priorityFee: z.number().int().nonnegative().optional(), // kobo
+    seats: z.number().int().min(1).max(4).default(1), // seats to book (4 = charter the keke)
   })
   .refine((b) => b.fromStop !== b.toStop, {
     message: "from and to must differ",

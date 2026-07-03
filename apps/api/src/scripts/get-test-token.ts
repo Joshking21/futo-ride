@@ -16,10 +16,11 @@ import { adminAuth } from "../lib/firebase-admin.js";
 import { getFirestore } from "firebase-admin/firestore";
 import { getAdminApp } from "../lib/firebase-admin.js";
 
-const ROLE = (process.argv[2] as "rider" | "driver") ?? "rider";
+const ROLE = (process.argv[2] as "rider" | "rider2" | "driver") ?? "rider";
 
 const TEST_USERS = {
   rider: { email: "test-rider@futo-ride.test", name: "Test Rider", password: "testpass123" },
+  rider2: { email: "test-rider2@futo-ride.test", name: "Test Rider Two", password: "testpass123" },
   driver: { email: "test-driver@futo-ride.test", name: "Test Driver", password: "testpass123" },
 };
 
@@ -50,11 +51,13 @@ async function getOrCreateUser() {
 async function ensureFirestoreDoc(uid: string) {
   const db = getFirestore(getAdminApp());
 
-  // Create the user doc (the mobile app normally does this on signup)
+  // Create the user doc (the mobile app normally does this on signup).
+  // rider2 is just a second rider account for pooling tests — its role is "rider".
+  const role = ROLE === "driver" ? "driver" : "rider";
   const userRef = db.collection("users").doc(uid);
   if (!(await userRef.get()).exists) {
-    await userRef.set({ id: uid, name: user.name, email: user.email, role: ROLE });
-    console.log(`Created users/${uid} doc (role: ${ROLE})`);
+    await userRef.set({ id: uid, name: user.name, email: user.email, role });
+    console.log(`Created users/${uid} doc (role: ${role})`);
   }
 
   // If driver, also create the driver doc
@@ -69,6 +72,8 @@ async function ensureFirestoreDoc(uid: string) {
         online: false,
         currentLat: 5.387,
         currentLng: 6.998,
+        capacity: 4,
+        seatsTaken: 0,
       });
       console.log(`Created drivers/${uid} doc (vehicleType: keke)`);
     }
