@@ -1,6 +1,7 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import {
   ArrowLeft,
+  Bus,
   ChevronDown,
   Compass,
   MapPin,
@@ -89,13 +90,13 @@ export default function BookRide() {
         <Text className="text-headline-sm font-bold text-on-surface font-jakarta">
           Book a Ride
         </Text>
-        {/* <Pressable
-          onPress={() => router.replace("/(rider)/home")}
+        <Pressable
+          // onPress={}
           style={{ elevation: 1 }}
-          className="w-12 h-12 rounded-2xl bg-white items-center justify-center  active:bg-surface-container"
+          className="w-12 "
         >
-          <X color="#0B1C30" size={24} />
-        </Pressable> */}
+          {/* <X color="#0B1C30" size={24} /> */}
+        </Pressable>
       </View>
 
       <ScrollView
@@ -318,7 +319,7 @@ export default function BookRide() {
                 elevation: rideType === "bus" ? 1 : 0,
               }}
             >
-              <Compass
+              <Bus
                 color={rideType === "bus" ? "#ffffff" : "#5b5e66"}
                 size={18}
               />
@@ -338,7 +339,7 @@ export default function BookRide() {
       </ScrollView>
 
       {/* Floating Bottom Action Area */}
-      <View className="absolute bottom-0 left-0 right-0 bg-white  p-4 z-40">
+      <View className="absolute bottom-0 left-0 right-0 p-4 z-40">
         <View className="max-w-[600px] mx-auto w-full">
           <Pressable
             onPress={handleFindRide}

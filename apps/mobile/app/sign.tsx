@@ -45,6 +45,13 @@ export default function Sign() {
       setError("Password must be at least 8 characters");
       return;
     }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError("Please enter a valid email address");
+      return;
+    }
+
     setError("");
     setIsSubmitting(true);
 
@@ -78,13 +85,6 @@ export default function Sign() {
     //   }
     // }, 1200);
   };
-
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-  if (!emailRegex.test(email)) {
-    setError("Please enter a valid email address");
-    return;
-  }
 
   return (
     <SafeAreaView
@@ -314,7 +314,7 @@ export default function Sign() {
               <Text className="font-jakarta text-body-md text-on-surface font-bold text-center">
                 Sign up with Google
               </Text>
-            </Pressable>{" "}
+            </Pressable>
             {/* Already have account */}
             <View className="flex-row justify-center items-center pb-8">
               <Text className="font-jakarta text-body-sm text-secondary">

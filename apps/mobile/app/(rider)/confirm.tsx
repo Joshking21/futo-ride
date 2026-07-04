@@ -1,11 +1,5 @@
 import { useRouter } from "expo-router";
-import {
-  ArrowLeft,
-  ChevronRight,
-  Info,
-  User,
-  Zap,
-} from "lucide-react-native";
+import { ArrowLeft, ChevronRight, Info, User, Zap } from "lucide-react-native";
 import React, { useState } from "react";
 import { Image, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -67,7 +61,10 @@ export default function ConfirmRide() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#f8f9ff" }} edges={["top", "bottom"]}>
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: "#f8f9ff" }}
+      edges={["top", "bottom"]}
+    >
       {/* Top Header */}
       <View
         style={{
@@ -79,27 +76,13 @@ export default function ConfirmRide() {
           backgroundColor: "transparent",
         }}
       >
-        <Pressable
-          onPress={() => router.back()}
-          style={({ pressed }) => ({
-            width: 48,
-            height: 48,
-            borderRadius: 16,
-            backgroundColor: "#ffffff",
-            alignItems: "center",
-            justifyContent: "center",
-            borderWidth: 1,
-            borderColor: "rgba(197, 197, 216, 0.15)",
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 1 },
-            shadowOpacity: 0.05,
-            shadowRadius: 2,
-            elevation: 1,
-            opacity: pressed ? 0.9 : 1,
-          })}
-        >
-          <ArrowLeft color="#0B1C30" size={20} />
-        </Pressable>
+       <Pressable
+                 onPress={() => router.replace("/(rider)/book")}
+                 style={{ elevation: 1 }}
+                 className="w-12 h-12 rounded-2xl bg-white items-center justify-center  active:bg-surface-container"
+               >
+                 <ArrowLeft color="#0B1C30" size={24} />
+               </Pressable>
 
         <Text
           style={{
@@ -236,7 +219,14 @@ export default function ConfirmRide() {
             marginTop: 16,
           }}
         >
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 16, flex: 1 }}>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 16,
+              flex: 1,
+            }}
+          >
             <View
               style={{
                 width: 56,
@@ -313,7 +303,14 @@ export default function ConfirmRide() {
             >
               ₦{basePrice}
             </Text>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 4 }}>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 4,
+                marginTop: 4,
+              }}
+            >
               <Text
                 style={{
                   color: "#5b5e66",
@@ -348,7 +345,15 @@ export default function ConfirmRide() {
             marginTop: 16,
           }}
         >
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 14, flex: 1, paddingRight: 16 }}>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 14,
+              flex: 1,
+              paddingRight: 16,
+            }}
+          >
             <View
               style={{
                 width: 44,
@@ -424,7 +429,9 @@ export default function ConfirmRide() {
               borderColor: paymentMethod === "naira" ? "#001caa" : "#e5eeff",
             }}
           >
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
+            <View
+              style={{ flexDirection: "row", alignItems: "center", gap: 14 }}
+            >
               {/* Radio Indicator */}
               <View
                 style={{
@@ -435,7 +442,8 @@ export default function ConfirmRide() {
                   alignItems: "center",
                   justifyContent: "center",
                   backgroundColor: "#ffffff",
-                  borderColor: paymentMethod === "naira" ? "#001caa" : "#cbd5e1",
+                  borderColor:
+                    paymentMethod === "naira" ? "#001caa" : "#cbd5e1",
                 }}
               >
                 {paymentMethod === "naira" && (
@@ -485,7 +493,9 @@ export default function ConfirmRide() {
               </Text>
             </View>
 
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            <View
+              style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
+            >
               <View
                 style={{
                   backgroundColor: "#f8fafc",
@@ -525,7 +535,9 @@ export default function ConfirmRide() {
               borderColor: paymentMethod === "cngn" ? "#001caa" : "#e5eeff",
             }}
           >
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
+            <View
+              style={{ flexDirection: "row", alignItems: "center", gap: 14 }}
+            >
               {/* Radio Indicator */}
               <View
                 style={{
@@ -585,7 +597,9 @@ export default function ConfirmRide() {
               </Text>
             </View>
 
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            <View
+              style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
+            >
               <View
                 style={{
                   backgroundColor: "#f8fafc",
@@ -629,7 +643,13 @@ export default function ConfirmRide() {
             marginTop: 24,
           }}
         >
-          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
             <Text
               style={{
                 color: "#5b5e66",
@@ -652,8 +672,16 @@ export default function ConfirmRide() {
             </Text>
           </View>
 
-          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <View
+              style={{ flexDirection: "row", alignItems: "center", gap: 4 }}
+            >
               <Text
                 style={{
                   color: "#5b5e66",
@@ -679,7 +707,13 @@ export default function ConfirmRide() {
           </View>
 
           {isPriority && (
-            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
               <Text
                 style={{
                   color: "#5b5e66",
@@ -699,13 +733,21 @@ export default function ConfirmRide() {
                 }}
               >
                 ₦{priorityFee}
-            </Text>
+              </Text>
             </View>
           )}
 
-          <View style={{ height: 1, backgroundColor: "#f1f5f9", marginVertical: 4 }} />
+          <View
+            style={{ height: 1, backgroundColor: "#f1f5f9", marginVertical: 4 }}
+          />
 
-          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
             <Text
               style={{
                 color: "#0b1c30",
@@ -737,43 +779,46 @@ export default function ConfirmRide() {
           bottom: 0,
           left: 0,
           right: 0,
-          backgroundColor: "#ffffff",
-          borderTopWidth: 1,
-          borderTopColor: "rgba(197, 197, 216, 0.2)",
+          // backgroundColor: "#ffffff",
+          // borderTopWidth: 1,
+          // borderTopColor: "rgba(197, 197, 216, 0.2)",
           padding: 20,
           zIndex: 40,
         }}
       >
-        <View style={{ maxWidth: 600, alignSelf: "center", width: "100%" }}>
-          <Pressable
-            onPress={handleConfirm}
-            style={({ pressed }) => ({
-              width: "100%",
-              height: 56,
-              backgroundColor: "#000000",
-              borderRadius: 28,
-              alignItems: "center",
-              justifyContent: "center",
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.1,
-              shadowRadius: 3,
-              elevation: 2,
-              opacity: pressed ? 0.9 : 1,
-            })}
+        {/* <View style={{ maxWidth: 600, alignSelf: "center", width: "100%" }}> */}
+        <Pressable
+          onPress={handleConfirm}
+          className="bg-primary text-white active:bg-primary/80  rounded-3xl w-fit mx-auto px-12 py-4"
+          style={({ pressed }) => ({
+            // width: "100%",
+            height: 56,
+
+            // backgroundColor: "#000000",
+            borderRadius: 28,
+            alignItems: "center",
+            justifyContent: "center",
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 3,
+            elevation: 2,
+            opacity: pressed ? 0.9 : 1,
+          })}
+        >
+          <Text
+            style={{
+              // color: "#ffffff",
+              fontSize: 16,
+              fontWeight: "700",
+              fontFamily: "Plus Jakarta Sans",
+            }}
+            className="text-white"
           >
-            <Text
-              style={{
-                color: "#ffffff",
-                fontSize: 16,
-                fontWeight: "700",
-                fontFamily: "Plus Jakarta Sans",
-              }}
-            >
-              Confirm Ride
-            </Text>
-          </Pressable>
-        </View>
+            Confirm Ride
+          </Text>
+        </Pressable>
+        {/* </View> */}
       </View>
     </SafeAreaView>
   );

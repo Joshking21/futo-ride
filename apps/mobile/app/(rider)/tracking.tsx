@@ -281,7 +281,7 @@ export default function LiveTracking() {
           backgroundColor: "transparent",
         }}
       >
-        <Pressable
+        {/* <Pressable
           onPress={() => {
             cancelBooking();
             router.replace("/(rider)/home");
@@ -304,6 +304,9 @@ export default function LiveTracking() {
           })}
         >
           <ArrowLeft color="#0B1C30" size={20} />
+        </Pressable> */}
+        <Pressable>
+
         </Pressable>
 
         <Text
@@ -770,6 +773,7 @@ export default function LiveTracking() {
                     fontFamily: "Plus Jakarta Sans",
                   }}
                 >
+                  
                   Ready to board?
                 </Text>
                 <Text
@@ -783,7 +787,7 @@ export default function LiveTracking() {
                     lineHeight: 16,
                   }}
                 >
-                  Scan the driver's QR code to verify your ride and start the trip.
+                  Scan the driver's QR code after the ride to pay for the trip
                 </Text>
               </View>
               <Pressable
@@ -879,12 +883,13 @@ export default function LiveTracking() {
 
           {/* Cancel button at bottom */}
           <Pressable
+          className="flex self-center mx-auto p-4 rounded-3xl px-14 border bg-error-container border-error-container flex-row gap-4 items-center justify-center"
             onPress={handleCancel}
             style={({ pressed }) => ({
               width: "100%",
               height: 56,
               borderWidth: 1,
-              borderColor: "#ffe0e0",
+              // borderColor: "#ffe0e0",
               borderRadius: 28,
               flexDirection: "row",
               alignItems: "center",
@@ -898,7 +903,7 @@ export default function LiveTracking() {
               backgroundColor: pressed ? "#fff5f5" : "#ffffff",
             })}
           >
-            <XCircle color="#ba1a1a" size={18} />
+            <XCircle color="#ba1a1a" size={22} />
             <Text
               style={{
                 color: "#ba1a1a",
