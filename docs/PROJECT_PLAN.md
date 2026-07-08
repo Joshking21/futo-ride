@@ -100,13 +100,18 @@ Real campus kekes carry **up to 4 students sharing a destination**, not one priv
 The keke model is therefore **shared-seat pooling**, decided as follows (locked):
 
 - **Capacity:** every keke has **4 seats** (`capacity: 4`, `seatsTaken: 0..4`).
-- **Pool by destination:** riders are pooled onto the same keke **only when they share the
-  same `toStop`** (e.g. everyone heading to Town). No directional/along-the-way matching —
-  same destination keeps matching and fare-split simple and correct.
-- **On-demand dispatch:** the **first** rider to a destination is assigned the nearest online
-  keke with a free seat, opening a *pool* for that `toStop`. Later riders to the **same
-  `toStop`** **join that same keke** (seat by seat) until it is full (4). When full, the keke
-  is no longer offered; a new rider opens a fresh pool on the next available keke. No waiting
+- **Pool by LANE (`fromStop` + `toStop`) — v6 correction:** riders are pooled onto the same
+  keke **only when they share the same pickup AND the same destination** (e.g. everyone at
+  SEET heading to Town). Destination-only pooling (the original v5 rule) was wrong: it would
+  pool riders picked up at *different* buildings onto one keke, forcing an unrealistic zigzag
+  pickup run. Keying on both stops makes a keke a single **`fromStop → toStop` trip** — it
+  gathers at one stop and drives to one destination. Keeps the flat per-seat fare, one ETA,
+  and one clean departure correct.
+- **On-demand dispatch:** the **first** rider on a lane is assigned the nearest online keke
+  with a free seat, opening a *pool* for that `fromStop → toStop` lane. Later riders on the
+  **same lane** **join that same keke** (seat by seat) until it is full (4) or its trip
+  **starts** (§20.10 — a rolling keke takes no new joins). When full/started, the keke is no
+  longer offered; a new rider opens a fresh pool on the next available keke. No waiting
   timer — the keke is dispatched immediately on the first booking.
 - **Flat per-seat fare:** each rider pays a **flat fare per seat** (`SEAT_FARE_KOBO`,
   distance-independent) — this is how campus kekes actually charge ("₦X to Town").
@@ -166,15 +171,19 @@ const etaMin = (km / 20) * 60;   // ~20 km/h keke speed
 
 **Fee split (locked): split with the driver — default 50/50** (tunable). The driver's half is broadcast as a "surge bonus active — log on" signal via Telegram, which **pulls more kekes onto the road** exactly when supply is short, easing the surge instead of just taxing students. Driver's share = a real **tip**; platform's share = a **priority/service fee** (honest naming).
 
+**Live read + grace window (v6):** `GET /surge/:zone` now **re-evaluates surge live** (not just reads the last stored state), so it can't get stuck "on" all quiet morning after a busy night. Because surge can flip in the seconds between the rider reading it and booking, `POST /rides` **honors a submitted `priorityFee` if surge is on *or* was on within a short grace window (~60s)** — the rider is never charged a fee the driver doesn't get, and never silently loses a fee they opted into. `priorityFee` is capped (anti-abuse).
+
 **Politics:** base FCFS always works, so non-payers are never stranded. Framing is always *"skip the queue,"* never *"pay or wait."*
 
 ---
 
 ## 9. Payments
 
-**Completion proof = QR scan.** The **driver's phone shows a per-trip QR**; the **rider scans it at dropoff**. This proves both were present, marks the trip complete, and **triggers the driver payout**. (No escrow — payout is a backend action.)
+**Completion proof = QR scan (or PIN fallback).** The **driver's phone shows a per-trip QR *and* a short numeric PIN**; the **rider scans the QR at dropoff** — or types the PIN if the camera fails (cracked screen, night glare, cheap Android). Either proves both were present, marks the trip complete, and **credits the driver's earnings ledger**. (No escrow.) See §20 for the PIN fallback and the ledger.
 
-- **Naira (Monnify) — primary.** Platform collects the fare; on QR-confirmed completion, it disburses to the driver.
+- **Payment gates completion (naira).** A naira ride can only be completed **after** its Monnify payment is confirmed `PAID` — the backend links the payment to the ride and rejects completion until then (402). This closes the "ride free by skipping payment" hole.
+- **Payout = an earnings ledger, not a live disbursement (MVP).** On completion the driver is credited (seat fare + their surge-bonus share) into an `earnings` ledger they can read; a real Monnify **disbursement** to the driver's bank is a documented future step (needs a bank-details capture flow — verify Monnify's disbursement API before building). `lib/monnify.ts`'s header must stop claiming disbursement until it exists.
+- **Naira (Monnify) — primary.** Platform collects the fare; a Monnify **webhook** (+ `/payments/verify` fallback) confirms it so a rider who closes the app mid-checkout is still reconciled.
 - **cNGN (optional, devnet) — light Solana touch.** Rider may pay by sending cNGN on Solana devnet via their Privy wallet (a direct transfer, **no escrow program**). Purely a "we used the chain" showing; cut freely.
 
 > Crypto is **not** legal tender in Nigeria → naira (Monnify) is always the primary path; cNGN is opt-in only.
@@ -280,17 +289,25 @@ An **LLM sits between the event and Alerta** and makes the alert intelligent —
 // /types
 type User    = { id; name; email; role; chatId?; privyWallet? };
 type Driver  = { id; name; plate; vehicleType: "keke"|"bus"; online;
-                 currentLat; currentLng; routeId? };       // routeId for buses
+                 currentLat; currentLng; lastSeenAt?;        // heartbeat (§20)
+                 capacity?; seatsTaken?; poolFromStop?; poolToStop?; poolStarted?;
+                 ratingSum?; ratingCount?; earningsKobo?;    // ledger (§20)
+                 routeId? };                                 // routeId for buses
 type Stop    = { id; name; lat; lng };                      // hardcoded buildings
 type Route   = { id; name; stopIds: string[] };             // bus: ordered stops → town
 type Ride    = { id; riderId; driverId; fromStop; toStop; status;
-                 fare; priorityFee; payMethod; qrToken; createdAt };
+                 fare; priorityFee; payMethod; qrToken; completionPin;
+                 paymentStatus?; expiresAt?; cancelledBy?; cancelReason?;
+                 seats; createdAt };
 type Incident= { id; rideId?; type; severity; aiSeverity; aiSummary;
                  location; status; createdAt };
 type Payment = { id; rideId; method; amount; status; ref };
 type Rating  = { id; rideId; driverId; stars; comment? };
+type Earning = { id; driverId; rideId; amount; createdAt };  // §20 payout ledger
+type TelegramLink = { nonce; uid; expiresAt };               // §20 handshake token
 ```
-`Ride.status`: `requested | assigned | arriving | started | completed | cancelled`
+`Ride.status`: `requested | assigned | arriving | started | completed | cancelled | expired`
+(`expired` = the payment window lapsed before the rider paid — seats auto-freed, §20.)
 
 ---
 
@@ -337,8 +354,15 @@ Privy wallet on payment screen + optional cNGN direct transfer on devnet. Leave 
 | Map SDK | **Google Maps** |
 | Town buses | **Fixed routes** → transit-tracker model |
 | Poof.new | **Not used** |
+| Payment window (TTL) | **3 min** `assigned` hold, then auto-`expired` (§20) |
+| Driver heartbeat timeout | **2 min** silent → not matchable (§20) |
+| Surge grace window | **60 s** after last "on" still honors a `priorityFee` (§20) |
+| Completion fallback | **QR *or* numeric PIN** (§20) |
+| Driver onboarding | **whitelist-gated `POST /drivers/register`** (§20) |
+| Driver payout (MVP) | **earnings ledger** (real disbursement deferred) (§20) |
+| Rate limiting | **on `/sos`, `/incidents/report`, `/rides`** (§20) |
 
-**Still to confirm:** real campus stop coordinates; final list of bus routes; whether rider & driver share one app or split into two.
+**Still to confirm:** real campus stop coordinates; final list of bus routes; whether rider & driver share one app or split into two; the exact source of the driver whitelist (env list vs SUG-seeded Firestore collection).
 
 ---
 
@@ -361,4 +385,108 @@ Privy wallet on payment screen + optional cNGN direct transfer on devnet. Leave 
 2. **Backend + data doc:** Fastify route modules per resource, Firestore collections as TS types, Security Rules, and the Alerta/Monnify/AI client modules.
 3. Then scaffold the monorepo and build Phase 1.
 
-*End of v4 — consolidated, all decisions locked.*
+---
+
+## 20. Reliability & Lifecycle Hardening (v6) — flow-gap audit fixes
+
+> A project-wide audit of the rider **and** driver flows surfaced link gaps where a
+> ride, a seat, or a payment could get stuck, stolen, or skipped. These fixes close
+> them. Everything below is **additive to the contract** except two intentional,
+> flagged changes: the stranded case now returns **200 (with a rideId)** instead of
+> 409, and completion now requires **payment + `started`**. The prize-winning
+> Alerta/AI layer is untouched except to make it **more** robust (SOS never dies).
+
+**20.1 Payment-abandonment TTL (the deadlock).**
+A booked `assigned` ride carries `expiresAt = createdAt + 3 min`. If the rider never
+pays within the window, the hold is **lazily swept**: the next booking or ride read
+flags it `expired`, **frees the seat(s)**, and pings the driver that the pickup
+dropped. No cron/infra — expiry is enforced on the read/booking paths. A `PAID` ride
+never expires.
+
+**20.2 Payment actually gates the ride.**
+`/payments/verify` **and** a new Monnify **webhook** (`POST /payments/webhook`, verified
+by Monnify signature — confirm the exact header/algorithm against Monnify's live docs)
+link the payment back to the ride (`ride.paymentStatus`). Verify **checks the amount
+paid == fare and status == PAID** before stamping it. `/payments/init` is **idempotent**
+(reuses an open payment for the ride instead of minting duplicates → no double-charge).
+`/rides/:id/complete` returns **402** until the ride is `PAID` (naira path). The
+driver **also can't advance the trip** (`/rides/:id/status` → `arriving`/`started`)
+until the ride is paid (**402**) — an unpaid booking can't tie up a driver; it just
+lapses on its expiry. On a shared keke the status fan-out advances only the **paid**
+riders; unpaid peers stay `assigned` and expire.
+
+**20.3 QR PIN fallback (broken-camera trap).**
+Alongside `qrToken`, each ride mints a short numeric **`completionPin`**. `GET
+/rides/:id/qr` returns **both**; the rider app offers "enter PIN manually". `POST
+/rides/:id/complete` accepts **`qrToken` OR `pin`** (constant-time compare, exactly one
+required). A dead camera no longer strands a paid trip.
+
+**20.4 Driver cancellation is no longer a black hole.**
+`cancel` records **`cancelledBy`** (`rider | driver | system`). If the **driver**
+cancels, the backend **auto re-matches** the rider to the next keke on the same
+lane (same `fromStop` + `toStop`) — keeps the same rideId + payment, mints a fresh QR/PIN, dispatches the new
+driver, rider's Firestore status flips back to `assigned`). If no keke is free, the
+ride goes `requested` (stranded incident raised) and, **if already paid, a refund is
+flagged** (`refundPending` — real Monnify refund is the same deferred disbursement
+work as payout). If the **rider** cancels, the assigned **driver is pinged** so they
+don't drive to a ghost pickup.
+
+**20.5 Driver heartbeat (ghost keke).**
+`/drivers/online` and `/drivers/location` stamp **`lastSeenAt`**. The matcher and the
+surge seat-count **ignore any keke silent > 2 min** — a driver who force-closes the app
+stops receiving pools even without calling `online:false`. Lazy, like the TTL.
+
+**20.6 Driver identity & vetting (the silent blocker).**
+*No backend path ever set `vehicleType:"keke"`*, so matching would have found **zero**
+kekes. New **`POST /drivers/register { name, plate }`** creates the keke driver doc
+(`vehicleType:"keke"`, `capacity:4`) and is **whitelist-gated** (SUG-approved drivers
+only — `DRIVER_WHITELIST` env for the demo, or an SUG-seeded `allowedDrivers`
+collection). `/drivers/online` now requires a registered keke driver (else 403) — a
+random student can't self-appoint as a driver and receive dispatches.
+
+**20.7 Driver can find their ride (the missing link).**
+The Telegram dispatch had **no rideId**, and there was no way for a driver to list
+their assignment — every driver action needs an id they never had. New **`GET
+/drivers/me/rides`** (active rides on my keke) + the **rideId is now in the dispatch
+message**. A matching Firestore rule lets a driver read rides where `driverId == uid`.
+
+**20.8 SOS never dies (protect the prize).**
+`raiseIncident` wraps AI triage in a fallback: if the LLM errors/times out, it uses a
+safe default (`critical` for SOS) and **still persists + still alerts Telegram**. A
+Gemini outage can no longer turn an SOS into a 500 with nobody notified.
+
+**20.9 Telegram handshake can't be hijacked.**
+uids leak (a rider sees a `driverId`), so the old `?start=<uid>` deep link let anyone
+bind a driver's dispatch channel to their own chat. Replaced with a **one-time nonce**:
+`POST /me/telegram-link` mints a short-lived token; the deep link carries the token; the
+webhook resolves **token → uid** (never a raw uid).
+
+**20.10 Booking abuse guards.**
+One **active ride per rider** (no fleet-draining / no self-inflated surge). `priorityFee`
+is **capped**. A pool is **closed to new joins once its trip is `started`** (no joining a
+keke already driving away from your pickup). The **stranded case returns the rideId** (as
+200 + `stranded:true`) so the rider can track/cancel it instead of getting an opaque 409.
+
+**20.11 State-machine edges.**
+`complete` is allowed **only from `started`** (driver must actually start the trip). A
+status change **fans out to all active pooled riders** on the keke (one tap, not three).
+Cancelling **after `started`** is allowed but **raises an incident** (mid-trip drop-off
+is safety-relevant).
+
+**20.12 Rate limiting.**
+`@fastify/rate-limit` on `/sos`, `/incidents/report`, and `/rides` — a loop can't spam
+the security group (or the LLM bill) or hammer the matcher.
+
+**20.13 Bus staleness.**
+Bus positions get **`lastSeenAt`**; proximity subscriptions **auto-disable** once
+delivered / stale so a last-semester opt-in doesn't ping forever.
+
+> **What did NOT change:** the response envelope, the money-is-kobo rule, the
+> Alerta→Telegram incident pipeline shape, the bus ETA math, and the seat-pooling
+> fare model. The frontend's two genuinely breaking deltas are **(a)** stranded is now
+> `200 { stranded:true, rideId }` not `409`, and **(b)** completion needs payment +
+> `started`. Both are called out in `BACKEND_INTEGRATION.md` and `FLOW_GUIDE.txt`.
+
+---
+
+*End of v4 — consolidated, all decisions locked. (v6 hardening in §20.)*

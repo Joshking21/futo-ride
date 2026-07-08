@@ -5,7 +5,7 @@
  */
 
 import { adminDb } from "./firestore.js";
-import { triageIncident } from "./ai-triage.js";
+import { triageIncident, type TriageResult } from "./ai-triage.js";
 import { sendTelegramAlert } from "./alerta.js";
 import type { Incident, Severity } from "../types/index.js";
 
@@ -15,6 +15,26 @@ const SEVERITY_EMOJI: Record<Severity, string> = {
   medium: "🟡",
   info: "🔵",
 };
+
+/**
+ * Safe triage: if the LLM errors or times out, fall back so an SOS is NEVER lost
+ * (§20.8). SOS/panic defaults to critical; anything else to high. We still persist
+ * and still alert — a human decides, not a failed API call.
+ */
+async function safeTriage(input: Parameters<typeof triageIncident>[0]): Promise<TriageResult> {
+  try {
+    return await triageIncident(input);
+  } catch {
+    const critical = input.type === "sos" || input.type === "accident";
+    return {
+      severity: critical ? "critical" : "high",
+      summary: input.message,
+      action: "AI triage unavailable — manual review needed.",
+      isLikelyFalseAlarm: false,
+      confidence: 0,
+    };
+  }
+}
 
 /** A Google Maps link for a coordinate, used in the alert meta. */
 export function mapsLink(lat: number, lng: number): string {
@@ -39,13 +59,8 @@ export async function raiseIncident(params: RaiseIncidentParams): Promise<string
   const { riderId, type, message, location, rideId } = params;
   const now = new Date();
 
-  const triage = await triageIncident({
-    type,
-    message,
-    location,
-    timeOfDay: now.toTimeString().slice(0, 5),
-    rideId,
-  });
+  const timeOfDay = now.toTimeString().slice(0, 5);
+  const triage = await safeTriage({ type, message, location, timeOfDay, rideId });
 
   const ref = adminDb().collection("incidents").doc();
   const incident: Incident = {
@@ -61,6 +76,8 @@ export async function raiseIncident(params: RaiseIncidentParams): Promise<string
   };
   await ref.set({ ...incident, riderId });
 
+  // Best-effort: the incident is already persisted, so a Telegram failure must not
+  // sink the alert path (§20.8) — log it, still return the incidentId.
   const tag = triage.isLikelyFalseAlarm ? " (AI: possible false alarm)" : "";
   await sendTelegramAlert({
     title: `${SEVERITY_EMOJI[triage.severity]} ${type.toUpperCase()}${tag}`,
@@ -70,10 +87,10 @@ export async function raiseIncident(params: RaiseIncidentParams): Promise<string
       incident_id: ref.id,
       ...(rideId ? { ride_id: rideId } : {}),
       location,
-      time: incident.createdAt,
+      time: timeOfDay,
       ai_confidence: triage.confidence,
     },
-  });
+  }).catch((err) => console.error("Alerta send failed (incident persisted):", err));
 
   return ref.id;
 }

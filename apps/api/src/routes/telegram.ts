@@ -10,7 +10,7 @@ type TelegramUpdate = {
   };
 };
 
-/** Pulls the uid from a "/start <uid>" command, if present. */
+/** Pulls the start parameter (a one-time nonce) from a "/start <nonce>" command. */
 function startPayload(text: string | undefined): string | null {
   if (!text) return null;
   const match = text.match(/^\/start(?:\s+(\S+))?/);
@@ -18,12 +18,13 @@ function startPayload(text: string | undefined): string | null {
 }
 
 /**
- * Telegram bot webhook — receives the /start handshake and stores the user's
- * chat id so we can send them personal pings (bus proximity, driver dispatch).
+ * Telegram bot webhook — receives the /start handshake and stores the user's chat
+ * id so we can send them personal pings (bus proximity, driver dispatch).
  *
  * Auth is the X-Telegram-Bot-Api-Secret-Token header (set via setWebhook), NOT a
- * Firebase token — Telegram is the caller. We only attach a chat id to an EXISTING
- * user doc, so a random uid can't create ghost records.
+ * Firebase token — Telegram is the caller. The /start parameter is a ONE-TIME NONCE
+ * (from POST /me/telegram-link), resolved here to the uid (§20.9). A raw uid is NOT
+ * accepted — that prevented hijacking a driver's dispatch channel.
  */
 export default async function telegramRoutes(app: FastifyInstance) {
   app.post("/telegram/webhook", async (req, reply) => {
@@ -35,16 +36,20 @@ export default async function telegramRoutes(app: FastifyInstance) {
 
     const update = req.body as TelegramUpdate;
     const chatId = update?.message?.chat?.id;
-    const uid = startPayload(update?.message?.text);
+    const nonce = startPayload(update?.message?.text);
 
     // Always 200 to Telegram (it retries on non-2xx); just no-op on a bad update.
-    if (typeof chatId !== "number" || !uid) return ok({ ok: true });
+    if (typeof chatId !== "number" || !nonce) return ok({ ok: true });
 
     const db = adminDb();
-    const userRef = db.collection("users").doc(uid);
-    if (!(await userRef.get()).exists) return ok({ ok: true });
+    const linkRef = db.collection("telegramLinks").doc(nonce);
+    const linkSnap = await linkRef.get();
+    const link = linkSnap.data() as { uid?: string; expiresAt?: number } | undefined;
+    if (!link?.uid || (link.expiresAt ?? 0) < Date.now()) return ok({ ok: true });
 
-    await userRef.set({ chatId }, { merge: true });
+    const uid = link.uid;
+    await linkRef.delete(); // single-use
+    await db.collection("users").doc(uid).set({ chatId }, { merge: true });
 
     // Mirror onto the driver doc too, if this user is also a driver.
     const driverRef = db.collection("drivers").doc(uid);

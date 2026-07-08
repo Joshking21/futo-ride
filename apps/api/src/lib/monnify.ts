@@ -1,6 +1,25 @@
-/** Monnify (Moniepoint) — naira payments + driver disbursement. */
+/** Monnify (Moniepoint) — naira payments. (Driver disbursement is a future step, §20.2.) */
+
+import { createHmac, timingSafeEqual } from "node:crypto";
 
 let cachedToken: { token: string; expiresAt: number } | null = null;
+
+/**
+ * Verifies a Monnify webhook's `monnify-signature` header: an HMAC-SHA512 of the
+ * RAW request body keyed with the Monnify secret key (verified: developers.monnify.com
+ * → Webhooks). MONNIFY_WEBHOOK_SECRET overrides the key if your dashboard sets a
+ * distinct one; otherwise the client secret key is used.
+ */
+export function verifyMonnifySignature(rawBody: string, signature: unknown): boolean {
+  if (typeof signature !== "string" || !signature) return false;
+  const key = process.env.MONNIFY_WEBHOOK_SECRET || process.env.MONNIFY_SECRET_KEY;
+  if (!key) return false;
+  const computed = createHmac("sha512", key).update(rawBody, "utf8").digest("hex");
+  const a = Buffer.from(computed);
+  const b = Buffer.from(signature);
+  if (a.length !== b.length) return false;
+  return timingSafeEqual(a, b);
+}
 
 function getConfig() {
   const apiKey = process.env.MONNIFY_API_KEY;
