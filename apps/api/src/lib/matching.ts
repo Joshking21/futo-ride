@@ -6,8 +6,12 @@
 import { FieldValue } from "firebase-admin/firestore";
 import { adminDb } from "./firestore.js";
 import { findNearest } from "./geo.js";
-import { DRIVER_HEARTBEAT_MS } from "./config.js";
-import { pingDriver } from "./dispatch.js";
+import { DRIVER_HEARTBEAT_MS, PAYMENT_WINDOW_MS } from "./config.js";
+import { pingDriver, dispatchToDriver } from "./dispatch.js";
+import { CAMPUS_STOPS } from "./campus-stops.js";
+import { mintQrToken, mintCompletionPin } from "./qr.js";
+import { driverPriorityBonusKobo } from "./surge.js";
+import { raiseIncident } from "./incidents.js";
 import type { Ride } from "../types/index.js";
 
 export const DEFAULT_CAPACITY = 4;
@@ -129,20 +133,22 @@ export async function freeSeats(ride: Pick<Ride, "driverId" | "seats">): Promise
 
 /**
  * Lazily expires unpaid `assigned` holds whose window has lapsed (§20.1): marks
- * them `expired`, frees their seats, and pings the driver. No cron — call this on
+ * them `expired`, frees their seats, and pings the driver. Indexed range query
+ * (rides[status ASC, expiresAt ASC]) — no in-memory scan. No cron: call this on
  * the booking path so lapsed seats free up before matching. Best-effort per ride.
  */
 export async function sweepExpiredRides(): Promise<number> {
   const db = adminDb();
   const now = Date.now();
-  // Query on the equality field only (auto-indexed); filter the deadline in memory
-  // so no composite index is required. Active `assigned` holds are few at campus scale.
-  const snap = await db.collection("rides").where("status", "==", "assigned").get();
+  const snap = await db
+    .collection("rides")
+    .where("status", "==", "assigned")
+    .where("expiresAt", "<=", now)
+    .get();
 
   let swept = 0;
   for (const doc of snap.docs) {
     const ride = doc.data() as Ride;
-    if ((ride.expiresAt ?? Infinity) > now) continue; // hold still valid
     if (ride.paymentStatus === "PAID") continue; // paid rides never expire
     await doc.ref.update({ status: "expired", cancelledBy: "system", cancelReason: "payment_timeout" });
     await freeSeats(ride);
@@ -156,4 +162,121 @@ export async function sweepExpiredRides(): Promise<number> {
     swept++;
   }
   return swept;
+}
+
+function stopById(id: string): Stop | undefined {
+  return CAMPUS_STOPS.find((s) => s.id === id);
+}
+
+/** True while a (naira/transfer) ride still needs a confirmed payment (§20.2). */
+function ridePaid(ride: Pick<Ride, "paymentStatus">): boolean {
+  return ride.paymentStatus === "PAID";
+}
+
+export type RematchResult = { rematched: boolean; newDriverId?: string; refundPending?: boolean };
+
+/**
+ * Tries to move a ride to another keke on the same lane (driver-cancel §20.4, or a
+ * stale-driver rescue §21/H5). On success: same rideId + payment, fresh QR/PIN, new
+ * driver dispatched, ride back to `assigned`. On failure: the ride is stranded
+ * (`requested`), a HIGH incident is raised, and a paid ride is flagged for refund.
+ * Best-effort and self-contained so both the route and the sweep can call it safely.
+ */
+export async function rematchRide(ride: Ride): Promise<RematchResult> {
+  const db = adminDb();
+  const ref = db.collection("rides").doc(ride.id);
+  const from = stopById(ride.fromStop);
+  const to = stopById(ride.toStop);
+
+  if (from && to) {
+    const kekes = await onlineKekes();
+    const rematch = matchKeke(from, ride.toStop, ride.seats, kekes, ride.driverId);
+    if (rematch) {
+      try {
+        const newDriverRef = db.collection("drivers").doc(rematch.id);
+        await db.runTransaction(async (tx) => {
+          const dSnap = await tx.get(newDriverRef);
+          const d = dSnap.data() ?? {};
+          const capacity = typeof d.capacity === "number" ? d.capacity : DEFAULT_CAPACITY;
+          const seatsTaken = typeof d.seatsTaken === "number" ? d.seatsTaken : 0;
+          if (capacity - seatsTaken < ride.seats) throw new Error("filled");
+          tx.update(newDriverRef, {
+            seatsTaken: seatsTaken + ride.seats,
+            poolFromStop: ride.fromStop,
+            poolToStop: ride.toStop,
+          });
+          tx.update(ref, {
+            driverId: rematch.id,
+            status: "assigned",
+            qrToken: mintQrToken(),
+            completionPin: mintCompletionPin(),
+            cancelledBy: FieldValue.delete(),
+            // A paid ride keeps its payment; an unpaid one gets a fresh hold.
+            ...(ridePaid(ride) ? {} : { expiresAt: Date.now() + PAYMENT_WINDOW_MS }),
+          });
+        });
+
+        if (!rematch.joining) {
+          await dispatchToDriver({
+            driverId: rematch.id,
+            rideId: ride.id,
+            fromName: from.name,
+            toName: to.name,
+            driverBonusKobo: driverPriorityBonusKobo(ride.priorityFee),
+          }).catch(() => undefined);
+        }
+        return { rematched: true, newDriverId: rematch.id };
+      } catch {
+        // Lost the seat race — fall through and strand the rider.
+      }
+    }
+  }
+
+  const refundPending = ridePaid(ride);
+  await ref.update({
+    driverId: "",
+    status: "requested",
+    cancelledBy: "system",
+    ...(refundPending ? { refundPending: true } : {}),
+    expiresAt: FieldValue.delete(),
+  });
+  if (from) {
+    await raiseIncident({
+      riderId: ride.riderId,
+      type: "stranded",
+      message: `No replacement keke for ride ${ride.id} (${ride.fromStop} → ${ride.toStop})${refundPending ? " (paid — refund pending)" : ""}.`,
+      location: `${from.name} (${from.lat},${from.lng})`,
+      rideId: ride.id,
+    }).catch(() => undefined);
+  }
+  return { rematched: false, refundPending };
+}
+
+/**
+ * Rescues PAID active rides whose driver has gone stale (§21/H5): a driver who
+ * force-closes the app leaves a paid rider stuck (paid rides never expire, and the
+ * one-active-ride guard blocks re-booking). Re-matches them to a fresh keke, or
+ * strands + flags a refund. Lazy, like the expiry sweep — call it on the booking path.
+ */
+export async function sweepStaleDriverRides(): Promise<number> {
+  const db = adminDb();
+  const cutoff = Date.now() - DRIVER_HEARTBEAT_MS;
+  const snap = await db
+    .collection("rides")
+    .where("status", "in", ["assigned", "arriving"])
+    .get();
+
+  let rescued = 0;
+  for (const doc of snap.docs) {
+    const ride = doc.data() as Ride;
+    if (!ridePaid(ride) || !ride.driverId) continue; // only paid rides with a driver
+    const dSnap = await db.collection("drivers").doc(ride.driverId).get();
+    const d = dSnap.data() ?? {};
+    const lastSeenAt = typeof d.lastSeenAt === "number" ? d.lastSeenAt : 0;
+    if (d.online === true && lastSeenAt >= cutoff) continue; // driver still live
+    await freeSeats(ride);
+    await rematchRide(ride).catch(() => undefined);
+    rescued++;
+  }
+  return rescued;
 }

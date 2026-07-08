@@ -17,13 +17,12 @@ const app = Fastify({ logger: true });
 // Treat an empty JSON body as {} instead of erroring. No-body POSTs (e.g.
 // /rides/:id/cancel) sent with `Content-Type: application/json` would otherwise
 // 500 with FST_ERR_CTP_EMPTY_JSON_BODY. Routes still Zod-validate their bodies.
-// We also stash the raw string on the request so the Monnify webhook can verify
-// its HMAC signature over the exact bytes (§20.2).
+// (The Partna webhook verifies an RSA signature over the parsed `data` field, so no
+// raw-body capture is needed — unlike Monnify's HMAC-over-raw-bytes.)
 app.addContentTypeParser(
   "application/json",
   { parseAs: "string" },
-  (req, body: string, done) => {
-    (req as typeof req & { rawBody?: string }).rawBody = body;
+  (_req, body: string, done) => {
     if (!body || body.trim() === "") return done(null, {});
     try {
       done(null, JSON.parse(body));

@@ -50,13 +50,17 @@ File: .env.example lists the names. Real values go in .env (never committed).
   FIREBASE_ADMIN_CLIENT_EMAIL=      service-account email
   FIREBASE_ADMIN_PRIVATE_KEY=       service-account private key (with \n escapes)
 
-  # Monnify (naira payments)
-  MONNIFY_API_KEY=                  from Monnify dashboard
-  MONNIFY_SECRET_KEY=
-  MONNIFY_CONTRACT_CODE=
-  MONNIFY_BASE_URL=                 https://sandbox.monnify.com (test) or live
-  MONNIFY_REDIRECT_URL=             where Monnify sends the user back after pay
-  MONNIFY_WEBHOOK_SECRET=           verifies the Monnify -> backend webhook (§20.2)
+  # Partna (payments — NGN onramp → USDC treasury; offramp payout) (§21)
+  PARTNA_API_KEY=                   from the Partna dashboard (staging vs prod)
+  PARTNA_API_USER=                  merchant username (also the widget `merchant` param)
+  PARTNA_BASE_URL=                  default staging-api.getpartna.com/v4 ; prod api.getpartna.com/v4
+  PARTNA_PAY_URL=                   hosted widget host (staging-pay.getpartna.com / pay.getpartna.com)
+  PARTNA_WEBHOOK_PUBLIC_KEY=        Partna RSA PUBLIC key (PEM) — verifies webhook signatures
+  TREASURY_SOLANA_ADDRESS=         platform Solana wallet that receives onramp USDC
+
+  # Payment / fee tunables (optional; defaults in code) (§21)
+  PLATFORM_FEE_BPS=                 platform welfare cut of the seat fare (default 500 = 5%)
+  CANCELLATION_FEE_KOBO=            fee if a rider cancels while the driver is en route (default 5000)
 
   # Driver onboarding (whitelist gate — §20.6)
   DRIVER_WHITELIST=                 comma-separated approved driver emails (or use
@@ -101,7 +105,7 @@ stolen, or skipped. Nearly all of it is additive; TWO changes touch how you code
      "started" -> scan QR or type PIN.
 
   Everything else is additive and safe to adopt incrementally:
-   • Each booked ride has expiresAt (a 3-min pay-or-lose seat hold). Pay promptly.
+   • Each booked ride has expiresAt (a 10-min pay-or-lose seat hold, §21). Pay promptly.
    • QR completion has a PIN fallback (GET /rides/:id/qr now returns { qrToken, pin };
      complete accepts { qrToken } OR { pin }).
    • "Connect Telegram" now calls POST /me/telegram-link first, then opens the
@@ -114,6 +118,21 @@ stolen, or skipped. Nearly all of it is additive; TWO changes touch how you code
      new riders once its trip is "started".
    • POST /rides, /sos, /incidents/report are rate-limited (429 on breach).
    • New status codes you'll see: 402 (payment required), 429 (rate-limited).
+
+
+## 1c. WHAT CHANGED IN v7 (Partna payment migration — PROJECT_PLAN §21)
+Payments moved from Monnify + cNGN to PARTNA. Frontend-visible deltas:
+  1) payMethod is "naira" ONLY now (optional, defaults to "naira"). cNGN is removed.
+  2) POST /payments/init still returns { checkoutUrl, reference } — checkoutUrl is now a
+     PARTNA hosted onramp link (rider pays NGN by bank transfer; backend settles USDC).
+  3) The pay-or-lose hold is now ~10 min (was 3) — bank transfers are slower than cards.
+  4) POST /rides/:id/complete is now rate-limited (429) and credits the driver 95% of the
+     seat fare (5% welfare cut); POST /rides/:id/rate now needs a COMPLETED ride (409).
+  5) Rider-cancel refunds are TIERED: assigned=full, arriving=fee-to-driver, started=none.
+  6) NEW endpoints: POST /drivers/me/withdraw (cashout), POST /buses/register (bus drivers
+     onboard before /buses/location), POST /payments/mock-deposit (staging demo helper).
+  Backend-only (not your concern, listed for awareness): RSA-verified Partna webhook,
+  transactional completion, stale-driver rescue, Firestore index cleanup.
 
 
 ## 2. THE TWO DATA SOURCES (memorise this table)
@@ -205,7 +224,7 @@ MONEY IS ALWAYS IN KOBO (integer). 1 naira = 100 kobo.
         e.g. fare: 25000  →  ₦250.00
   • TO SEND: send kobo →  a ₦50 priority fee = 5000
   • You NEVER deal in naira on the wire. The backend converts to naira only
-    internally when it talks to Monnify. Treat kobo as the one unit everywhere.
+    internally at the Partna payment edge. Treat kobo as the one unit everywhere.
 
 
 ## 5. STOPS & ROUTES — what they are and how to "register" them
@@ -263,7 +282,7 @@ These are two DIFFERENT models. Do not mix them.
   How it moves           | building → building        | fixed route → town
   Seats                  | SHARED, 4 seats, pooled    | n/a (just board)
   Matching/assignment    | YES (pool by destination)  | NO
-  Fare in app            | YES, FLAT PER SEAT (Monnify)| NO (flat/on-board, later)
+  Fare in app            | YES, FLAT PER SEAT (Partna) | NO (flat/on-board, later)
   QR completion          | YES (per rider, per seat)  | NO
   Live position source   | Firebase RTDB              | Firebase RTDB
   ETA                    | from booking response      | GET /buses/routes/:id/eta
@@ -295,7 +314,7 @@ These are two DIFFERENT models. Do not mix them.
     • Seats are claimed atomically, so two riders can't overfill the same keke;
       if a keke fills up between your read and your booking you may get a 409
       "Keke just filled up, try again" — just retry (a new pool opens).
-    • The matched ride carries expiresAt (now + 3 min). Pay before it or the seat is
+    • The matched ride carries expiresAt (now + 10 min, §21). Pay before it or the seat is
       auto-released and the ride becomes "expired" (§20.1). A PAID ride never expires.
 
   FARE = FLAT PER SEAT: fare = seats × seat fare. Booking 2 seats costs 2×.
@@ -404,10 +423,24 @@ THE QR / PIN / "CODE" FLOW (keke only) — how it actually works:
   Send: nothing
   Returns: { totalKobo: number, recent: [ { rideId, amount, createdAt } ] }
   What it does: (§20.2 payout ledger) the driver's running earnings total + recent
-    credits. On each completion the driver is credited (seat fare + their share of
-    any surge bonus). This is a LEDGER, not a live bank payout — a real Monnify
-    disbursement to the driver's account is a documented future step.
+    credits. On completion the driver is credited 95% of the seat fare (5% welfare
+    cut, §21/P2) + their share of any surge bonus. This is a LEDGER, not a live bank
+    payout — withdraw via POST /drivers/me/withdraw.
   Scenario: Driver "Earnings" screen → show today's total + a recent list.
+
+### POST /drivers/me/withdraw                     (DRIVER)
+  Auth: yes (the driver)
+  Send: { amountKobo: number, method: "bank" | "wallet",
+          accountNumber?, bankCode?,   // for method "bank"
+          walletAddress? }             // for method "wallet"
+  Returns: { withdrawalId: string, status: "pending", amountKobo: number }
+  Errors: 400 missing bank/wallet fields · 404 driver not found · 409 insufficient balance
+  What it does: (§21/P3) BATCH cashout of ledger earnings. Debits earningsKobo
+    transactionally (no overdraw), records a withdrawals doc. The real payout — Partna
+    OFFRAMP (crypto→bank) or on-chain USDC to a wallet — is deferred; status stays
+    "pending" until then. Drivers withdraw end-of-shift/week, NOT per ride (that's the
+    micro-transaction trap — per-ride bank fees would exceed a ₦150 fare).
+  Scenario: Driver "Earnings" screen → "Withdraw" → pick bank or wallet → submit.
 
 ### GET /drivers/:id/rating                       (anyone)
   Auth: no
@@ -422,7 +455,7 @@ THE QR / PIN / "CODE" FLOW (keke only) — how it actually works:
   Send: {
           fromStop: string,        // a stop id, e.g. "seet"
           toStop:   string,        // a stop id, must differ from fromStop
-          payMethod: "naira" | "cngn",
+          payMethod: "naira",     // optional, defaults to "naira" (cNGN removed, §21)
           seats?:    number,       // 1..4, default 1 — seats to book; 4 = charter
           priorityFee?: number     // KOBO, capped, only if surge on (see section 9)
         }
@@ -448,7 +481,7 @@ THE QR / PIN / "CODE" FLOW (keke only) — how it actually works:
        cap; else it's dropped to 0. fare = seats × flat seat-fare + honored priorityFee.
     6. If a keke is found: atomically claims your seats, creates YOUR ride as
        "assigned" with YOUR own qrToken + completionPin, and sets expiresAt =
-       now + 3 min (pay-or-lose hold, §20.1). NEW pool → dispatches the driver on
+       now + 10 min (pay-or-lose hold, §20.1/§21). NEW pool → dispatches the driver on
        Telegram (pickup→dropoff + rideId, blind to who paid); a JOIN doesn't re-ping.
        Returns …/pooled/expiresAt/stranded:false.
        (pooled=true → you joined an existing keke; pooled=false → fresh keke.)
@@ -498,7 +531,7 @@ THE QR / PIN / "CODE" FLOW (keke only) — how it actually works:
     An out-of-order call (e.g. assigned → started, or repeating a state) → 409.
     (§20.2) THE DRIVER CANNOT ADVANCE AN UNPAID RIDE → 402 until it's PAID. So a
     rider who books but doesn't pay can't tie up the driver — the driver simply
-    can't mark "arriving"/"started" for them, and the seat lapses on its 3-min
+    can't mark "arriving"/"started" for them, and the seat lapses on its 10-min
     expiry. (Pay first, THEN the driver moves the trip.)
     (§20.11) ON A SHARED KEKE this FANS OUT to the pooled rides at once — one
     "Start trip" tap advances every PAID rider sharing the keke (affected = how
@@ -547,33 +580,45 @@ THE QR / PIN / "CODE" FLOW (keke only) — how it actually works:
   Returns: { checkoutUrl: string, reference: string }
   Errors: 403 not your ride · 404 ride not found · 409 ride not payable
           (expired/cancelled/completed) · 500 if payment not configured
-  What it does: looks up the ride's fare (kobo), converts to naira internally,
-    starts a Monnify transaction, stores a payment record, returns a checkoutUrl
-    (card / bank transfer / virtual account) + a reference. (§20.2) IDEMPOTENT: if
-    the ride already has an open payment, its existing checkoutUrl/reference is
-    returned — so a double-tap or a retry does NOT create a second charge.
-  Scenario: Payment screen (Naira) → call this → open checkoutUrl (in-app browser
-    or WebView) → user pays → Monnify redirects to MONNIFY_REDIRECT_URL. Do this
-    promptly — the seat is only held until the ride's expiresAt (3 min).
+  What it does: (§21) looks up the ride's fare (kobo), converts to naira, and builds
+    a PARTNA hosted onramp checkout — the rider pays NGN by bank transfer and Partna
+    settles USDC into the platform treasury. Returns checkoutUrl (the Partna pay link)
+    + reference (futoride-<rideId>). IDEMPOTENT (payment doc keyed by ride): a retry
+    returns the same checkoutUrl/reference — no duplicate ramp.
+  Scenario: Payment screen (Naira) → call this → open checkoutUrl (in-app browser or
+    WebView) → user completes the Partna onramp. Do this promptly — the seat is only
+    held until the ride's expiresAt (~10 min; bank transfers are slower than cards).
+    For the demo you can instead call POST /payments/mock-deposit (staging) to fire
+    the webhook without a human completing checkout.
 
 ### POST /payments/verify                         (RIDER)
-  Auth: yes
+  Auth: yes (rider on the ride — ownership checked, §21)
   Send: { reference: string }   // the reference from /payments/init
   Returns: { status: string, amount: number, paid: boolean }   // amount in KOBO
-  What it does: asks Monnify the real status, updates the stored payment. (§20.2)
-    It only marks the payment PAID and stamps the ride paymentStatus:"PAID"
-    (clearing the ride's expiry) when Monnify says PAID AND the amount paid equals
-    the fare — a short/partial payment stays pending. paid:true means the ride is
-    now completable.
-  Scenario: after the user returns from checkout, call this to confirm before
-    unlocking completion. (A Monnify webhook also reconciles server-side, so even
-    if the app dies here the payment still lands — but call verify for instant UX.)
+  What it does: (§21) reads the AUTHORITATIVE Partna ramp status and reconciles the
+    stored payment. Only marks PAID + stamps the ride paymentStatus:"PAID" (clearing
+    the expiry) when the onramp is `completed` AND the settled amount ≥ fare. If money
+    lands after the ride already expired/cancelled, it flags refundPending instead (C3).
+  Scenario: after the user returns from checkout, call this to confirm before unlocking
+    completion. (A Partna webhook also reconciles server-side, so even if the app dies
+    here the payment still lands — but call verify for instant UX.)
 
-### POST /payments/webhook            (MONNIFY → BACKEND, server-to-server)
-  Auth: Monnify transaction signature (NOT a Firebase token). The app NEVER calls this.
-  What it does: (§20.2) Monnify calls this when a transaction completes, so a rider
-    who closes the app mid-checkout is still reconciled to PAID (same amount check
-    as /verify). Listed here only so you know payments can confirm without /verify.
+### POST /payments/webhook            (PARTNA → BACKEND, server-to-server)
+  Auth: Partna webhook signature (NOT a Firebase token). The app NEVER calls this.
+  What it does: (§21) Partna calls this on onramp status changes. Verifies the
+    RSA-PSS/SHA-256 signature over the `data` field (Partna's PUBLIC key), then
+    reconciles from the authoritative ramp status (same PAID + amount check as /verify),
+    so a rider who closes the app mid-checkout is still reconciled to PAID.
+
+### POST /payments/mock-deposit       (RIDER — staging/demo only)
+  Auth: yes (rider on the ride)
+  Send: { rideId: string }
+  Returns: { ok: true }
+  What it does: (§21) demo helper — calls Partna staging POST /mock/fiat-deposit to
+    simulate the rider's NGN bank transfer so the real onramp webhook fires without a
+    human completing the hosted checkout. Refuses unless PARTNA_BASE_URL is staging.
+  Scenario: THE PAYMENT DEMO SHOT — book → init → mock-deposit → watch the ride flip
+    PAID (via the webhook) live, with zero real naira.
 
 ### GET /buses/routes                             (anyone)
   Auth: no
@@ -596,14 +641,25 @@ THE QR / PIN / "CODE" FLOW (keke only) — how it actually works:
     RTDB which the app already subscribes to — passing them keeps this stateless
     and instant. (You read once, hand it to us, we do the geo math.)
 
-### POST /buses/location                          (BUS DRIVER)
+### POST /buses/register                          (BUS DRIVER) — call ONCE first
   Auth: yes (the bus driver)
+  Send: { name: string, plate: string, routeId: string }
+  Returns: { id, name, plate, vehicleType: "bus", routeId }
+  Errors: 404 unknown route · 409 already registered as a keke driver
+  What it does: (§21/H6) explicit bus-driver onboarding — writes the driver doc with
+    vehicleType "bus". NO whitelist (buses are lower-stakes than keke dispatch/money),
+    but this stops any authenticated student from silently corrupting the tracker, and
+    refuses to convert an existing keke driver (which used to remove them from matching).
+  Scenario: bus driver onboarding (one-time) → then they can post location.
+
+### POST /buses/location                          (BUS DRIVER)
+  Auth: yes (a REGISTERED bus driver)
   Send: { routeId: string, lat: number, lng: number }
   Returns: { ok: true }
-  Errors: 404 unknown route
-  What it does: stores the bus's authoritative position (and tags the driver as
-    vehicleType "bus" on that routeId) AND fires Telegram pings to any rider whose
-    subscribed stop the bus has just reached (de-duped so each approach pings once).
+  Errors: 403 not a registered bus driver (call POST /buses/register first) · 404 unknown route
+  What it does: stores the bus's authoritative position AND fires Telegram pings to any
+    rider whose subscribed stop the bus has just reached (de-duped so each approach pings
+    once). (§21/H6) requires a registered bus driver — no longer auto-tags on first call.
   Scenario: bus driver app, periodically while driving the route, posts position
     here (and to RTDB for the live map). This is what powers proximity pings.
 
@@ -788,7 +844,7 @@ A) RIDER books a keke (the happy path):
         • stranded:true → no keke; show "we've flagged it", let them wait/cancel. STOP.
         • else pooled=true → "you're sharing this keke"; false → "your keke is on
           the way" (a NEW pool also triggers the driver's Telegram dispatch).
-        • Note expiresAt: the seat is held ~3 min — go to Payment NOW.
+        • Note expiresAt: the seat is held ~10 min — go to Payment NOW.
    6. Payment: POST /payments/init { rideId } → open checkoutUrl → user pays →
         POST /payments/verify { reference } → paid:true. (If they abandon here, the
         ride auto-expires and the seat frees — status flips to "expired".)
@@ -828,6 +884,7 @@ C) RIDER tracks a bus:
       get a "🚌 Bus approaching" ping when it nears the stop.
 
 D) BUS DRIVER:
+   0. ONE-TIME: POST /buses/register { name, plate, routeId } (§21/H6).
    1. Login. While driving the route, POST /buses/location { routeId, lat, lng }
       periodically (+ RTDB). This both updates position and fires rider proximity
       pings automatically.
@@ -848,27 +905,34 @@ E) SOS (any time):
     and the webhook registered once (setWebhook). Until a user completes the
     /start handshake, their personal pings are simply skipped (no error). The SUG
     Security group target is separate (ALERTA_TELEGRAM_TARGET) and works on its own.
-  • cNGN / Solana (payMethod "cngn") is accepted by the schema but the on-chain
-    payment path is NOT implemented — naira (Monnify) is the working path. NOTE:
-    the payment gate on completion currently covers the NAIRA path; the cNGN path
-    (todo.md) will need its own paid-confirmation before it can gate completion.
-  • DRIVER PAYOUT is a LEDGER, not a real bank transfer. On completion we credit the
-    driver's earnings (GET /drivers/me/earnings); an actual Monnify DISBURSEMENT to
-    the driver's account (and the bank-details capture it needs) is a future step.
-    Same for REFUNDS on a driver-cancel-after-pay — flagged (refundPending), not yet
-    sent. (§20.2/§20.4)
+  • PAYMENTS are Partna (§21): the rider pays NGN via a Partna hosted onramp and the
+    backend settles USDC into the treasury; a webhook (RSA-verified) confirms it. cNGN
+    is GONE (Partna doesn't support it) — USDC on Solana is the settlement asset. The
+    COLLECTION path (init → checkout → webhook/verify → PAID) is built and gates
+    completion. For the DEMO, use POST /payments/mock-deposit on staging to fire the
+    webhook without a human at the checkout — a real end-to-end integration, no real naira.
+  • THE PAYOUT LEG is deferred (honest framing): the driver EARNINGS LEDGER is real
+    (credited 95% on completion, GET /drivers/me/earnings), and POST /drivers/me/withdraw
+    debits it transactionally — but the actual Partna OFFRAMP (crypto→bank) / on-chain
+    USDC transfer is not wired yet. Same for REFUNDS (refundPending is flagged, not sent).
+    Kamino float-yield is a V2 PITCH line, not built. (§21/P3)
+  • PROD caveats (say them honestly): Partna allows one pending ramp per account, so
+    concurrent riders need per-rider Partna accounts/KYC — the demo is serial; riders
+    KYC once in production (staging uses test BVN/OTP 123456); the ledger is naira while
+    the treasury is USDC, so the platform carries NGN/USDC FX. (§21.7)
   • Live positions are read by the app from Firebase RTDB; the backend does not
     serve a "live positions" endpoint (by design).
   • "town" stop coords and the single sample bus route are PLACEHOLDERS — replace
     with the real campus/town coordinates and the real SUG route list.
   • THE DRIVER WHITELIST source is a decision to finalise: DRIVER_WHITELIST env
     (comma-separated emails) for the demo, or an SUG-seeded allowedDrivers Firestore
-    collection for production. (§20.6)
-  • TTL / heartbeat / stale-sub sweeps are LAZY (enforced on the next read/booking),
-    not a background cron — fine at campus scale, revisit if load grows. (§20.1/20.5/20.13)
-  • Firestore composite indexes: the surge query, the one-active-ride query, and the
-    driver's-active-rides query filter + range, so each may need an index the first
-    time it runs — Firestore prints a one-click "create index" link in the logs.
+    collection for production. Bus drivers use an explicit POST /buses/register (no
+    whitelist) before posting location. (§20.6/§21 H6)
+  • TTL / heartbeat / stale-driver / stale-sub sweeps are LAZY (enforced on the next
+    read/booking), not a background cron — fine at campus scale. (§20.1/20.5/21 H5)
+  • Firestore composite indexes ship in firestore.indexes.json (surge, expiry sweep,
+    earnings). The former in-memory index "bypasses" (earnings, expiry sweep) are gone;
+    other multi-field queries are equality/`in` and need no composite index. (§21.6)
 
 ===============================================================================
  End of guide. Endpoint quick-reference also lives in docs/API.md; the contract

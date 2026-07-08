@@ -1,107 +1,111 @@
 # todo.md — Solana Roadmap (to win the Solana bounty) 🏆◎
 
-> **Status:** planning only — nothing here is built yet. This is the sequenced plan
-> for the Solana side of FUTO-Ride. The Alerta/AI safety layer (the main prizes) is
-> already built and tested; this is the **additional** Solana track.
+> **Status:** the treasury/insurance track. **Big update (v7):** the Solana angle is no
+> longer a bolt-on — the **main payment flow now settles USDC on Solana via Partna**
+> (PROJECT_PLAN §21). Every fare a rider pays becomes USDC in the platform treasury on
+> Solana. So the "on-chain treasury" this roadmap is built around **already exists as a
+> side effect of collecting fares**. What's left is the welfare-levy + AI-claims story.
 >
-> **Shift from the original plan:** PROJECT_PLAN §5/§9/§16 treated Solana as a
-> "light touch — cut freely." We are now aiming to **actually win a Solana bounty**,
-> so cNGN is no longer decorative — it becomes a real on-chain payment path plus a
-> genuinely novel treasury/insurance mechanism. Naira (Monnify) stays the primary,
-> legal-tender path; cNGN is opt-in (crypto isn't legal tender in NG).
+> **Shift from the original plan:** cNGN is **DROPPED** — Partna doesn't support it, and
+> it was never legal tender anyway. The settlement asset is **USDC on Solana**. The rider
+> always pays **naira** (legal tender); the USDC leg is invisible to them (a treasury/
+> liquidity detail, exactly like Uber's float). This is *stronger* than the old cNGN plan:
+> USDC is the canonical stablecoin and Partna delivers it natively.
 
 ---
 
-## Where we are now (verified in code)
+## Where we are now (verified in code, v7)
 
-- `payMethod: "naira" | "cngn"` is a **valid enum** and is **stored** on the ride,
-  but **nothing branches on `cngn`** — a cNGN ride still gets a naira fare and would
-  still go through Monnify. It's a placeholder seam.
-- `User.privyWallet?` field exists as a placeholder. No wallet logic.
-- **Zero** Solana / Privy / web3 code or dependencies in `apps/api`.
-- Monnify naira payments: **built + sandbox-tested** (init → checkout → verify).
+- `payMethod` is now **`"naira"` only** (cNGN enum removed — it was a free-ride hole, C1).
+- **Payments run on Partna** (`lib/partna.ts` + `routes/payments.ts`): NGN onramp →
+  **USDC settled into `TREASURY_SOLANA_ADDRESS`** → RSA-verified webhook marks the ride PAID.
+  Built; demo via staging `POST /payments/mock-deposit`.
+- **The 5% welfare cut is LIVE**: on completion the platform's cut is recorded per ride in
+  `treasuryContributions` (driver keeps 95%). The "on-chain welfare fund" story has a paper
+  trail already (§21/P2).
+- **Withdrawal ledger is built**: `POST /drivers/me/withdraw` debits earnings
+  transactionally; the actual **offramp / on-chain USDC transfer leg is the deferred step**.
+- `User.privyWallet?` exists as a placeholder. **Zero** direct `@solana/web3.js` /
+  `@solana/spl-token` code yet — the on-chain *transfer* legs (S1 wallet payout, S2 treasury
+  sweep, S3 claim payout) are what this roadmap still adds.
 
-So the Solana work is a green field — we build onto clean seams, not fight old code.
+So the treasury already fills from real fares; the remaining Solana work is the **on-chain
+transfer legs** (Privy wallet payout, and the AI-verified insurance claims).
 
 ---
 
 ## The pitch (why this wins a Solana bounty)
 
 A campus keke app where:
-1. Students can **pay their fare in cNGN** on Solana devnet (real on-chain transfer).
-2. Every ride auto-contributes **~5% into an on-chain driver-welfare treasury**.
-3. When a driver has a mishap (tyre bursts, repair needed) they submit a **photo
-   claim**; **AI verifies** it (reuses our triage stack) and the treasury **pays out
-   cNGN** for the repair — **decentralised mutual insurance for informal drivers.**
+1. Every fare a student pays (in naira) is **settled as USDC on Solana** in the platform
+   treasury — via Partna's onramp. Real stablecoin flow, on real rails. **(Built.)**
+2. Every ride auto-contributes **~5% into a driver-welfare treasury** on-chain. **(Recorded
+   per ride today; the on-chain sweep is S2.)**
+3. When a driver has a mishap (tyre bursts, repair needed) they submit a **photo claim**;
+   **AI verifies** it (reuses our triage stack) and the treasury **pays out USDC** for the
+   repair — **decentralised mutual insurance for informal drivers.** **(S3.)**
 
 The story is the win: real utility for real (unbanked/informal) drivers, on-chain
 transparency of the welfare fund, and it **stacks on our AI prize** (AI claim
-verification). That's substance, not a "we sent one token" checkbox.
+verification). That's substance, not a "we sent one token" checkbox — and the collection
+half is already live via Partna.
 
 ---
 
-## PHASE S1 — cNGN ride payment (devnet) ← BUILD THIS FIRST
+## PHASE S1 — USDC settlement is DONE (via Partna) ✅
 
-> The foundation. The 5% treasury split only makes sense once cNGN actually flows.
+> The old S1 was "wire cNGN payment." That's superseded: the **main payment flow already
+> settles USDC on Solana** (PROJECT_PLAN §21). No separate cNGN path to build.
 
-**Goal:** a rider with `payMethod: "cngn"` pays the fare in cNGN on Solana devnet.
+- [x] Rider pays naira → Partna onramp → **USDC delivered to `TREASURY_SOLANA_ADDRESS`**.
+- [x] Backend confirms via RSA-verified webhook / `getRampByReference` → ride PAID.
+- [x] Fare stays **kobo internally**; naira only at the Partna edge; USDC base units only
+      ever matter at the future on-chain *transfer* edge (S2/S3).
+- [ ] **Remaining (thin):** capture each rider's/driver's `privyWallet` pubkey on their doc
+      when they connect a wallet (needed for on-chain payout in S2/S3 — frontend supplies it).
 
-- [ ] **Confirm the pieces (verify before coding):**
-  - [ ] cNGN devnet SPL token **mint address** + decimals (get from cNGN docs/faucet).
-  - [ ] Get devnet SOL (faucet) + test cNGN for the demo wallets.
-  - [ ] Privy: how the **mobile** app creates/exposes a wallet + signs (frontend dev's
-        domain — we just need the wallet pubkey and a way to receive the signed tx or
-        confirm the transfer).
-- [ ] **Decide the flow (one of):**
-  - [ ] **App-signed transfer (recommended for devnet):** the mobile app builds+signs
-        the cNGN transfer (rider wallet → platform wallet) via Privy, submits it, and
-        sends the **tx signature** to our backend to verify on-chain. Backend never
-        holds the rider's key. Cleanest, most "real".
-  - [ ] Backend-orchestrated: backend builds an unsigned tx, app signs, backend
-        submits. More backend control, more moving parts.
-- [ ] **Backend work (`apps/api`):**
-  - [ ] Add deps: `@solana/web3.js`, `@solana/spl-token` (verify latest versions).
-  - [ ] New `lib/solana.ts`: connection (devnet RPC), `verifyCngnTransfer(sig, expectedAmount, to)`
-        — confirms a finalized cNGN transfer of the right amount to the platform ATA.
-  - [ ] New route `POST /payments/cngn/verify { rideId, signature }` — verifies the
-        on-chain transfer, marks a `Payment { method: "cngn" }` as paid. (Mirror of
-        the Monnify verify, but reads the chain instead of Monnify.)
-  - [ ] Branch on `payMethod` in the payment flow: `naira` → Monnify (existing);
-        `cngn` → the on-chain path. Fare stays **kobo internally**; convert to cNGN
-        base units only at the chain edge (like we do naira at the Monnify edge).
-  - [ ] Store `privyWallet` (rider pubkey) on the user doc when they connect a wallet.
-  - [ ] Env: `SOLANA_RPC_URL`, `CNGN_MINT`, `PLATFORM_SOLANA_WALLET` (pubkey), and a
-        `PLATFORM_SOLANA_SECRET` only if the backend must send (treasury phase).
-- [ ] **Docs:** update API.md (new endpoint), BACKEND_INTEGRATION.md (how the app
-      pays in cNGN + sends the signature), FLOW_GUIDE.txt, PROJECT_PLAN §9.
-- [ ] **Test on devnet:** real transfer, backend verifies signature, payment marked paid.
-
-**Definition of done (S1):** a rider pays a real fare in cNGN on devnet and the
-backend confirms it from the chain.
+**Definition of done (S1):** ✅ a real fare settles as USDC in the treasury on-chain and the
+backend confirms it. (Demo it on staging with `POST /payments/mock-deposit`.)
 
 ---
 
 ## PHASE S2 — Driver-welfare treasury (5% split)
 
-> Depends on S1 (cNGN must flow first). Custodial-wallet version — NOT a smart
+> Depends on S1 (USDC must flow first). Custodial-wallet version — NOT a smart
 > contract yet (see S4). Matches PROJECT_PLAN's "no escrow program" for now.
 
-- [ ] **Treasury = a platform-controlled Solana wallet** (its own keypair/ATA for cNGN).
-- [ ] On a **completed** cNGN ride: compute `treasuryCut = round(fare × 0.05)` and
-      move that cNGN from the platform/collections wallet into the **treasury wallet**
+- [ ] **Treasury = a platform-controlled Solana wallet** (its own keypair/ATA for USDC).
+- [ ] On a **completed** USDC ride: compute `treasuryCut = round(fare × 0.05)` and
+      move that USDC from the platform/collections wallet into the **treasury wallet**
       (a second on-chain transfer). Record a `treasuryContributions` doc
       `{ rideId, driverId, amount, sig, createdAt }`.
   - [ ] Decide whose 5% it is: the plan's fee model already splits fees; here the 5%
         is a **driver-welfare levy** — document clearly whether it comes off the
         driver's earnings or the platform's cut (product decision).
-- [ ] `GET /treasury/balance` → live on-chain cNGN balance of the treasury wallet
+- [ ] `GET /treasury/balance` → live on-chain USDC balance of the treasury wallet
       (transparency — show it in the app/demo).
 - [ ] **Naira parity (optional):** if a ride was paid in **naira**, either skip the
       on-chain levy or mirror it as a ledger entry funded later — keep it simple; the
-      Solana story is the cNGN path.
+      Solana story is the USDC path.
 - [ ] **Docs + devnet test:** contribution transfer fires on completion, balance grows.
 
-**Definition of done (S2):** completing cNGN rides visibly grows an on-chain treasury.
+**Definition of done (S2):** completing USDC rides visibly grows an on-chain treasury.
+
+### S2b — Kamino float yield (PROD / V2 pitch — DO NOT BUILD for the demo)
+> The capital-efficiency story that turns the payout *liability* into a yield asset. Keep it in
+> the pitch, not the codebase (§21.7 / PROJECT_PLAN §21.7).
+
+- Native USDC sitting in the treasury earns **0%** — it's just cash in a safe.
+- The float (drivers' unpaid earnings held between collection and their weekly withdrawal) is
+  real idle liquidity — exactly what Uber/Bolt sweep into interest-bearing accounts.
+- **V2:** the treasury PDA programmatically supplies idle USDC to **Kamino Lend** (Solana's
+  largest stablecoin lending venue, ~5–9% supply APY), and pulls the principal back when a
+  driver withdraws — the treasury keeps the accrued interest **plus** the 5% welfare cut.
+- **Stage line (verbatim-ready):** *"For the MVP the float sits in the treasury PDA; for V2 it's
+  supplied to Kamino Lend for a 5–9% baseline APY, turning our payout liability into a
+  yield-generating asset until drivers batch-withdraw."*
+- **Not for the demo** — it's real DeFi integration + risk (Kamino market, liquidation, on-chain
+  keys) with zero added demo value. Ship S1–S3 first; Kamino is the "what's next" slide.
 
 ---
 
@@ -115,13 +119,13 @@ backend confirms it from the chain.
   - [ ] Guardrails: cap payout per claim; cap per driver per period; flag likely fraud
         (same photo reused, amount too high) — mirrors the false-alarm filtering we
         already do for SOS.
-- [ ] On approval: **treasury wallet → driver wallet** cNGN transfer; record
+- [ ] On approval: **treasury wallet → driver wallet** USDC transfer; record
       `claims { id, driverId, amount, status, aiReason, sig, createdAt }`.
 - [ ] Human-in-the-loop option: high-value/low-confidence claims route to an admin
       (Telegram, like incidents) before payout.
-- [ ] **Docs + devnet test:** submit a claim → AI approves → driver receives cNGN.
+- [ ] **Docs + devnet test:** submit a claim → AI approves → driver receives USDC.
 
-**Definition of done (S3):** a driver submits a tyre-burst photo and receives a cNGN
+**Definition of done (S3):** a driver submits a tyre-burst photo and receives a USDC
 payout from the treasury after AI approval — end-to-end, on devnet.
 
 ---
@@ -147,22 +151,27 @@ full user story on-chain.
 
 ## Open decisions (resolve before/while building)
 
-- [ ] **Whose 5%?** driver's earnings vs platform cut vs a small rider surcharge.
-- [ ] **cNGN devnet availability:** confirm mint + faucet actually work on devnet
-      (if cNGN isn't on devnet, fall back to a stand-in SPL token for the demo and
-      say so honestly).
+- [x] **Whose 5%?** RESOLVED (v7): a platform welfare cut **off the top of the seat fare**
+      (`PLATFORM_FEE_BPS`, default 5%); driver keeps 95%. Revisit if it should be a rider
+      surcharge instead.
+- [ ] **Which Solana cluster for S2/S3 transfers?** Partna settles USDC to our treasury
+      address (its network); the S2 sweep + S3 payouts need the treasury keypair on the
+      same cluster. Confirm with Partna which network their USDC lands on (`solana`).
 - [ ] **Wallet custody:** rider/driver via Privy (non-custodial) — confirm the mobile
-      integration path with the frontend dev.
+      integration path with the frontend dev; capture `privyWallet` on connect (S1 remaining).
 - [ ] **Payout controls:** per-claim cap, per-driver rate limit, fraud rules.
-- [ ] **Naira rides + treasury:** contribute, skip, or ledger-and-settle-later?
+- [ ] **Treasury source of the 5%:** S1 already lands 100% of the fare as USDC + records the
+      5% cut in `treasuryContributions`. S2 is just the on-chain *sweep* into a separate
+      welfare wallet (or leave it logical and pay claims from the main treasury).
 
 ---
 
 ## Guardrails (keep the main prize safe)
 
 - Alerta/AI safety layer is the headline and is **done** — Solana work must **not**
-  regress it. Re-run the existing test suite after Solana changes.
-- Naira (Monnify) stays the **primary** path; cNGN is **opt-in** (legal-tender reality).
-- Everything stays on **devnet**. No mainnet, no real funds.
-- Keep money **kobo internally**; convert to cNGN base units only at the chain edge
-  (same discipline as the Monnify naira edge).
+  regress it. Re-run the existing test suite (`src/scripts/e2e-test.ts`) after changes.
+- The rider always pays **naira** (legal tender); USDC settlement is invisible plumbing.
+- S2/S3 on-chain transfers use **real USDC on Solana** (Partna settles there) — treat the
+  treasury keypair as a live secret; test with small amounts first.
+- Keep money **kobo internally**; convert to naira at the Partna edge and to USDC base
+  units only at the on-chain transfer edge.
