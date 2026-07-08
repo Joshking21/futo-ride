@@ -71,7 +71,7 @@ return json.data;                             // typed payload
 > **⚠️ v6 contract changes (PROJECT_PLAN §20) — read these two first:**
 > 1. **Stranded is now `200`, not `409`.** `POST /rides` with no keke available returns `200 { stranded: true, rideId, driverId: null }` (so you can track/cancel the pending request). A real error is still an error; check `data.stranded`, not the status code, for "no keke".
 > 2. **Completion needs payment + a started trip.** `POST /rides/:id/complete` returns `402` until the naira payment is confirmed `PAID`, and `409` unless the driver has marked the trip `started`. So: pay → wait for `started` → scan.
-> Other additive changes: rides carry `expiresAt` (a 3-min pay-or-lose hold), the QR flow has a PIN fallback, the Telegram connect step now uses a one-time link, and drivers must `register` before going online. All detailed below.
+> Other additive changes: rides carry `expiresAt` (a 10-min pay-or-lose hold, §21), the QR flow has a PIN fallback, the Telegram connect step now uses a one-time link, and drivers must `register` before going online. All detailed below.
 
 ### 💰 Money is always in **kobo**
 
@@ -79,7 +79,9 @@ Every money value the backend sends or accepts is an **integer in kobo** (1 nair
 
 - **Display:** divide by 100 to show naira → `₦${(fare / 100).toLocaleString()}`. e.g. `fare: 25000` → **₦250.00**.
 - **Sending:** send kobo back (e.g. a `priorityFee` of ₦50 → `5000`).
-- You never deal with naira on the wire — the backend converts to naira internally only when it talks to Monnify. Treat kobo as the single unit across the whole API.
+- You never deal with naira on the wire — the backend converts to naira internally only at the Partna payment edge. Treat kobo as the single unit across the whole API.
+
+> **🔁 v7: payments are now Partna (was Monnify + cNGN).** You still call `POST /payments/init` and get `{ checkoutUrl, reference }` — `checkoutUrl` is now a **Partna hosted onramp** link (rider pays NGN by bank transfer; the backend settles it as USDC in the treasury). `payMethod` is `"naira"` only (cNGN is gone). New: `POST /drivers/me/withdraw` (driver cashout), `POST /buses/register` (bus drivers onboard before posting location), and a staging-only `POST /payments/mock-deposit` for the demo. See `docs/API.md` for shapes.
 
 ---
 
@@ -129,6 +131,7 @@ POST /drivers/online         driver go on/off (+ position) → { online }
 POST /drivers/location       driver position update        → { ok }
 GET  /drivers/me/rides       driver's active assignments   → { rides }
 GET  /drivers/me/earnings    driver earnings ledger        → { totalKobo, recent }
+POST /drivers/me/withdraw    driver cashout (offramp/wallet)→ { withdrawalId, status, amountKobo }
 GET  /drivers/:id/rating     driver avg rating + count     → { average, count }
 
 POST /rides                  book keke seat(s), pooled     → { rideId, driverId, etaMin, fare, seats, seatsTaken, pooled, expiresAt, stranded }
@@ -138,15 +141,17 @@ POST /rides/:id/complete     rider confirms via QR OR PIN  → { ok, fare }
 GET  /rides/:id/qr           driver fetches QR + PIN        → { qrToken, pin }
 POST /rides/:id/rate         rider rates the driver        → { ok }
 
-POST /payments/init          start a Monnify payment       → { checkoutUrl, reference }
+POST /payments/init          start a Partna onramp         → { checkoutUrl, reference }
 POST /payments/verify        confirm a payment             → { status, amount, paid }
-POST /payments/webhook       Monnify → backend (s2s)       → { ok }   (app never calls)
+POST /payments/webhook       Partna → backend (s2s)        → { ok }   (app never calls)
+POST /payments/mock-deposit  staging demo: simulate pay    → { ok }   (staging only)
 
 POST /sos                    raise an SOS (AI→Alerta)      → { incidentId }
 POST /incidents/report       report accident/off-route     → { incidentId }
 
 GET  /buses/routes           list routes + ordered stops   → { routes }
 GET  /buses/routes/:id/eta   ETA to each stop from a pos   → { routeId, stops }
+POST /buses/register         onboard a bus driver          → { id, name, plate, vehicleType, routeId }
 POST /buses/location         bus driver posts position     → { ok }
 POST /buses/proximity        opt-in "notify near my stop"  → { enabled }
 
@@ -167,7 +172,7 @@ The user presses Start in Telegram; the backend resolves the nonce → their uid
 
 **Shared-seat pooling (keke):** a keke has 4 seats and pools riders **on the same lane — same `fromStop` AND same `toStop`** (a "SEET → Town" keke; riders at a different pickup or destination get a different keke, so there's no zigzag pickup run). In `POST /rides`, send `seats` (1–4, default 1). The response's `pooled` tells you whether the rider joined an existing keke (`true`) or got a fresh one (`false`) — show "you're sharing this keke" vs "your keke is on the way". Fare is **flat per seat** (`seats × seat fare`), so 2 seats costs 2×. `seats: 4` = charter the whole keke. Each rider has their **own ride, own QR/PIN, own completion**. A rider may only have **one active ride at a time** (`409` otherwise). A pool **stops accepting new riders once its trip is `started`**. If no keke has room you get **`200 { stranded: true, rideId }`** (see the v6 note at the top) — not a 409. Seats free automatically on complete/cancel/expiry.
 
-**The 3-minute pay-or-lose hold (`expiresAt`):** a matched ride comes back with `expiresAt` (epoch ms). The seat is held only until then — if the rider hasn't paid, the backend auto-releases it and the ride becomes `expired` (watch `rides/{id}.status`). So: after `POST /rides`, take the rider **straight to payment**; show a countdown to `expiresAt` if you like. A confirmed payment cancels the expiry.
+**The 10-minute pay-or-lose hold (`expiresAt`):** a matched ride comes back with `expiresAt` (epoch ms). The seat is held only until then — if the rider hasn't paid, the backend auto-releases it and the ride becomes `expired` (watch `rides/{id}.status`). So: after `POST /rides`, take the rider **straight to payment**; show a countdown to `expiresAt` if you like. A confirmed payment cancels the expiry. (v7 raised this from 3 min because a Partna bank transfer takes longer than a card checkout.)
 
 **Ride lifecycle (driver-driven):** the driver advances the trip with `POST /rides/:id/status { status }` — `"arriving"` when en route to pickup, then `"started"` at pickup. Transitions are ordered (`assigned → arriving → started`); out-of-order returns `409`. **The driver can't advance an unpaid ride** — `402` until it's `PAID` (payment secures the seat before the driver commits). On a shared keke, one status call **advances every _paid_ pooled rider at once** (`affected` = how many); unpaid peers stay `assigned` and expire. The rider app doesn't call this — it watches `rides/{id}.status` via Firestore and updates the tracking UI.
 
@@ -180,12 +185,12 @@ The user presses Start in Telegram; the backend resolves the nonce → their uid
 The backend's types live in `apps/api/src/types`. For the requests you send, here are the shapes you'll use (copy these into your app, or we can share them as a package later if you prefer):
 
 ```ts
-type PayMethod = "naira" | "cngn";
+type PayMethod = "naira";   // cNGN removed in v7 (Partna migration); payMethod is optional now
 
 type BookRideRequest = {
   fromStop: string;        // a campus stop id
   toStop: string;          // a campus stop id (≠ fromStop)
-  payMethod: PayMethod;
+  payMethod?: PayMethod;   // optional, defaults to "naira"
   seats?: number;          // 1..4, default 1 — seats to book; 4 charters the keke
   priorityFee?: number;    // kobo, capped — only when surge is active (grace ~60s)
 };

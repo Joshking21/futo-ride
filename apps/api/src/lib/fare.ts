@@ -24,6 +24,16 @@ export function seatFareKobo(seats: number): number {
   return SEAT_FARE_KOBO * seats;
 }
 
+/** Platform's cut of a seat fare (kobo), given the fee in basis points (§21/P2). */
+export function platformCutKobo(seatFareKoboAmount: number, feeBps: number): number {
+  return Math.round((seatFareKoboAmount * feeBps) / 10_000);
+}
+
+/** Driver's share of a seat fare after the platform cut (kobo) (§21/P2). */
+export function driverSeatShareKobo(seatFareKoboAmount: number, feeBps: number): number {
+  return seatFareKoboAmount - platformCutKobo(seatFareKoboAmount, feeBps);
+}
+
 /**
  * Surge state for a zone over a rolling 2-minute window (PROJECT_PLAN §8):
  * ON when pending ≥ 3 AND pending > kekes × 1.5; OFF at pending ≤ kekes × 1.2 (hysteresis).

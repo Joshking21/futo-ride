@@ -5,7 +5,8 @@
 
 export type Role = "rider" | "driver" | "admin";
 export type VehicleType = "keke" | "bus";
-export type PayMethod = "naira" | "cngn";
+/** Fare is always collected in naira (via Partna onramp → USDC treasury, §21). */
+export type PayMethod = "naira";
 export type RideStatus =
   | "requested"
   | "assigned"
@@ -98,8 +99,8 @@ export type Payment = {
   rideId: string;
   method: PayMethod;
   amount: number; // kobo (integer) — the fare this payment must cover
-  status: string; // "pending" | "PAID" | Monnify status
-  ref: string; // Monnify transactionReference — used by /verify + /webhook
+  status: string; // "pending" | "PAID" | Partna ramp status
+  ref: string; // Partna rampReference (futoride-<rideId>) — used by /verify + /webhook
   checkoutUrl?: string; // stored so /init is idempotent (§20.2)
 };
 
@@ -125,4 +126,25 @@ export type TelegramLink = {
   nonce: string;
   uid: string;
   expiresAt: number; // epoch ms
+};
+
+/** The platform's per-ride welfare-treasury cut, recorded on completion (§21/P2). */
+export type TreasuryContribution = {
+  rideId: string;
+  driverId: string;
+  amount: number; // kobo — the platform's cut of this ride's seat fare
+  createdAt: number;
+};
+
+/** A driver's batch withdrawal request (§21/P3). Payout (offramp/on-chain) is deferred. */
+export type Withdrawal = {
+  id: string;
+  driverId: string;
+  amount: number; // kobo debited from the earnings ledger
+  method: "bank" | "wallet";
+  status: "pending" | "paid" | "failed";
+  createdAt: number;
+  accountNumber?: string;
+  bankCode?: string;
+  walletAddress?: string;
 };

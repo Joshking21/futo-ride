@@ -4,15 +4,22 @@ import { verifyRequest } from "../lib/auth.js";
 import { adminDb } from "../lib/firestore.js";
 import { ok, HttpError } from "../lib/http.js";
 import { CAMPUS_STOPS } from "../lib/campus-stops.js";
-import { seatFareKobo } from "../lib/fare.js";
+import { seatFareKobo, driverSeatShareKobo, platformCutKobo } from "../lib/fare.js";
 import { evaluateSurge, driverPriorityBonusKobo } from "../lib/surge.js";
 import { mintQrToken, mintCompletionPin, verifyQrToken } from "../lib/qr.js";
-import { PAYMENT_WINDOW_MS, DRIVER_HEARTBEAT_MS } from "../lib/config.js";
+import {
+  PAYMENT_WINDOW_MS,
+  DRIVER_HEARTBEAT_MS,
+  PLATFORM_FEE_BPS,
+  CANCELLATION_FEE_KOBO,
+} from "../lib/config.js";
 import {
   onlineKekes,
   matchKeke,
   freeSeats,
   sweepExpiredRides,
+  sweepStaleDriverRides,
+  rematchRide,
   DEFAULT_CAPACITY,
   type Stop,
 } from "../lib/matching.js";
@@ -22,18 +29,41 @@ import { BookRide, CompleteRide, RateRide, RideId, UpdateRideStatus } from "../s
 import type { Ride, RideStatus } from "../types/index.js";
 
 const ACTIVE_STATUSES: RideStatus[] = ["assigned", "arriving", "started"];
+const RATE_LIMIT = { config: { rateLimit: { max: 30, timeWindow: "1 minute" } } };
 
 function stopById(id: string): Stop | undefined {
   return CAMPUS_STOPS.find((s) => s.id === id);
 }
 
-/** True if the ride still needs (naira) payment before it can complete (§20.2). */
+/** True if the ride still needs a confirmed payment before it can advance/complete (§20.2). */
 function needsPayment(ride: Ride): boolean {
-  return ride.payMethod === "naira" && ride.paymentStatus !== "PAID";
+  return ride.paymentStatus !== "PAID";
+}
+
+/**
+ * Credits a driver's earnings ledger (§20.2): writes one deterministic `earnings`
+ * doc keyed to the reason so a retry can't double-credit (M7), and bumps the running
+ * `earningsKobo` total. `key` distinguishes fare vs. cancellation-fee credits per ride.
+ */
+async function creditDriver(driverId: string, rideId: string, amountKobo: number, key: string): Promise<void> {
+  if (!driverId || amountKobo <= 0) return;
+  const db = adminDb();
+  const earningRef = db.collection("earnings").doc(`${rideId}_${key}`);
+  const created = await db.runTransaction(async (tx) => {
+    if ((await tx.get(earningRef)).exists) return false; // already credited
+    tx.set(earningRef, { id: earningRef.id, driverId, rideId, amount: amountKobo, createdAt: Date.now() });
+    return true;
+  });
+  if (created) {
+    await db
+      .collection("drivers")
+      .doc(driverId)
+      .set({ earningsKobo: FieldValue.increment(amountKobo) }, { merge: true });
+  }
 }
 
 export default async function rideRoutes(app: FastifyInstance) {
-  app.post("/rides", { config: { rateLimit: { max: 30, timeWindow: "1 minute" } } }, async (req) => {
+  app.post("/rides", RATE_LIMIT, async (req) => {
     const user = await verifyRequest(req);
     const body = BookRide.parse(req.body);
 
@@ -43,8 +73,12 @@ export default async function rideRoutes(app: FastifyInstance) {
 
     const db = adminDb();
 
-    // Free any lapsed unpaid holds first so their seats are available to match (§20.1).
-    await sweepExpiredRides().catch((err) => req.log.error({ err }, "expiry sweep failed"));
+    // Free lapsed unpaid holds (§20.1) and rescue paid riders whose driver vanished
+    // (§21/H5) first, so their seats are available to match and they aren't left stuck.
+    await Promise.all([
+      sweepExpiredRides().catch((err) => req.log.error({ err }, "expiry sweep failed")),
+      sweepStaleDriverRides().catch((err) => req.log.error({ err }, "stale-driver sweep failed")),
+    ]);
 
     // One active ride per rider (§20.10): block a second in-progress ride.
     const active = await db
@@ -55,15 +89,21 @@ export default async function rideRoutes(app: FastifyInstance) {
       .get();
     if (!active.empty) throw new HttpError("You already have an active ride", 409);
 
-    // Reuse an existing stranded ("requested") ride so retries don't pile up docs
-    // or inflate the surge pending-count (§20.10 / F8).
+    // Reuse an existing stranded ("requested") ride so retries don't pile up docs or
+    // inflate the surge pending-count (§20.10). But NEVER reuse a doc that is paid or
+    // owed a refund — overwriting it would destroy the payment/refund trail (C2, §21);
+    // leave those for the deferred refund and open a fresh doc.
     const strandedSnap = await db
       .collection("rides")
       .where("riderId", "==", user.uid)
       .where("status", "==", "requested")
-      .limit(1)
+      .limit(5)
       .get();
-    const reuseRef = strandedSnap.empty ? null : strandedSnap.docs[0].ref;
+    const reusable = strandedSnap.docs.find((d) => {
+      const r = d.data() as Ride;
+      return r.paymentStatus !== "PAID" && r.refundPending !== true;
+    });
+    const reuseRef = reusable?.ref ?? null;
 
     const [kekes, surge] = await Promise.all([onlineKekes(), evaluateSurge(body.fromStop)]);
     const match = matchKeke(from, body.toStop, body.seats, kekes);
@@ -200,12 +240,11 @@ export default async function rideRoutes(app: FastifyInstance) {
       throw new HttpError("Ride already closed", 409);
     }
 
-    const cancelledBy = isRider ? "rider" : "driver";
-    const wasStarted = ride.status === "started";
     const from = stopById(ride.fromStop);
-    const to = stopById(ride.toStop);
+    const wasStarted = ride.status === "started";
+    const paid = ride.paymentStatus === "PAID";
 
-    // Release this driver's seat first (§20.4).
+    // Release this rider's seat back to the keke first (§20.4).
     await freeSeats(ride);
 
     // Mid-trip cancellation is safety-relevant — flag it (§20.11).
@@ -213,77 +252,49 @@ export default async function rideRoutes(app: FastifyInstance) {
       await raiseIncident({
         riderId: ride.riderId,
         type: "mid-trip-cancel",
-        message: `Ride ${ride.id} cancelled mid-trip by ${cancelledBy} (${ride.fromStop} → ${ride.toStop}).`,
+        message: `Ride ${ride.id} cancelled mid-trip by ${isRider ? "rider" : "driver"} (${ride.fromStop} → ${ride.toStop}).`,
         location: `${from.name} (${from.lat},${from.lng})`,
         rideId: ride.id,
       }).catch((err) => req.log.error({ err }, "mid-trip-cancel alert failed"));
     }
 
-    if (isDriver && from && to) {
-      // Driver bailed — try to re-match the rider to another keke (§20.4).
-      const kekes = await onlineKekes();
-      const rematch = matchKeke(from, ride.toStop, ride.seats, kekes, ride.driverId);
-      if (rematch) {
-        const newDriverRef = db.collection("drivers").doc(rematch.id);
-        await db.runTransaction(async (tx) => {
-          const dSnap = await tx.get(newDriverRef);
-          const d = dSnap.data() ?? {};
-          const capacity = typeof d.capacity === "number" ? d.capacity : DEFAULT_CAPACITY;
-          const seatsTaken = typeof d.seatsTaken === "number" ? d.seatsTaken : 0;
-          if (capacity - seatsTaken < ride.seats) {
-            throw new HttpError("Keke just filled up, try again", 409);
-          }
-          tx.update(newDriverRef, {
-            seatsTaken: seatsTaken + ride.seats,
-            poolFromStop: ride.fromStop,
-            poolToStop: ride.toStop,
-          });
-          tx.update(ref, {
-            driverId: rematch.id,
-            status: "assigned",
-            qrToken: mintQrToken(),
-            completionPin: mintCompletionPin(),
-            cancelledBy: FieldValue.delete(),
-            // A paid ride keeps its payment; an unpaid one gets a fresh hold.
-            ...(needsPayment(ride) ? { expiresAt: Date.now() + PAYMENT_WINDOW_MS } : {}),
-          });
-        });
-
-        if (!rematch.joining) {
-          await dispatchToDriver({
-            driverId: rematch.id,
-            rideId: ride.id,
-            fromName: from.name,
-            toName: to.name,
-            driverBonusKobo: driverPriorityBonusKobo(ride.priorityFee),
-          }).catch((err) => req.log.error({ err }, "re-match dispatch failed"));
-        }
-        return ok({ ok: true, rematched: true, newDriverId: rematch.id });
-      }
-
-      // No keke free — strand the rider and flag a refund if they'd paid.
-      const refundPending = ride.paymentStatus === "PAID";
-      await ref.update({
-        driverId: "",
-        status: "requested",
-        cancelledBy: "driver",
-        ...(refundPending ? { refundPending: true } : {}),
-        expiresAt: FieldValue.delete(),
-      });
-      if (from) {
-        await raiseIncident({
-          riderId: ride.riderId,
-          type: "stranded",
-          message: `Driver cancelled ride ${ride.id}; no replacement keke for ${ride.fromStop} → ${ride.toStop}${refundPending ? " (paid — refund pending)" : ""}.`,
-          location: `${from.name} (${from.lat},${from.lng})`,
-          rideId: ride.id,
-        }).catch((err) => req.log.error({ err }, "driver-cancel strand alert failed"));
-      }
-      return ok({ ok: true, rematched: false, refundPending });
+    // DRIVER cancels → auto re-match the rider to another keke on the same lane, or
+    // strand + flag a refund (§20.4). Shared helper (also used by the stale-driver sweep).
+    if (isDriver) {
+      const result = await rematchRide(ride);
+      return ok({ ok: true, ...result });
     }
 
-    // Rider cancelled — close the ride and warn the assigned driver (no ghost pickup).
-    await ref.update({ status: "cancelled", cancelledBy: "rider" });
+    // RIDER cancels → tiered refund policy (H4, §21). Only a PAID ride has anything to
+    // refund; the fee (when charged) is credited to the driver as fuel/time comp.
+    let refundPending = false;
+    if (paid) {
+      if (ride.status === "assigned") {
+        // Grace period — driver not yet en route. Full refund, no fee.
+        refundPending = true;
+      } else if (ride.status === "arriving") {
+        // Driver already driving to pickup — charge a fee, refund the rest.
+        const fee = Math.min(CANCELLATION_FEE_KOBO, ride.fare);
+        refundPending = ride.fare > fee;
+        await creditDriver(ride.driverId, ride.id, fee, "cancelfee").catch((err) =>
+          req.log.error({ err }, "cancellation-fee credit failed"),
+        );
+      } else if (wasStarted) {
+        // Mid-trip — the driver did the job. No refund; driver earns as if completed.
+        const earned =
+          driverSeatShareKobo(seatFareKobo(ride.seats), PLATFORM_FEE_BPS) +
+          driverPriorityBonusKobo(ride.priorityFee);
+        await creditDriver(ride.driverId, ride.id, earned, "fare").catch((err) =>
+          req.log.error({ err }, "mid-trip fare credit failed"),
+        );
+      }
+    }
+
+    await ref.update({
+      status: "cancelled",
+      cancelledBy: "rider",
+      ...(refundPending ? { refundPending: true } : {}),
+    });
     if (ride.driverId) {
       await pingDriver(
         ride.driverId,
@@ -291,7 +302,7 @@ export default async function rideRoutes(app: FastifyInstance) {
         `Ride ${ride.id} (${ride.fromStop} → ${ride.toStop}) was cancelled by the rider.`,
       ).catch((err) => req.log.error({ err }, "rider-cancel driver ping failed"));
     }
-    return ok({ ok: true });
+    return ok({ ok: true, refundPending });
   });
 
   // Legal forward transitions the driver can drive the trip through.
@@ -348,7 +359,7 @@ export default async function rideRoutes(app: FastifyInstance) {
     return ok({ status: body.status, affected });
   });
 
-  app.post("/rides/:id/complete", async (req) => {
+  app.post("/rides/:id/complete", RATE_LIMIT, async (req) => {
     const user = await verifyRequest(req);
     const { id } = RideId.parse(req.params);
     const body = CompleteRide.parse(req.body);
@@ -368,24 +379,33 @@ export default async function rideRoutes(app: FastifyInstance) {
     const expected = body.qrToken ? ride.qrToken : ride.completionPin;
     if (!verifyQrToken(expected, supplied)) throw new HttpError("Invalid QR code or PIN", 400);
 
-    await ref.update({ status: "completed" });
+    // Atomically flip to completed so a double-tap/retry can't complete twice (M7).
+    const completed = await db.runTransaction(async (tx) => {
+      const cur = await tx.get(ref);
+      if ((cur.data() as Ride | undefined)?.status !== "started") return false;
+      tx.update(ref, { status: "completed" });
+      return true;
+    });
+    if (!completed) throw new HttpError("Ride already completed", 409);
+
     await freeSeats(ride);
 
-    // Credit the driver's earnings ledger: seat fare + their share of any surge fee.
+    // Credit the driver (95% seat share + their surge-bonus share) and record the
+    // platform's 5% cut for the welfare treasury (§21/P2). Deterministic ids →
+    // idempotent, so no double-credit even if this path is retried.
     if (ride.driverId) {
-      const amount = seatFareKobo(ride.seats) + driverPriorityBonusKobo(ride.priorityFee);
-      const earningRef = db.collection("earnings").doc();
-      await earningRef.set({
-        id: earningRef.id,
-        driverId: ride.driverId,
-        rideId: ride.id,
-        amount,
-        createdAt: Date.now(),
-      });
+      const driverAmount =
+        driverSeatShareKobo(seatFareKobo(ride.seats), PLATFORM_FEE_BPS) +
+        driverPriorityBonusKobo(ride.priorityFee);
+      await creditDriver(ride.driverId, ride.id, driverAmount, "fare");
+      const platformCut = platformCutKobo(seatFareKobo(ride.seats), PLATFORM_FEE_BPS);
       await db
-        .collection("drivers")
-        .doc(ride.driverId)
-        .set({ earningsKobo: FieldValue.increment(amount) }, { merge: true });
+        .collection("treasuryContributions")
+        .doc(ride.id)
+        .set(
+          { rideId: ride.id, driverId: ride.driverId, amount: platformCut, createdAt: Date.now() },
+          { merge: true },
+        );
     }
 
     return ok({ ok: true, fare: ride.fare });
@@ -415,6 +435,7 @@ export default async function rideRoutes(app: FastifyInstance) {
 
     const ride = snap.data() as Ride;
     if (ride.riderId !== user.uid) throw new HttpError("Only the rider can rate", 403);
+    if (ride.status !== "completed") throw new HttpError("Rate only after the ride is completed", 409);
 
     // One rating per ride: the rating doc id is the ride id (idempotent guard).
     const ratingRef = db.collection("ratings").doc(id);

@@ -1,9 +1,10 @@
 import type { FastifyInstance } from "fastify";
+import { FieldValue } from "firebase-admin/firestore";
 import { verifyRequest } from "../lib/auth.js";
 import { adminDb } from "../lib/firestore.js";
 import { ok, HttpError } from "../lib/http.js";
 import { isApprovedDriver } from "../lib/whitelist.js";
-import { GoOnline, UpdateLocation, DriverId, RegisterDriver } from "../schemas/drivers.js";
+import { GoOnline, UpdateLocation, DriverId, RegisterDriver, WithdrawEarnings } from "../schemas/drivers.js";
 import type { Ride, RideStatus } from "../types/index.js";
 
 const DEFAULT_CAPACITY = 4;
@@ -99,16 +100,53 @@ export default async function driverRoutes(app: FastifyInstance) {
     const totalKobo =
       typeof driverSnap.data()?.earningsKobo === "number" ? driverSnap.data()!.earningsKobo : 0;
 
-    // Query on the equality field only (auto-indexed); sort + cap in memory so no
-    // composite index is needed. A driver's ledger is bounded by their completed rides.
-    const recentSnap = await db.collection("earnings").where("driverId", "==", user.uid).get();
-    const recent = recentSnap.docs
-      .map((doc) => doc.data())
-      .sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0))
-      .slice(0, 10)
-      .map((e) => ({ rideId: e.rideId, amount: e.amount, createdAt: e.createdAt }));
+    // Indexed query: newest 10 credits for this driver (composite index
+    // earnings[driverId ASC, createdAt DESC] in firestore.indexes.json). No in-memory sort.
+    const recentSnap = await db
+      .collection("earnings")
+      .where("driverId", "==", user.uid)
+      .orderBy("createdAt", "desc")
+      .limit(10)
+      .get();
+    const recent = recentSnap.docs.map((doc) => {
+      const e = doc.data();
+      return { rideId: e.rideId, amount: e.amount, createdAt: e.createdAt };
+    });
 
     return ok({ totalKobo, recent });
+  });
+
+  app.post("/drivers/me/withdraw", async (req) => {
+    const user = await verifyRequest(req);
+    const body = WithdrawEarnings.parse(req.body);
+
+    const db = adminDb();
+    const driverRef = db.collection("drivers").doc(user.uid);
+    const wRef = db.collection("withdrawals").doc();
+
+    // Debit the ledger transactionally so a driver can't overdraw or race two withdrawals
+    // (§21/P3). The real payout — Partna offramp to bank, or on-chain USDC to the wallet —
+    // is a deferred step; the withdrawal record stays "pending" until then (like refunds).
+    await db.runTransaction(async (tx) => {
+      const dSnap = await tx.get(driverRef);
+      if (!dSnap.exists) throw new HttpError("Driver not found", 404);
+      const balance = typeof dSnap.data()?.earningsKobo === "number" ? dSnap.data()!.earningsKobo : 0;
+      if (body.amountKobo > balance) throw new HttpError("Insufficient balance", 409);
+      tx.update(driverRef, { earningsKobo: FieldValue.increment(-body.amountKobo) });
+      tx.set(wRef, {
+        id: wRef.id,
+        driverId: user.uid,
+        amount: body.amountKobo,
+        method: body.method,
+        status: "pending",
+        createdAt: Date.now(),
+        ...(body.accountNumber ? { accountNumber: body.accountNumber } : {}),
+        ...(body.bankCode ? { bankCode: body.bankCode } : {}),
+        ...(body.walletAddress ? { walletAddress: body.walletAddress } : {}),
+      });
+    });
+
+    return ok({ withdrawalId: wRef.id, status: "pending", amountKobo: body.amountKobo });
   });
 
   app.get("/drivers/:id/rating", async (req) => {

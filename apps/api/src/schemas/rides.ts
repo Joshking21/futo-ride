@@ -5,7 +5,7 @@ export const BookRide = z
   .object({
     fromStop: z.string().min(1),
     toStop: z.string().min(1),
-    payMethod: z.enum(["naira", "cngn"]),
+    payMethod: z.enum(["naira"]).default("naira"),
     priorityFee: z.number().int().nonnegative().max(PRIORITY_FEE_CAP_KOBO).optional(), // kobo, capped (§20.10)
     seats: z.number().int().min(1).max(4).default(1), // seats to book (4 = charter the keke)
   })

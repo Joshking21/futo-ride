@@ -5,7 +5,7 @@ import { ok, HttpError } from "../lib/http.js";
 import { BUS_ROUTES } from "../lib/routes.js";
 import { resolveRoute, etaAlongRoute, isBusNearStop } from "../lib/bus.js";
 import { sendTelegramAlert } from "../lib/alerta.js";
-import { RouteId, RouteEtaQuery, ProximityOptIn, BusLocation } from "../schemas/buses.js";
+import { RouteId, RouteEtaQuery, ProximityOptIn, BusLocation, RegisterBus } from "../schemas/buses.js";
 
 type LatLng = { lat: number; lng: number };
 
@@ -88,25 +88,52 @@ export default async function busRoutes(app: FastifyInstance) {
     return ok({ routeId: id, stops: etas });
   });
 
+  // Explicit bus-driver onboarding (§21/H6) — call once before posting positions.
+  // No whitelist (buses are lower-stakes than keke dispatch), but a real register step
+  // stops any authenticated student from silently corrupting the tracker, and refuses to
+  // convert an existing keke driver (which used to remove them from keke matching).
+  app.post("/buses/register", async (req) => {
+    const user = await verifyRequest(req);
+    const body = RegisterBus.parse(req.body);
+
+    if (!resolveRoute(body.routeId)) throw new HttpError("Unknown route", 404);
+
+    const ref = adminDb().collection("drivers").doc(user.uid);
+    const snap = await ref.get();
+    if (snap.data()?.vehicleType === "keke") {
+      throw new HttpError("Already registered as a keke driver", 409);
+    }
+
+    await ref.set(
+      { id: user.uid, name: body.name, plate: body.plate, vehicleType: "bus", routeId: body.routeId },
+      { merge: true },
+    );
+    return ok({ id: user.uid, name: body.name, plate: body.plate, vehicleType: "bus", routeId: body.routeId });
+  });
+
   app.post("/buses/location", async (req) => {
     const user = await verifyRequest(req);
     const body = BusLocation.parse(req.body);
 
     if (!resolveRoute(body.routeId)) throw new HttpError("Unknown route", 404);
 
-    await adminDb()
-      .collection("drivers")
-      .doc(user.uid)
-      .set(
-        {
-          vehicleType: "bus",
-          routeId: body.routeId,
-          currentLat: body.lat,
-          currentLng: body.lng,
-          lastSeenAt: Date.now(),
-        },
-        { merge: true },
-      );
+    const ref = adminDb().collection("drivers").doc(user.uid);
+    const snap = await ref.get();
+    // Must be a registered bus driver (§21/H6): blocks random students and prevents a
+    // keke driver's doc from being flipped to "bus" (which silently unmatched them).
+    if (snap.data()?.vehicleType !== "bus") {
+      throw new HttpError("Register as a bus driver first", 403);
+    }
+
+    await ref.set(
+      {
+        routeId: body.routeId,
+        currentLat: body.lat,
+        currentLng: body.lng,
+        lastSeenAt: Date.now(),
+      },
+      { merge: true },
+    );
 
     await notifyProximity(body.routeId, { lat: body.lat, lng: body.lng });
     return ok({ ok: true });

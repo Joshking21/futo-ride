@@ -23,7 +23,7 @@ apps/api/src/
     http.ts          ok() / fail() envelope + HttpError   (Layer 0)
     firebase-admin.ts Admin SDK singleton, adminAuth()     (Layer 0)
     auth.ts          verifyRequest() — verifies the ID token (Layer 0)
-    monnify.ts       Monnify client (verify endpoints first)
+    partna.ts        Partna payments client (onramp/offramp; verify endpoints first)
     alerta.ts        Alerta client (verify endpoints first)
     ai-triage.ts     LLM incident triage
     geo.ts           Turf helpers (distance, nearest, ETA)

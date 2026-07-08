@@ -110,7 +110,7 @@ async function main() {
   const compUnstarted = await call("POST", `/rides/${ride1}/complete`, rider.token, { pin: "000000" });
   check("complete before started → 409", compUnstarted.status === 409, compUnstarted);
 
-  // Simulate a confirmed Monnify payment (can't drive real card checkout headlessly).
+  // Simulate a confirmed Partna onramp (can't drive the hosted checkout headlessly).
   await db.collection("rides").doc(ride1).set({ paymentStatus: "PAID", expiresAt: FieldValue.delete() }, { merge: true });
   console.log("  (marked ride PAID out-of-band)");
 

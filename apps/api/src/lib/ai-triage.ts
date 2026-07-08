@@ -1,7 +1,17 @@
 /** AI incident triage — event → severity + summary + action (PROJECT_PLAN §11). */
 
 import { GoogleGenAI } from "@google/genai";
+import { z } from "zod";
 import type { Severity } from "../types/index.js";
+
+/** Validates the LLM's JSON so an out-of-enum severity can't reach Telegram (M9, §21). */
+const TriageSchema = z.object({
+  severity: z.enum(["critical", "high", "medium", "info"]),
+  summary: z.string().min(1),
+  action: z.string().min(1),
+  isLikelyFalseAlarm: z.boolean(),
+  confidence: z.number().min(0).max(1),
+});
 
 export interface TriageInput {
   type: string;
@@ -79,5 +89,7 @@ export async function triageIncident(input: TriageInput): Promise<TriageResult> 
     throw new Error("LLM API error: No response text generated");
   }
 
-  return JSON.parse(response.text) as TriageResult;
+  // Validate before trusting: a bad/out-of-enum field throws → safeTriage() falls back
+  // to a safe default and the SOS is still persisted + alerted (§20.8).
+  return TriageSchema.parse(JSON.parse(response.text));
 }

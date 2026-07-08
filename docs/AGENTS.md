@@ -87,9 +87,9 @@ futo-ride/
 |---|---|---|---|
 | **Fastify** | route registration, hooks/preHandler for auth, lifecycle | Fastify docs + installed version | Medium |
 | **Firebase Admin** | `verifyIdToken`, Firestore writes (Layer 0 already wires this) | Firebase Admin docs + installed `firebase-admin` | Medium |
-| **Monnify** | sandbox `sandbox.monnify.com`, keys `MK_TEST_…`; confirm auth + init/disbursement endpoints | Monnify developer docs | ⚠️ HIGH |
+| **Partna** (payments) | staging `staging-api.getpartna.com/v4`, headers `x-api-key`+`x-api-user`; `POST /ramp` (onramp/offramp), hosted onramp widget, RSA-PSS webhook. **Verified 2026-07-09.** cNGN unsupported → USDC-on-Solana. Replaces Monnify. | `docs.getpartna.com/v4` | ⚠️ HIGH |
 | **Alerta** | `https://api.alerta.encrisoft.com/v2`, headers `x-api-key`+`x-api-secret`, `POST /v2/telegram/send` | `docs.encrisoft.com` | ⚠️ HIGH |
-| **LLM (AI triage)** | one call: incident context → severity + summary + action | provider's current SDK/docs | Medium |
+| **LLM (AI triage)** | Google Gemini via `@google/genai`; one call → severity + summary + action (Zod-validated) | Google GenAI SDK/docs | Medium |
 
 > Mobile-side services (`@react-native-firebase`, `react-native-maps`, Privy) are the **frontend dev's** domain — don't wire them from the backend side.
 
@@ -131,23 +131,23 @@ If interactive docs are ever wanted, OpenAPI can be generated from the Zod schem
 
 ## 8. Environment variables (proposed names — confirm against the real `.env.example`)
 
-Server-side, read only in `apps/api`. Never commit values.
+Server-side, read only in `apps/api`. Never commit values. **The `.env.example` file is the
+source of truth** — this list is a summary; reconcile against it.
 ```
 # Firebase Admin (SECRET)
-FIREBASE_ADMIN_PROJECT_ID=
-FIREBASE_ADMIN_CLIENT_EMAIL=
-FIREBASE_ADMIN_PRIVATE_KEY=
-# Monnify (SECRET)
-MONNIFY_API_KEY=
-MONNIFY_SECRET_KEY=
-MONNIFY_CONTRACT_CODE=
-MONNIFY_BASE_URL=
+FIREBASE_ADMIN_PROJECT_ID= / FIREBASE_ADMIN_CLIENT_EMAIL= / FIREBASE_ADMIN_PRIVATE_KEY=
+# Partna payments (SECRET) — replaces Monnify (§21)
+PARTNA_API_KEY= / PARTNA_API_USER= / PARTNA_BASE_URL= / PARTNA_PAY_URL=
+PARTNA_WEBHOOK_PUBLIC_KEY= / TREASURY_SOLANA_ADDRESS=
 # Alerta (SECRET)
-ALERTA_API_KEY=
-ALERTA_API_SECRET=
-ALERTA_TELEGRAM_TARGET=
-# LLM (SECRET)
-LLM_API_KEY=
+ALERTA_API_KEY= / ALERTA_API_SECRET= / ALERTA_TELEGRAM_TARGET=
+# Telegram bot (SECRET) — per-user chat-id capture
+TELEGRAM_BOT_TOKEN= / TELEGRAM_WEBHOOK_SECRET=
+# LLM / AI triage (SECRET)
+LLM_API_KEY= / LLM_MODEL=
+# Driver onboarding + lifecycle/fee tunables (optional; defaults in code)
+DRIVER_WHITELIST= / PAYMENT_WINDOW_MS= / DRIVER_HEARTBEAT_MS= / SURGE_GRACE_MS=
+PRIORITY_FEE_CAP_KOBO= / PLATFORM_FEE_BPS= / CANCELLATION_FEE_KOBO=
 # Server
 PORT=
 ```
