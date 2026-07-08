@@ -4,8 +4,10 @@ import { ok } from "../lib/http.js";
 import { raiseIncident, mapsLink } from "../lib/incidents.js";
 import { Sos, ReportIncident } from "../schemas/incidents.js";
 
+const RATE_LIMIT = { config: { rateLimit: { max: 10, timeWindow: "1 minute" } } };
+
 export default async function incidentRoutes(app: FastifyInstance) {
-  app.post("/sos", async (req) => {
+  app.post("/sos", RATE_LIMIT, async (req) => {
     const user = await verifyRequest(req);
     const body = Sos.parse(req.body);
 
@@ -19,7 +21,7 @@ export default async function incidentRoutes(app: FastifyInstance) {
     return ok({ incidentId });
   });
 
-  app.post("/incidents/report", async (req) => {
+  app.post("/incidents/report", RATE_LIMIT, async (req) => {
     const user = await verifyRequest(req);
     const body = ReportIncident.parse(req.body);
 

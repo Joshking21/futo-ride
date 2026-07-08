@@ -1,6 +1,4 @@
-===============================================================================
- FUTO-RIDE — FULL FLOW & ENDPOINT GUIDE (for frontend + presentation)
-===============================================================================
+# FUTO-RIDE — FULL FLOW & ENDPOINT GUIDE (for frontend + presentation)
  Read this top to bottom. It explains, in order:
    0. The big picture (who does what)
    1. Environment variables (backend) + what the frontend needs
@@ -23,9 +21,7 @@
 ===============================================================================
 
 
--------------------------------------------------------------------------------
- 0. THE BIG PICTURE — who does what
--------------------------------------------------------------------------------
+## 0. THE BIG PICTURE — who does what
 
 There are 3 actors:
   • RIDER  — a FUTO student. Hails a keke, tracks the bus, pays, SOS.
@@ -44,9 +40,7 @@ Golden rule for the frontend:
   → Doing an action (book, pay, SOS, go online) = HTTP call to our backend.
 
 
--------------------------------------------------------------------------------
- 1. ENVIRONMENT VARIABLES
--------------------------------------------------------------------------------
+## 1. ENVIRONMENT VARIABLES
 
 BACKEND env (server-side only — these live in apps/api, NEVER in the app).
 File: .env.example lists the names. Real values go in .env (never committed).
@@ -92,9 +86,7 @@ projectId, etc.) for @react-native-firebase — that's your standard Firebase
 setup, unrelated to the backend secrets above.
 
 
--------------------------------------------------------------------------------
- 1b. WHAT CHANGED IN v6 (flow-gap hardening — PROJECT_PLAN §20)
--------------------------------------------------------------------------------
+## 1b. WHAT CHANGED IN v6 (flow-gap hardening — PROJECT_PLAN §20)
 A project-wide audit closed gaps where a ride, seat, or payment could get stuck,
 stolen, or skipped. Nearly all of it is additive; TWO changes touch how you code:
 
@@ -124,9 +116,7 @@ stolen, or skipped. Nearly all of it is additive; TWO changes touch how you code
    • New status codes you'll see: 402 (payment required), 429 (rate-limited).
 
 
--------------------------------------------------------------------------------
- 2. THE TWO DATA SOURCES (memorise this table)
--------------------------------------------------------------------------------
+## 2. THE TWO DATA SOURCES (memorise this table)
 
   WHAT YOU NEED                         | GET IT FROM        | HOW
   --------------------------------------|--------------------|--------------------
@@ -146,9 +136,7 @@ Libraries the frontend uses:
   • a QR renderer (e.g. react-native-qrcode-svg) — driver shows the QR
 
 
--------------------------------------------------------------------------------
- 3. AUTH — signup, login, and the token on every call
--------------------------------------------------------------------------------
+## 3. AUTH — signup, login, and the token on every call
 
 We do NOT have a /signup or /login endpoint. Identity is 100% Firebase.
 Our backend only VERIFIES the token Firebase gives you; it never issues one.
@@ -198,9 +186,7 @@ Reusable client helper (adapt to your style):
     }
 
 
--------------------------------------------------------------------------------
- 4. THE RESPONSE ENVELOPE + THE MONEY RULE
--------------------------------------------------------------------------------
+## 4. THE RESPONSE ENVELOPE + THE MONEY RULE
 
 EVERY endpoint returns one of these two shapes:
     success:  { "ok": true,  "data": { ...payload... } }
@@ -222,9 +208,7 @@ MONEY IS ALWAYS IN KOBO (integer). 1 naira = 100 kobo.
     internally when it talks to Monnify. Treat kobo as the one unit everywhere.
 
 
--------------------------------------------------------------------------------
- 5. STOPS & ROUTES — what they are and how to "register" them
--------------------------------------------------------------------------------
+## 5. STOPS & ROUTES — what they are and how to "register" them
 
 STOPS (campus buildings + town) are HARDCODED in the backend, not a database.
 File: apps/api/src/lib/campus-stops.ts
@@ -256,9 +240,7 @@ File: apps/api/src/lib/routes.ts
   must exist in CAMPUS_STOPS.
 
 
--------------------------------------------------------------------------------
- 6. KEKE vs BUS — THE CORE DIFFERENCE
--------------------------------------------------------------------------------
+## 6. KEKE vs BUS — THE CORE DIFFERENCE
 
 These are two DIFFERENT models. Do not mix them.
 
@@ -292,9 +274,7 @@ These are two DIFFERENT models. Do not mix them.
   `vehicleType` of "keke" or "bus". A keke driver also has `capacity` (4) and
   `seatsTaken` (0..4); a bus driver has a `routeId`.
 
-.......................................................................
- 6a. KEKE SEAT POOLING — how sharing works (READ THIS for the booking UI)
-.......................................................................
+### 6a. KEKE SEAT POOLING — how sharing works (READ THIS for the booking UI)
   A keke seats 4. Riders SHARE a keke when they're on the SAME LANE — same PICKUP
   (fromStop) AND same DESTINATION (toStop). (v6 fix: destination-only pooling was
   wrong — it would put riders from different buildings on one keke and force a
@@ -352,23 +332,17 @@ THE QR / PIN / "CODE" FLOW (keke only) — how it actually works:
      stops anyone from completing a trip with just the rideId.
 
 
--------------------------------------------------------------------------------
- 7. EVERY ENDPOINT — what / send / how / scenario
--------------------------------------------------------------------------------
+## 7. EVERY ENDPOINT — what / send / how / scenario
  Base URL = EXPO_PUBLIC_API_URL. "Auth: yes" means attach the Bearer token.
  All bodies are JSON. All responses are the { ok, data } envelope.
 
-........................................................................
- GET /health
-........................................................................
+### GET /health
   Auth: no
   Send: nothing
   Returns: { status: "ok" }
   Use: a quick "is the backend up?" check. Scenario: app startup ping.
 
-........................................................................
- GET /stops
-........................................................................
+### GET /stops
   Auth: no
   Send: nothing
   Returns: { stops: [ { id, name, lat, lng } ] }
@@ -376,9 +350,7 @@ THE QR / PIN / "CODE" FLOW (keke only) — how it actually works:
   Scenario: Book a Ride screen → populate the From and To building pickers from
     this list. Use the stop `id` (e.g. "seet") when calling POST /rides.
 
-........................................................................
- POST /drivers/register                        (DRIVER) — call ONCE first
-........................................................................
+### POST /drivers/register                        (DRIVER) — call ONCE first
   Auth: yes (the driver) — MUST be on the SUG driver whitelist
   Send: { name: string, plate: string }
   Returns: { id, name, plate, vehicleType: "keke", capacity: 4 }
@@ -392,9 +364,7 @@ THE QR / PIN / "CODE" FLOW (keke only) — how it actually works:
     then they can go online. Bus drivers don't use this (they're tagged "bus"
     automatically on their first POST /buses/location).
 
-........................................................................
- POST /drivers/online                          (DRIVER)
-........................................................................
+### POST /drivers/online                          (DRIVER)
   Auth: yes (a REGISTERED keke driver)
   Send: { online: boolean, lat?: number, lng?: number }
   Returns: { online: boolean }
@@ -405,9 +375,7 @@ THE QR / PIN / "CODE" FLOW (keke only) — how it actually works:
     goes online, send { online:true, lat, lng }. Only ONLINE kekes SEEN IN THE LAST
     2 MINUTES are matchable (§20.5) — so keep the heartbeat fresh (see below).
 
-........................................................................
- POST /drivers/location                        (DRIVER)
-........................................................................
+### POST /drivers/location                        (DRIVER)
   Auth: yes (a registered keke driver)
   Send: { lat: number, lng: number }
   Returns: { ok: true }
@@ -420,9 +388,7 @@ THE QR / PIN / "CODE" FLOW (keke only) — how it actually works:
     closed the app without going offline" ghost-keke case) — so this heartbeat
     isn't optional if you want to keep receiving assignments.
 
-........................................................................
- GET /drivers/me/rides                          (DRIVER)
-........................................................................
+### GET /drivers/me/rides                          (DRIVER)
   Auth: yes (the driver)
   Send: nothing
   Returns: { rides: [ { rideId, fromStop, toStop, status, seats, riderId, etaMin? } ] }
@@ -433,9 +399,7 @@ THE QR / PIN / "CODE" FLOW (keke only) — how it actually works:
   Scenario: Driver active-trip screen → on dispatch (or on foreground) call this →
     render the pickup(s); use each rideId for /status, /qr, /cancel.
 
-........................................................................
- GET /drivers/me/earnings                       (DRIVER)
-........................................................................
+### GET /drivers/me/earnings                       (DRIVER)
   Auth: yes (the driver)
   Send: nothing
   Returns: { totalKobo: number, recent: [ { rideId, amount, createdAt } ] }
@@ -445,9 +409,7 @@ THE QR / PIN / "CODE" FLOW (keke only) — how it actually works:
     disbursement to the driver's account is a documented future step.
   Scenario: Driver "Earnings" screen → show today's total + a recent list.
 
-........................................................................
- GET /drivers/:id/rating                       (anyone)
-........................................................................
+### GET /drivers/:id/rating                       (anyone)
   Auth: no
   Send: nothing (id = the driver's uid in the URL)
   Returns: { average: number | null, count: number }
@@ -455,9 +417,7 @@ THE QR / PIN / "CODE" FLOW (keke only) — how it actually works:
     ratings they have. average is null until the first rating exists.
   Scenario: Live Tracking driver card → show "⭐ 4.6 (23)". See section 8 for math.
 
-........................................................................
- POST /rides                                   (RIDER) — the big one
-........................................................................
+### POST /rides                                   (RIDER) — the big one
   Auth: yes (the rider)
   Send: {
           fromStop: string,        // a stop id, e.g. "seet"
@@ -505,9 +465,7 @@ THE QR / PIN / "CODE" FLOW (keke only) — how it actually works:
     (assigned → arriving → started → completed; or → expired/cancelled) — a
     Firebase read, not us.
 
-........................................................................
- POST /rides/:id/cancel                        (RIDER or the assigned DRIVER)
-........................................................................
+### POST /rides/:id/cancel                        (RIDER or the assigned DRIVER)
   Auth: yes (must be the rider OR the driver on that ride)
   Send: nothing (id in URL)
   Returns: { ok: true, rematched?, newDriverId?, refundPending? }
@@ -527,9 +485,7 @@ THE QR / PIN / "CODE" FLOW (keke only) — how it actually works:
   Scenario: Live Tracking "Cancel ride" button. If the response says rematched,
     just keep watching rides/{id} — the driver card updates itself to the new keke.
 
-........................................................................
- POST /rides/:id/status                        (the assigned DRIVER)
-........................................................................
+### POST /rides/:id/status                        (the assigned DRIVER)
   Auth: yes (must be the driver on that ride)
   Send: { status: "arriving" | "started" }
   Returns: { status: "arriving" | "started", affected: number }
@@ -552,9 +508,7 @@ THE QR / PIN / "CODE" FLOW (keke only) — how it actually works:
     "Start trip" sends { status:"started" }. The RIDER app does NOT call this — it
     watches rides/{id}.status change in Firestore and updates the tracking UI.
 
-........................................................................
- GET /rides/:id/qr                             (the assigned DRIVER)
-........................................................................
+### GET /rides/:id/qr                             (the assigned DRIVER)
   Auth: yes (must be the driver on that ride)
   Send: nothing (id in URL)
   Returns: { qrToken: string, pin: string }
@@ -564,9 +518,7 @@ THE QR / PIN / "CODE" FLOW (keke only) — how it actually works:
   Scenario: Driver "Completion" screen → render qrToken with a QR library AND show
     the pin in large text → "rider scans the QR, or types this PIN".
 
-........................................................................
- POST /rides/:id/complete                      (RIDER)
-........................................................................
+### POST /rides/:id/complete                      (RIDER)
   Auth: yes (must be the rider on that ride)
   Send: { qrToken: string }  OR  { pin: string }   // exactly ONE — scanned or typed
   Returns: { ok: true, fare: number }   // fare in KOBO
@@ -580,9 +532,7 @@ THE QR / PIN / "CODE" FLOW (keke only) — how it actually works:
     Complete / Receipt. (If you get 402, the payment hasn't confirmed yet — verify
     it first; if 409 "not started", the driver hasn't tapped Start trip yet.)
 
-........................................................................
- POST /rides/:id/rate                          (RIDER)
-........................................................................
+### POST /rides/:id/rate                          (RIDER)
   Auth: yes (must be the rider on that ride)
   Send: { stars: 1..5 (integer), comment?: string }
   Returns: { ok: true }
@@ -591,9 +541,7 @@ THE QR / PIN / "CODE" FLOW (keke only) — how it actually works:
     same ride twice) and bumps the driver's running rating totals (see section 8).
   Scenario: Trip Complete screen → stars + optional comment → Done.
 
-........................................................................
- POST /payments/init                           (RIDER)
-........................................................................
+### POST /payments/init                           (RIDER)
   Auth: yes (rider on the ride)
   Send: { rideId: string }
   Returns: { checkoutUrl: string, reference: string }
@@ -608,9 +556,7 @@ THE QR / PIN / "CODE" FLOW (keke only) — how it actually works:
     or WebView) → user pays → Monnify redirects to MONNIFY_REDIRECT_URL. Do this
     promptly — the seat is only held until the ride's expiresAt (3 min).
 
-........................................................................
- POST /payments/verify                         (RIDER)
-........................................................................
+### POST /payments/verify                         (RIDER)
   Auth: yes
   Send: { reference: string }   // the reference from /payments/init
   Returns: { status: string, amount: number, paid: boolean }   // amount in KOBO
@@ -623,26 +569,20 @@ THE QR / PIN / "CODE" FLOW (keke only) — how it actually works:
     unlocking completion. (A Monnify webhook also reconciles server-side, so even
     if the app dies here the payment still lands — but call verify for instant UX.)
 
-........................................................................
- POST /payments/webhook            (MONNIFY → BACKEND, server-to-server)
-........................................................................
+### POST /payments/webhook            (MONNIFY → BACKEND, server-to-server)
   Auth: Monnify transaction signature (NOT a Firebase token). The app NEVER calls this.
   What it does: (§20.2) Monnify calls this when a transaction completes, so a rider
     who closes the app mid-checkout is still reconciled to PAID (same amount check
     as /verify). Listed here only so you know payments can confirm without /verify.
 
-........................................................................
- GET /buses/routes                             (anyone)
-........................................................................
+### GET /buses/routes                             (anyone)
   Auth: no
   Send: nothing
   Returns: { routes: [ { id, name, stops: [ {id,name,lat,lng} ] } ] }
   What it does: lists every bus route resolved to its ordered stops.
   Scenario: Bus tab → populate the route picker and the stop picker.
 
-........................................................................
- GET /buses/routes/:id/eta?lat=..&lng=..       (anyone)
-........................................................................
+### GET /buses/routes/:id/eta?lat=..&lng=..       (anyone)
   Auth: no
   Send: query params lat & lng = the BUS's current position (which the app reads
     from Firebase RTDB and passes in)
@@ -656,9 +596,7 @@ THE QR / PIN / "CODE" FLOW (keke only) — how it actually works:
     RTDB which the app already subscribes to — passing them keeps this stateless
     and instant. (You read once, hand it to us, we do the geo math.)
 
-........................................................................
- POST /buses/location                          (BUS DRIVER)
-........................................................................
+### POST /buses/location                          (BUS DRIVER)
   Auth: yes (the bus driver)
   Send: { routeId: string, lat: number, lng: number }
   Returns: { ok: true }
@@ -669,9 +607,7 @@ THE QR / PIN / "CODE" FLOW (keke only) — how it actually works:
   Scenario: bus driver app, periodically while driving the route, posts position
     here (and to RTDB for the live map). This is what powers proximity pings.
 
-........................................................................
- POST /buses/proximity                         (RIDER)
-........................................................................
+### POST /buses/proximity                         (RIDER)
   Auth: yes (the rider)
   Send: { routeId: string, stopId: string, enabled?: boolean (default true) }
   Returns: { enabled: boolean }
@@ -682,9 +618,7 @@ THE QR / PIN / "CODE" FLOW (keke only) — how it actually works:
   Scenario: Notifications screen → "notify me when a bus is near [building]" →
     pick route + stop → toggle on → call this. (Also show the Connect Telegram step.)
 
-........................................................................
- GET /surge/:zone                              (anyone)
-........................................................................
+### GET /surge/:zone                              (anyone)
   Auth: no
   Send: nothing (zone = a pickup stop id, e.g. "seet")
   Returns: { zone, surge: "on" | "off" }
@@ -696,9 +630,7 @@ THE QR / PIN / "CODE" FLOW (keke only) — how it actually works:
     A fee the rider opts into is still honored by POST /rides for ~60s even if
     surge flips off as they tap Confirm (grace window) — so they never lose it.
 
-........................................................................
- POST /sos                                     (RIDER) — the prize feature
-........................................................................
+### POST /sos                                     (RIDER) — the prize feature
   Auth: yes (the rider)
   Send: { rideId?: string, message?: string, lat: number, lng: number }
   Returns: { incidentId: string }
@@ -710,9 +642,7 @@ THE QR / PIN / "CODE" FLOW (keke only) — how it actually works:
     → show "help has been alerted". THE DEMO MONEY-SHOT: a real Telegram message
     landing in the security group live on stage.
 
-........................................................................
- POST /incidents/report                        (RIDER or DRIVER)
-........................................................................
+### POST /incidents/report                        (RIDER or DRIVER)
   Auth: yes
   Send: { rideId?: string, type: string, message: string, lat: number, lng: number }
         e.g. type "accident" or "off-route"
@@ -721,9 +651,7 @@ THE QR / PIN / "CODE" FLOW (keke only) — how it actually works:
     manual report (accident, driver off-route, etc.). Rate-limited like /sos.
   Scenario: a "Report a problem" action mid-trip.
 
-........................................................................
- POST /me/telegram-link                         (RIDER or DRIVER)
-........................................................................
+### POST /me/telegram-link                         (RIDER or DRIVER)
   Auth: yes (any logged-in user)
   Send: nothing
   Returns: { url: string, nonce: string, expiresAt: number }
@@ -735,9 +663,7 @@ THE QR / PIN / "CODE" FLOW (keke only) — how it actually works:
     section 11 for the full handshake.
 
 
--------------------------------------------------------------------------------
- 8. RATINGS — how the math works
--------------------------------------------------------------------------------
+## 8. RATINGS — how the math works
 
 When a rider rates a ride (POST /rides/:id/rate { stars }):
   • A rating doc is written with id = the ride id. Because the id is the ride id,
@@ -755,9 +681,7 @@ When someone reads GET /drivers/:id/rating:
   The app shows "⭐ 4.6 (5)". Before any rating: average null → show "New driver".
 
 
--------------------------------------------------------------------------------
- 9. SURGE & THE PRIORITY FEE — on/off + the 50/50 split
--------------------------------------------------------------------------------
+## 9. SURGE & THE PRIORITY FEE — on/off + the 50/50 split
 
 WHY: when many riders want a keke and few are online, the optional priority fee
 lets a rider "skip the queue", and half of it becomes a bonus that pulls more
@@ -790,9 +714,7 @@ THE SPLIT (when a priority fee is paid during surge):
   The framing is always "skip the queue", never "pay or wait".
 
 
--------------------------------------------------------------------------------
- 10. INCIDENTS / SOS / AI TRIAGE / ALERTA → TELEGRAM
--------------------------------------------------------------------------------
+## 10. INCIDENTS / SOS / AI TRIAGE / ALERTA → TELEGRAM
 
 Flow for /sos and /incidents/report:
     event → AI triage → save incident → Alerta → SUG Security Telegram group
@@ -816,9 +738,7 @@ Security responds in Telegram — there's no required app screen for them (a web
 dashboard is optional/later).
 
 
--------------------------------------------------------------------------------
- 11. TELEGRAM HANDSHAKE (chatId) — needed for pings to actually deliver
--------------------------------------------------------------------------------
+## 11. TELEGRAM HANDSHAKE (chatId) — needed for pings to actually deliver
 
 A Telegram bot CANNOT message someone who hasn't started a chat with it. So:
   • SUG SECURITY group pings (SOS / incidents) use ALERTA_TELEGRAM_TARGET (a
@@ -854,9 +774,7 @@ WHAT THE FRONTEND DOES for the handshake (the "Connect Telegram" step):
   requires an HTTPS url, so for local testing use a tunnel (e.g. ngrok).
 
 
--------------------------------------------------------------------------------
- 12. FULL END-TO-END SCENARIOS
--------------------------------------------------------------------------------
+## 12. FULL END-TO-END SCENARIOS
 
 A) RIDER books a keke (the happy path):
    1. Splash → has Firebase session? → Home/Map.
@@ -920,9 +838,7 @@ E) SOS (any time):
    3. Show "help has been alerted".
 
 
--------------------------------------------------------------------------------
- 13. WHAT IS NOT BUILT YET (say this honestly in the demo)
--------------------------------------------------------------------------------
+## 13. WHAT IS NOT BUILT YET (say this honestly in the demo)
 
   • No /signup, /login, or /users endpoint — identity is pure Firebase, and the
     APP writes the users/{uid} profile doc on signup. (Stops, however, DO have an
@@ -950,12 +866,9 @@ E) SOS (any time):
     collection for production. (§20.6)
   • TTL / heartbeat / stale-sub sweeps are LAZY (enforced on the next read/booking),
     not a background cron — fine at campus scale, revisit if load grows. (§20.1/20.5/20.13)
-  • Firestore composite indexes: only the SURGE query (fromStop + status + createdAt
-    range) needs a composite index — it's in firestore.indexes.json and deployed.
-    Every other multi-field query uses equality-only filters (auto-indexed via index
-    merging) or sorts a small set in memory, so no extra indexes are needed. If you
-    ever add a filter+range/orderBy query, Firestore prints a one-click "create
-    index" link in the logs.
+  • Firestore composite indexes: the surge query, the one-active-ride query, and the
+    driver's-active-rides query filter + range, so each may need an index the first
+    time it runs — Firestore prints a one-click "create index" link in the logs.
 
 ===============================================================================
  End of guide. Endpoint quick-reference also lives in docs/API.md; the contract

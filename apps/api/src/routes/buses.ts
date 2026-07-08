@@ -9,10 +9,14 @@ import { RouteId, RouteEtaQuery, ProximityOptIn, BusLocation } from "../schemas/
 
 type LatLng = { lat: number; lng: number };
 
+/** A proximity subscription auto-expires after this idle window (§20.13). */
+const SUB_TTL_MS = 24 * 60 * 60 * 1000;
+
 /**
  * Fires a Telegram ping to each rider whose subscribed stop the bus has just
  * reached, and re-arms subscriptions once the bus leaves the radius. De-dupes
- * via a `notifiedAt` flag so each approach pings once.
+ * via a `notifiedAt` flag so each approach pings once. Subscriptions past their
+ * TTL are auto-disabled so a stale opt-in never pings forever (§20.13).
  */
 async function notifyProximity(routeId: string, busPos: LatLng): Promise<void> {
   const db = adminDb();
@@ -25,13 +29,22 @@ async function notifyProximity(routeId: string, busPos: LatLng): Promise<void> {
 
   const route = resolveRoute(routeId);
   const routeName = route?.name ?? routeId;
+  const now = Date.now();
 
   for (const doc of subs.docs) {
     const sub = doc.data() as {
       userId: string;
       stopId: string;
       notifiedAt?: number;
+      expiresAt?: number;
     };
+
+    // Stale opt-in — retire it and move on.
+    if ((sub.expiresAt ?? 0) < now) {
+      await doc.ref.update({ enabled: false });
+      continue;
+    }
+
     const near = isBusNearStop(routeId, sub.stopId, busPos);
 
     if (near && !sub.notifiedAt) {
@@ -90,6 +103,7 @@ export default async function busRoutes(app: FastifyInstance) {
           routeId: body.routeId,
           currentLat: body.lat,
           currentLng: body.lng,
+          lastSeenAt: Date.now(),
         },
         { merge: true },
       );
@@ -118,6 +132,7 @@ export default async function busRoutes(app: FastifyInstance) {
           routeId: body.routeId,
           stopId: body.stopId,
           enabled: body.enabled,
+          expiresAt: Date.now() + SUB_TTL_MS, // refreshed each opt-in; auto-retires when stale (§20.13)
         },
         { merge: true },
       );

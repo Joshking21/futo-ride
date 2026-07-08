@@ -6,6 +6,7 @@
 
 import { adminDb } from "./firestore.js";
 import { surgeState, type SurgeState } from "./fare.js";
+import { DRIVER_HEARTBEAT_MS, SURGE_GRACE_MS } from "./config.js";
 
 const WINDOW_MS = 2 * 60 * 1000;
 
@@ -14,10 +15,16 @@ export const DRIVER_PRIORITY_SHARE = 0.5;
 
 const DEFAULT_CAPACITY = 4;
 
+export type SurgeEval = {
+  state: SurgeState;
+  /** Whether a submitted priorityFee should be honored (on, or within grace, §20). */
+  honorPriority: boolean;
+};
+
 /**
- * Count of available keke SEATS across online kekes (§6a) — pooling means a keke
- * with free seats is still "available" capacity, so surge compares demand against
- * open seats, not vehicle count.
+ * Count of available keke SEATS across online kekes seen within the heartbeat
+ * window (§6a + §20.5) — pooling means a keke with free seats is still "available"
+ * capacity, and a stale keke is not counted.
  */
 async function availableKekes(): Promise<number> {
   const snap = await adminDb()
@@ -26,9 +33,12 @@ async function availableKekes(): Promise<number> {
     .where("vehicleType", "==", "keke")
     .get();
 
+  const cutoff = Date.now() - DRIVER_HEARTBEAT_MS;
   let seats = 0;
   for (const doc of snap.docs) {
     const d = doc.data();
+    const lastSeenAt = typeof d.lastSeenAt === "number" ? d.lastSeenAt : 0;
+    if (lastSeenAt < cutoff) continue;
     const capacity = typeof d.capacity === "number" ? d.capacity : DEFAULT_CAPACITY;
     const seatsTaken = typeof d.seatsTaken === "number" ? d.seatsTaken : 0;
     seats += Math.max(0, capacity - seatsTaken);
@@ -50,9 +60,11 @@ async function pendingRequests(zone: string): Promise<number> {
 
 /**
  * Evaluates surge for a zone against live counts, applying hysteresis from the
- * persisted previous state, and stores the new state. Returns the current state.
+ * persisted previous state, and stores the new state + last-on timestamp. Returns
+ * the current state and whether a priorityFee should be honored (on, or still
+ * within the grace window after flipping off — §20).
  */
-export async function evaluateSurge(zone: string): Promise<SurgeState> {
+export async function evaluateSurge(zone: string): Promise<SurgeEval> {
   const db = adminDb();
   const ref = db.collection("surgeState").doc(zone);
 
@@ -62,22 +74,22 @@ export async function evaluateSurge(zone: string): Promise<SurgeState> {
     ref.get(),
   ]);
 
-  const prev = (prevSnap.data()?.state as SurgeState) ?? "off";
+  const prevData = prevSnap.data() ?? {};
+  const prev = (prevData.state as SurgeState) ?? "off";
+  const prevLastOnAt = typeof prevData.lastOnAt === "number" ? prevData.lastOnAt : 0;
   const next = surgeState(pending, kekes, prev);
+  const now = Date.now();
+  const lastOnAt = next === "on" ? now : prevLastOnAt;
 
-  if (next !== prev) {
-    await ref.set({ state: next, updatedAt: Date.now() }, { merge: true });
+  if (next !== prev || next === "on") {
+    await ref.set({ state: next, updatedAt: now, lastOnAt }, { merge: true });
   }
-  return next;
+
+  const honorPriority = next === "on" || now - lastOnAt <= SURGE_GRACE_MS;
+  return { state: next, honorPriority };
 }
 
 /** Driver's bonus (kobo) from a priority fee, given the split. */
 export function driverPriorityBonusKobo(priorityFeeKobo: number): number {
   return Math.round(priorityFeeKobo * DRIVER_PRIORITY_SHARE);
-}
-
-/** Read-only current surge state for a zone (for the rider's priority button). */
-export async function readSurge(zone: string): Promise<SurgeState> {
-  const snap = await adminDb().collection("surgeState").doc(zone).get();
-  return (snap.data()?.state as SurgeState) ?? "off";
 }

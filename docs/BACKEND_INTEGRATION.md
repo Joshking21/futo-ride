@@ -66,7 +66,12 @@ if (!json.ok) throw new Error(json.error);   // show json.error to the user
 return json.data;                             // typed payload
 ```
 
-**Status codes:** `200` ok · `400` bad input · `401` missing/invalid token · `403` not allowed · `404` not found · `409` conflict · `500` server error.
+**Status codes:** `200` ok · `400` bad input · `401` missing/invalid token · `402` payment required · `403` not allowed · `404` not found · `409` conflict · `429` rate-limited · `500` server error.
+
+> **⚠️ v6 contract changes (PROJECT_PLAN §20) — read these two first:**
+> 1. **Stranded is now `200`, not `409`.** `POST /rides` with no keke available returns `200 { stranded: true, rideId, driverId: null }` (so you can track/cancel the pending request). A real error is still an error; check `data.stranded`, not the status code, for "no keke".
+> 2. **Completion needs payment + a started trip.** `POST /rides/:id/complete` returns `402` until the naira payment is confirmed `PAID`, and `409` unless the driver has marked the trip `started`. So: pay → wait for `started` → scan.
+> Other additive changes: rides carry `expiresAt` (a 3-min pay-or-lose hold), the QR flow has a PIN fallback, the Telegram connect step now uses a one-time link, and drivers must `register` before going online. All detailed below.
 
 ### 💰 Money is always in **kobo**
 
@@ -117,19 +122,25 @@ async function apiPost<T>(path: string, body: unknown): Promise<T> {
 GET  /health                 health check                  → { status }
 GET  /stops                  campus stops (keke pickers)   → { stops }
 
+POST /me/telegram-link       mint one-time Telegram link   → { url, nonce, expiresAt }
+
+POST /drivers/register       onboard a keke driver         → { id, name, plate, vehicleType, capacity }
 POST /drivers/online         driver go on/off (+ position) → { online }
 POST /drivers/location       driver position update        → { ok }
+GET  /drivers/me/rides       driver's active assignments   → { rides }
+GET  /drivers/me/earnings    driver earnings ledger        → { totalKobo, recent }
 GET  /drivers/:id/rating     driver avg rating + count     → { average, count }
 
-POST /rides                  book keke seat(s), pooled     → { rideId, driverId, etaMin, fare, seats, pooled }
-POST /rides/:id/cancel       cancel a ride                 → { ok }
-POST /rides/:id/status       driver: arriving / started    → { status }
-POST /rides/:id/complete     rider confirms via QR token   → { ok, fare }
-GET  /rides/:id/qr           driver fetches the trip QR    → { qrToken }
+POST /rides                  book keke seat(s), pooled     → { rideId, driverId, etaMin, fare, seats, seatsTaken, pooled, expiresAt, stranded }
+POST /rides/:id/cancel       cancel a ride                 → { ok, rematched?, newDriverId?, refundPending? }
+POST /rides/:id/status       driver: arriving / started    → { status, affected }
+POST /rides/:id/complete     rider confirms via QR OR PIN  → { ok, fare }
+GET  /rides/:id/qr           driver fetches QR + PIN        → { qrToken, pin }
 POST /rides/:id/rate         rider rates the driver        → { ok }
 
 POST /payments/init          start a Monnify payment       → { checkoutUrl, reference }
-POST /payments/verify        confirm a payment             → { status, amount }
+POST /payments/verify        confirm a payment             → { status, amount, paid }
+POST /payments/webhook       Monnify → backend (s2s)       → { ok }   (app never calls)
 
 POST /sos                    raise an SOS (AI→Alerta)      → { incidentId }
 POST /incidents/report       report accident/off-route     → { incidentId }
@@ -139,27 +150,28 @@ GET  /buses/routes/:id/eta   ETA to each stop from a pos   → { routeId, stops 
 POST /buses/location         bus driver posts position     → { ok }
 POST /buses/proximity        opt-in "notify near my stop"  → { enabled }
 
-GET  /surge/:zone            surge state for a pickup stop → { zone, surge }
+GET  /surge/:zone            live surge state for a zone   → { zone, surge }
 ```
 
-**Surge & the priority button (rider):** call `GET /surge/:zone` (zone = the pickup stop id) — if `surge: "on"`, show the optional priority-fee control on Ride Options; otherwise hide it. Send `priorityFee` (kobo) in `POST /rides` only when it's on; the backend ignores it off-surge. When set, half goes to the driver as a bonus and half is the platform service fee.
+**Surge & the priority button (rider):** call `GET /surge/:zone` (zone = the pickup stop id) — it now **re-evaluates surge live** — if `surge: "on"`, show the optional priority-fee control on Ride Options; otherwise hide it. Send `priorityFee` (kobo) in `POST /rides` when it's on; the backend honors it if surge is on **or was on within ~60s** (so a rider who opts in doesn't lose the fee if surge flips off as they tap Confirm), and ignores it otherwise. `priorityFee` is capped — an over-cap value is rejected (400). When honored, half goes to the driver as a bonus and half is the platform service fee.
 
 **Bus tracking:** subscribe to live bus positions from RTDB as usual. To show ETAs, pass the bus's current `lat`/`lng` to `GET /buses/routes/:id/eta` and you get cumulative ETA to each stop ahead. `GET /buses/routes` (no auth) gives you the route list + stops to populate pickers. `POST /buses/proximity` registers a Telegram proximity alert (needs the Telegram connect step first).
 
-**Connecting Telegram (for personal pings):** your only job is a "Connect Telegram" button that deep-links the user to the bot with their uid:
+**Connecting Telegram (for personal pings):** your "Connect Telegram" button now first asks the backend for a one-time link, then opens it (the old `?start=<uid>` link is gone — uids leak, so it let others hijack a driver's channel):
 ```ts
 import { Linking } from "react-native";
-import auth from "@react-native-firebase/auth";
-const uid = auth().currentUser!.uid;
-Linking.openURL(`https://t.me/<YourBotUsername>?start=${uid}`);
+const { url } = await apiPost("/me/telegram-link", {}); // POST, auth attached
+Linking.openURL(url); // https://t.me/<Bot>?start=<one-time-nonce>
 ```
-The user presses Start in Telegram; the backend captures their chat id automatically (via its own `/telegram/webhook`, which you do NOT call). You can reflect "connected" by watching `users/{uid}.chatId` appear in your Firestore subscription. Until this is done, bus-proximity and dispatch pings are silently skipped.
+The user presses Start in Telegram; the backend resolves the nonce → their uid and captures their chat id automatically (via its own `/telegram/webhook`, which you do NOT call). Reflect "connected" by watching `users/{uid}.chatId` appear in your Firestore subscription. Until this is done, bus-proximity and dispatch pings are silently skipped. (The nonce is short-lived — mint a fresh one each time they tap Connect.)
 
-**Shared-seat pooling (keke):** a keke has 4 seats and pools riders **going to the same `toStop`**. In `POST /rides`, send `seats` (1–4, default 1). The response's `pooled` tells you whether the rider joined an existing keke (`true`) or got a fresh one (`false`) — you can show "you're sharing this keke" vs "your keke is on the way". Fare is **flat per seat** (`seats × seat fare`), so 2 seats costs 2×. `seats: 4` = charter the whole keke (the rare "private ride"). Each rider on a shared keke has their **own ride, own QR, own completion** — they scan out individually at the shared dropoff. If no keke has room, you get `409` (same as before). Seats free automatically when a rider completes or cancels.
+**Shared-seat pooling (keke):** a keke has 4 seats and pools riders **on the same lane — same `fromStop` AND same `toStop`** (a "SEET → Town" keke; riders at a different pickup or destination get a different keke, so there's no zigzag pickup run). In `POST /rides`, send `seats` (1–4, default 1). The response's `pooled` tells you whether the rider joined an existing keke (`true`) or got a fresh one (`false`) — show "you're sharing this keke" vs "your keke is on the way". Fare is **flat per seat** (`seats × seat fare`), so 2 seats costs 2×. `seats: 4` = charter the whole keke. Each rider has their **own ride, own QR/PIN, own completion**. A rider may only have **one active ride at a time** (`409` otherwise). A pool **stops accepting new riders once its trip is `started`**. If no keke has room you get **`200 { stranded: true, rideId }`** (see the v6 note at the top) — not a 409. Seats free automatically on complete/cancel/expiry.
 
-**Ride lifecycle (driver-driven):** the driver advances the trip with `POST /rides/:id/status { status }` — `"arriving"` when en route to pickup, then `"started"` at pickup. Transitions are ordered (`assigned → arriving → started`); an out-of-order call returns `409`. Completion is separate (rider scans QR, below). The rider app doesn't call this — it just watches `rides/{id}.status` change via its Firestore subscription and updates the tracking UI.
+**The 3-minute pay-or-lose hold (`expiresAt`):** a matched ride comes back with `expiresAt` (epoch ms). The seat is held only until then — if the rider hasn't paid, the backend auto-releases it and the ride becomes `expired` (watch `rides/{id}.status`). So: after `POST /rides`, take the rider **straight to payment**; show a countdown to `expiresAt` if you like. A confirmed payment cancels the expiry.
 
-**QR completion flow:** the driver app calls `GET /rides/:id/qr` and renders the `qrToken` as a QR code; the rider scans it and posts it to `POST /rides/:id/complete`. The backend verifies the token matches before completing — so a stranger with just the rideId can't close the trip.
+**Ride lifecycle (driver-driven):** the driver advances the trip with `POST /rides/:id/status { status }` — `"arriving"` when en route to pickup, then `"started"` at pickup. Transitions are ordered (`assigned → arriving → started`); out-of-order returns `409`. **The driver can't advance an unpaid ride** — `402` until it's `PAID` (payment secures the seat before the driver commits). On a shared keke, one status call **advances every _paid_ pooled rider at once** (`affected` = how many); unpaid peers stay `assigned` and expire. The rider app doesn't call this — it watches `rides/{id}.status` via Firestore and updates the tracking UI.
+
+**QR / PIN completion flow:** the driver app calls `GET /rides/:id/qr` → `{ qrToken, pin }`, renders `qrToken` as a QR **and** shows the short numeric `pin`. The rider scans the QR (or, if their camera won't focus, taps "enter PIN manually") and posts **either** to `POST /rides/:id/complete { qrToken }` **or** `{ pin }`. The backend verifies it matches before completing, so a stranger with just the rideId can't close the trip. Remember completion needs the ride **paid** (`402` otherwise) and **`started`** (`409` otherwise).
 
 ---
 
@@ -175,22 +187,34 @@ type BookRideRequest = {
   toStop: string;          // a campus stop id (≠ fromStop)
   payMethod: PayMethod;
   seats?: number;          // 1..4, default 1 — seats to book; 4 charters the keke
-  priorityFee?: number;    // kobo — only when surge is active
+  priorityFee?: number;    // kobo, capped — only when surge is active (grace ~60s)
 };
 
 type BookRideResponse = {
   rideId: string;
-  driverId: string;
-  etaMin: number;
+  driverId: string | null; // null when stranded
+  etaMin?: number;         // absent when stranded
   fare: number;            // kobo (divide by 100 to show naira) = seats × seat fare
   seats: number;           // seats booked on this shared keke
-  pooled: boolean;         // true = joined an existing keke; false = fresh keke dispatched
+  seatsTaken?: number;     // seats now taken on the keke (incl. yours)
+  pooled: boolean;         // true = joined an existing keke; false = fresh keke
+  expiresAt?: number;      // epoch ms — pay before this or the seat is released
+  stranded: boolean;       // true = no keke; the ride is "requested" — track/cancel it
 };
+
+type CompleteRideRequest =   // send exactly ONE of the two
+  | { qrToken: string }
+  | { pin: string };
 
 type RideStatus =
   | "requested" | "assigned" | "arriving"
-  | "started" | "completed" | "cancelled";
+  | "started" | "completed" | "cancelled" | "expired";
+
+// Driver app only:
+type RegisterDriverRequest = { name: string; plate: string };
 ```
+
+**Driver-app note (new):** a keke driver must call **`POST /drivers/register { name, plate }` once** (they must be SUG-whitelisted) before `POST /drivers/online` will work. To find the trip they were dispatched, call **`GET /drivers/me/rides`** (the Telegram dispatch also now contains the `rideId`). Earnings show via **`GET /drivers/me/earnings`**.
 
 > When the backend adds or changes an endpoint, both `docs/API.md` and this file get updated — so this stays your single point of truth for the contract.
 
