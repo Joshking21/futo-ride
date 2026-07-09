@@ -1,24 +1,48 @@
 import { useRouter } from "expo-router";
 import { ArrowLeft, ChevronRight, Info, User, Zap } from "lucide-react-native";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Image, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import KekeIcon from "../../components/KekeIcon";
 import { useApp } from "../../context/AppContext";
+import { apiRequest } from "../../config/apiHelper";
 
 export default function ConfirmRide() {
   const router = useRouter();
   const { activeTrip, confirmBooking } = useApp();
   const [isPriority, setIsPriority] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<"naira" | "cngn">("naira");
+  const [seats, setSeats] = useState(1);
+  const [isSurgeActive, setIsSurgeActive] = useState(false);
 
-  const basePrice = 850;
-  const serviceFee = 100;
+  useEffect(() => {
+    const checkSurge = async () => {
+      const getStopId = (name: string) => {
+        const lower = name.toLowerCase();
+        if (lower.includes("gate")) return "gate";
+        if (lower.includes("library")) return "library";
+        if (lower.includes("seet")) return "seet";
+        if (lower.includes("town")) return "town";
+        return "seet";
+      };
+      const zone = getStopId(activeTrip.pickup);
+      try {
+        const res = await apiRequest<{ zone: string; surge: "on" | "off" }>(`/surge/${zone}`);
+        setIsSurgeActive(res.surge === "on");
+      } catch (e) {
+        console.error("Surge query failed:", e);
+      }
+    };
+    checkSurge();
+  }, [activeTrip.pickup]);
+
+  const basePrice = activeTrip.rideType === "keke" ? (seats * 150) : 150;
+  const serviceFee = activeTrip.rideType === "keke" ? 50 : 20;
   const priorityFee = 100;
-  const totalPrice = basePrice + serviceFee + (isPriority ? priorityFee : 0);
+  const totalPrice = basePrice + serviceFee + (isPriority && isSurgeActive ? priorityFee : 0);
 
-  const handleConfirm = () => {
-    confirmBooking();
+  const handleConfirm = async () => {
+    await confirmBooking(isPriority && isSurgeActive, paymentMethod, seats);
     router.replace("/(rider)/tracking");
   };
 
@@ -262,33 +286,74 @@ export default function ConfirmRide() {
               >
                 5 min away • 1.6 km
               </Text>
-              {/* Seats badge */}
-              <View
-                style={{
-                  backgroundColor: "#eff3ff",
-                  paddingHorizontal: 10,
-                  paddingVertical: 4,
-                  borderRadius: 12,
-                  marginTop: 8,
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 6,
-                  alignSelf: "flex-start",
-                }}
-              >
-                <User color="#001caa" size={11} />
-                <Text
+              {/* Interactive Seats selector (Keke only) */}
+              {activeTrip.rideType === "keke" ? (
+                <View
                   style={{
-                    color: "#001caa",
-                    fontSize: 10,
-                    fontWeight: "700",
-                    fontFamily: "Plus Jakarta Sans",
-                    lineHeight: 12,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 12,
+                    marginTop: 8,
                   }}
                 >
-                  4 seats available
-                </Text>
-              </View>
+                  <Pressable
+                    onPress={() => setSeats((s) => Math.max(1, s - 1))}
+                    style={{
+                      width: 24,
+                      height: 24,
+                      borderRadius: 12,
+                      backgroundColor: "#eff3ff",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Text style={{ color: "#001caa", fontWeight: "900", fontSize: 16 }}>-</Text>
+                  </Pressable>
+                  <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 13, fontWeight: "700", color: "#0b1c30" }}>
+                    {seats} seat{seats > 1 ? "s" : ""}
+                  </Text>
+                  <Pressable
+                    onPress={() => setSeats((s) => Math.min(4, s + 1))}
+                    style={{
+                      width: 24,
+                      height: 24,
+                      borderRadius: 12,
+                      backgroundColor: "#eff3ff",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Text style={{ color: "#001caa", fontWeight: "900", fontSize: 16 }}>+</Text>
+                  </Pressable>
+                </View>
+              ) : (
+                <View
+                  style={{
+                    backgroundColor: "#eff3ff",
+                    paddingHorizontal: 10,
+                    paddingVertical: 4,
+                    borderRadius: 12,
+                    marginTop: 8,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 6,
+                    alignSelf: "flex-start",
+                  }}
+                >
+                  <User color="#001caa" size={11} />
+                  <Text
+                    style={{
+                      color: "#001caa",
+                      fontSize: 10,
+                      fontWeight: "700",
+                      fontFamily: "Plus Jakarta Sans",
+                      lineHeight: 12,
+                    }}
+                  >
+                    Transit Boarding
+                  </Text>
+                </View>
+              )}
             </View>
           </View>
 
@@ -326,78 +391,80 @@ export default function ConfirmRide() {
           </View>
         </View>
 
-        {/* Priority Banner Card */}
-        <View
-          style={{
-            backgroundColor: "#eff3ff",
-            padding: 18,
-            borderRadius: 24,
-            borderWidth: 1,
-            borderColor: "#dce9ff",
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 1 },
-            shadowOpacity: 0.05,
-            shadowRadius: 2,
-            elevation: 1,
-            marginTop: 16,
-          }}
-        >
+        {/* Priority Banner Card — only shown during active surge on keke rides */}
+        {activeTrip.rideType === "keke" && isSurgeActive && (
           <View
             style={{
+              backgroundColor: "#eff3ff",
+              padding: 18,
+              borderRadius: 24,
+              borderWidth: 1,
+              borderColor: "#dce9ff",
               flexDirection: "row",
               alignItems: "center",
-              gap: 14,
-              flex: 1,
-              paddingRight: 16,
+              justifyContent: "space-between",
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 1 },
+              shadowOpacity: 0.05,
+              shadowRadius: 2,
+              elevation: 1,
+              marginTop: 16,
             }}
           >
             <View
               style={{
-                width: 44,
-                height: 44,
-                backgroundColor: "#ffffff",
-                borderRadius: 16,
+                flexDirection: "row",
                 alignItems: "center",
-                justifyContent: "center",
-                borderWidth: 1,
-                borderColor: "#e5eeff",
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 1 },
-                shadowOpacity: 0.05,
-                shadowRadius: 1,
-                elevation: 1,
+                gap: 14,
+                flex: 1,
+                paddingRight: 16,
               }}
             >
-              <Zap color="#001caa" size={18} fill="#001caa" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text
+              <View
                 style={{
-                  color: "#0b1c30",
-                  fontSize: 14,
-                  fontWeight: "700",
-                  fontFamily: "Plus Jakarta Sans",
+                  width: 44,
+                  height: 44,
+                  backgroundColor: "#ffffff",
+                  borderRadius: 16,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderWidth: 1,
+                  borderColor: "#e5eeff",
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: 1 },
+                  shadowOpacity: 0.05,
+                  shadowRadius: 1,
+                  elevation: 1,
                 }}
               >
-                Priority — skip the queue
-              </Text>
-              <Text
-                style={{
-                  color: "#5b5e66",
-                  fontSize: 12,
-                  fontFamily: "Plus Jakarta Sans",
-                  marginTop: 2,
-                }}
-              >
-                Get matched faster
-              </Text>
+                <Zap color="#001caa" size={18} fill="#001caa" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text
+                  style={{
+                    color: "#0b1c30",
+                    fontSize: 14,
+                    fontWeight: "700",
+                    fontFamily: "Plus Jakarta Sans",
+                  }}
+                >
+                  Priority — skip the queue
+                </Text>
+                <Text
+                  style={{
+                    color: "#5b5e66",
+                    fontSize: 12,
+                    fontFamily: "Plus Jakarta Sans",
+                    marginTop: 2,
+                  }}
+                >
+                  Get matched faster
+                </Text>
+              </View>
             </View>
+            <CustomSwitch value={isPriority} onValueChange={setIsPriority} />
           </View>
-          <CustomSwitch value={isPriority} onValueChange={setIsPriority} />
-        </View>
+        )}
 
         {/* Payment selector label */}
         <Text

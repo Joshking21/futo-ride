@@ -17,19 +17,10 @@ import { useApp } from "../../context/AppContext";
 
 export default function DriverActiveTrip() {
   const router = useRouter();
-  const { activeTrip, progressDriverTrip, clearActiveTrip } = useApp();
-  const [tripState, setTripState] = useState<
-    "arrived" | "start" | "dropoff" | "complete"
-  >("arrived");
-
-  const handleTripAction = () => {
-    progressDriverTrip();
-    if (tripState === "arrived") {
-      setTripState("start");
-    } else if (tripState === "start") {
-      setTripState("dropoff");
-    } else if (tripState === "dropoff") {
-      setTripState("complete");
+  const { activeTrip, progressDriverTrip, cancelBooking } = useApp();
+  const handleTripAction = async () => {
+    if (activeTrip.status === "searching" || activeTrip.status === "confirmed" || activeTrip.status === "tracking") {
+      await progressDriverTrip();
     } else {
       router.push("/(driver)/qr");
     }
@@ -41,8 +32,8 @@ export default function DriverActiveTrip() {
       {
         text: "Yes, Cancel",
         style: "destructive",
-        onPress: () => {
-          clearActiveTrip();
+        onPress: async () => {
+          await cancelBooking();
           router.replace("/(driver)/home");
         },
       },
@@ -50,17 +41,19 @@ export default function DriverActiveTrip() {
   };
 
   const getButtonText = () => {
-    if (tripState === "arrived") return "I've Arrived at Pickup";
-    if (tripState === "start") return "Start Trip";
-    if (tripState === "dropoff") return "At Dropoff Location";
+    if (activeTrip.status === "searching" || activeTrip.status === "confirmed") {
+      return "Start Heading to Pickup";
+    }
+    if (activeTrip.status === "tracking") {
+      return "I've Arrived at Pickup";
+    }
     return "Complete Trip (Show QR)";
   };
 
   const getStatusTitle = () => {
-    if (tripState === "arrived") return "Arrived at Pickup";
-    if (tripState === "start") return "Passenger Boarding";
-    if (tripState === "dropoff") return "Heading to Dropoff";
-    return "Arrived at Dropoff";
+    if (activeTrip.status === "searching" || activeTrip.status === "confirmed") return "Assigned";
+    if (activeTrip.status === "tracking") return "Heading to Pickup";
+    return "Heading to Dropoff";
   };
 
   const getStatusBadge = () => {
@@ -78,16 +71,17 @@ export default function DriverActiveTrip() {
   const renderStepNode = (step: number, label: string) => {
     let state: "active" | "completed" | "inactive" = "inactive";
 
-    if (step === 1) {
-      state = tripState === "arrived" ? "active" : "completed";
-    } else if (step === 2) {
-      if (tripState === "arrived") state = "inactive";
-      else if (tripState === "start") state = "active";
-      else state = "completed";
-    } else if (step === 3) {
-      if (tripState === "arrived" || tripState === "start") state = "inactive";
-      else if (tripState === "dropoff") state = "active";
-      else state = "completed";
+    const currentStep = activeTrip.status === "searching" || activeTrip.status === "confirmed" ? 1
+      : activeTrip.status === "tracking" ? 2
+      : activeTrip.status === "arrived" ? 3
+      : 1;
+
+    if (step === currentStep) {
+      state = "active";
+    } else if (step < currentStep) {
+      state = "completed";
+    } else {
+      state = "inactive";
     }
 
     return (
@@ -259,10 +253,10 @@ export default function DriverActiveTrip() {
           <View className="flex-row items-center justify-between px-6 py-2 relative">
             <View className="absolute left-[54px] right-[54px] top-[20px] h-[1.5px] border-t border-dashed border-slate-300" />
             {/* Dynamic solid blue line overlays */}
-            {tripState !== "arrived" && (
+            {activeTrip.status !== "confirmed" && activeTrip.status !== "searching" && activeTrip.status !== "idle" && (
               <View
                 className="absolute left-[54px] top-[20px] h-[1.5px] bg-[#001caa]"
-                style={{ width: tripState === "start" ? "42%" : "84%" }}
+                style={{ width: activeTrip.status === "tracking" ? "42%" : "84%" }}
               />
             )}
 

@@ -14,7 +14,7 @@ import {
   XCircle,
 } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Image, Pressable, ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Image, Pressable, ScrollView, Text, View, Modal } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import KekeIcon from "../../components/KekeIcon";
 import { useApp } from "../../context/AppContext";
@@ -22,23 +22,39 @@ import { useApp } from "../../context/AppContext";
 export default function LiveTracking() {
   const router = useRouter();
   const { activeTrip, cancelBooking, completeTrip } = useApp();
-  const [driverState, setDriverState] = useState<"assigned" | "arriving" | "arrived">("assigned");
+  const [showScanner, setShowScanner] = useState(false);
+  const [scanStatus, setScanStatus] = useState("Align QR code within the frame...");
 
+  const driverState = activeTrip.status === "confirmed" ? "assigned"
+    : activeTrip.status === "tracking" ? "arriving"
+    : activeTrip.status === "arrived" ? "arrived"
+    : "assigned";
+
+  // Simulate scanning when modal opens
   useEffect(() => {
-    // Simulate real-time tracking progression
-    const timer1 = setTimeout(() => {
-      setDriverState("arriving");
-    }, 4000);
+    let t1: any, t2: any;
+    if (showScanner) {
+      setScanStatus("Focusing camera...");
+      t1 = setTimeout(() => {
+        setScanStatus("QR code detected! Verifying with backend...");
+      }, 1200);
 
-    const timer2 = setTimeout(() => {
-      setDriverState("arrived");
-    }, 10000);
-
+      t2 = setTimeout(async () => {
+        try {
+          await completeTrip(); // automatically uses activeTrip.qrToken from context
+          setShowScanner(false);
+          router.replace("/(rider)/receipt");
+        } catch (err: any) {
+          setScanStatus(`Verification failed: ${err.message}`);
+          setTimeout(() => setShowScanner(false), 2000);
+        }
+      }, 2500);
+    }
     return () => {
-      clearTimeout(timer1);
-      clearTimeout(timer2);
+      clearTimeout(t1);
+      clearTimeout(t2);
     };
-  }, []);
+  }, [showScanner]);
 
   const handleCancel = () => {
     Alert.alert(
@@ -49,8 +65,8 @@ export default function LiveTracking() {
         {
           text: "Yes, Cancel",
           style: "destructive",
-          onPress: () => {
-            cancelBooking();
+          onPress: async () => {
+            await cancelBooking();
             router.replace("/(rider)/home");
           },
         },
@@ -59,8 +75,7 @@ export default function LiveTracking() {
   };
 
   const handleVerifyComplete = () => {
-    completeTrip();
-    router.replace("/(rider)/receipt");
+    setShowScanner(true);
   };
 
   // Helper to render Stepper Node dynamically
@@ -917,6 +932,47 @@ export default function LiveTracking() {
           </Pressable>
         </View>
       </ScrollView>
+
+      {/* Dynamic simulated scanner modal */}
+      <Modal
+        visible={showScanner}
+        animationType="slide"
+        transparent={false}
+        onRequestClose={() => setShowScanner(false)}
+      >
+        <SafeAreaView className="flex-1 bg-[#0b1c30] justify-between p-6">
+          <View className="flex-row justify-between items-center h-16">
+            <Pressable
+              onPress={() => setShowScanner(false)}
+              className="w-12 h-12 bg-white/10 rounded-2xl items-center justify-center active:bg-white/20"
+            >
+              <ArrowLeft color="#ffffff" size={24} />
+            </Pressable>
+            <Text className="text-white text-lg font-bold font-jakarta">Scan Verification QR</Text>
+            <View className="w-12" />
+          </View>
+
+          {/* Scanner UI frame */}
+          <View className="align-center items-center justify-center flex-1 my-6">
+            <View className="w-64 h-64 border-2 border-primary rounded-3xl relative items-center justify-center p-4 bg-white/5">
+              <View className="absolute top-4 left-4 w-8 h-8 border-t-4 border-l-4 border-primary rounded-tl-lg" />
+              <View className="absolute top-4 right-4 w-8 h-8 border-t-4 border-r-4 border-primary rounded-tr-lg" />
+              <View className="absolute bottom-4 left-4 w-8 h-8 border-b-4 border-l-4 border-primary rounded-bl-lg" />
+              <View className="absolute bottom-4 right-4 w-8 h-8 border-b-4 border-r-4 border-primary rounded-br-lg" />
+              <ActivityIndicator size="large" color="#001caa" />
+            </View>
+            <Text className="text-white/80 font-bold text-center mt-8 px-8 font-jakarta leading-5 text-sm">
+              {scanStatus}
+            </Text>
+          </View>
+
+          <View className="items-center pb-8">
+            <Text className="text-white/40 text-xs font-jakarta">
+              Verify scanning on FUTO-Ride backend API
+            </Text>
+          </View>
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 }

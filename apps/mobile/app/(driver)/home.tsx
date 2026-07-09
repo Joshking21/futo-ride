@@ -24,7 +24,7 @@ export default function DriverHome() {
     setOnline,
     activeTrip,
     triggerMockIncomingRequest,
-    confirmBooking,
+    progressDriverTrip,
     clearActiveTrip,
     earnings,
   } = useApp();
@@ -65,7 +65,7 @@ export default function DriverHome() {
   };
 
   const handleAcceptRequest = () => {
-    confirmBooking();
+    progressDriverTrip();
     router.push("/(driver)/active");
   };
 

@@ -66,6 +66,11 @@
           "isAndroidLocationServicesEnabled": true
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "7c9a0fc6-b122-4abf-8bfc-7749fc50a805"
+      }
+    }
   }
 }

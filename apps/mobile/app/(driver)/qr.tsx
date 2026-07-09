@@ -6,7 +6,7 @@ import {
   Navigation,
   Shield,
 } from "lucide-react-native";
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -18,13 +18,36 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useApp } from "../../context/AppContext";
+import { apiRequest } from "../../config/apiHelper";
 
 export default function DriverQR() {
   const router = useRouter();
-  const { activeTrip, completeTrip } = useApp();
+  const { activeTrip, clearActiveTrip } = useApp();
+  const [qrToken, setQrToken] = useState<string>("");
+
+  useEffect(() => {
+    const fetchQrToken = async () => {
+      if (!activeTrip.rideId) return;
+      try {
+        const res = await apiRequest<{ qrToken: string }>(`/rides/${activeTrip.rideId}/qr`);
+        setQrToken(res.qrToken);
+      } catch (err) {
+        console.error("Failed to load QR token:", err);
+      }
+    };
+    fetchQrToken();
+  }, [activeTrip.rideId]);
+
+  // Automatically redirect driver home when rider scans QR (which clears activeTrip on driver side)
+  useEffect(() => {
+    if (activeTrip.status === "idle") {
+      Alert.alert("Ride Complete", "The student has scanned the QR code and the fare has been verified.");
+      router.replace("/(driver)/home");
+    }
+  }, [activeTrip.status]);
 
   const handleScanDone = () => {
-    completeTrip();
+    clearActiveTrip();
     router.replace("/(driver)/home");
   };
 
@@ -153,6 +176,11 @@ export default function DriverQR() {
               Waiting for rider to scan...
             </Text>
           </View>
+          {qrToken ? (
+            <Text className="text-secondary text-sm font-jakarta mt-4 font-bold text-center">
+              Verification Code: {qrToken}
+            </Text>
+          ) : null}
         </View>
 
         {/* Tip Instruction Card */}

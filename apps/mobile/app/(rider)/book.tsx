@@ -24,6 +24,7 @@ const CAMPUS_LOCATIONS = [
   { name: "SOES Building", desc: "School of Environmental Sciences" },
   { name: "PGS Complex", desc: "Post Graduate School building" },
   { name: "Health Centre", desc: "Campus medical clinic and emergency" },
+  { name: "Town (Owerri)", desc: "Town transport terminal outside campus" },
 ];
 
 export default function BookRide() {
