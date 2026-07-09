@@ -102,7 +102,7 @@ export default function RiderHome() {
           }}
           className="w-full h-full object-cover"
         /> */}
-        {/* <LiveMapScreen /> */}
+        <LiveMapScreen />
         {/* <MapView style={{ flex: 1 }}>
           <UrlTile
             urlTemplate="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
