@@ -1,0 +1,282 @@
+/**
+ * Seat-aware keke matching + seat/lifecycle bookkeeping (§6a, §20). Shared by the
+ * booking route and the driver-cancel re-match path so the logic lives in one place.
+ */
+
+import { FieldValue } from "firebase-admin/firestore";
+import { adminDb } from "./firestore.js";
+import { findNearest } from "./geo.js";
+import { DRIVER_HEARTBEAT_MS, PAYMENT_WINDOW_MS } from "./config.js";
+import { pingDriver, dispatchToDriver } from "./dispatch.js";
+import { CAMPUS_STOPS } from "./campus-stops.js";
+import { mintQrToken, mintCompletionPin } from "./qr.js";
+import { driverPriorityBonusKobo } from "./surge.js";
+import { raiseIncident } from "./incidents.js";
+import type { Ride } from "../types/index.js";
+
+export const DEFAULT_CAPACITY = 4;
+
+export type Stop = { id: string; name: string; lat: number; lng: number };
+
+/** An online keke with its live seat state, for pooling (§6a). */
+export type OnlineKeke = {
+  id: string;
+  lat: number;
+  lng: number;
+  capacity: number;
+  seatsTaken: number;
+  poolFromStop?: string;
+  poolToStop?: string;
+  poolStarted?: boolean;
+};
+
+export type MatchedKeke = OnlineKeke & { distKm: number; etaMin: number; joining: boolean };
+
+/**
+ * Online kekes with seat state, filtered to those seen within the heartbeat window
+ * (§20.5 — a keke silent > DRIVER_HEARTBEAT_MS is treated as gone, not matchable).
+ */
+export async function onlineKekes(): Promise<OnlineKeke[]> {
+  const snap = await adminDb()
+    .collection("drivers")
+    .where("online", "==", true)
+    .where("vehicleType", "==", "keke")
+    .get();
+
+  const cutoff = Date.now() - DRIVER_HEARTBEAT_MS;
+  const kekes: OnlineKeke[] = [];
+  for (const doc of snap.docs) {
+    const d = doc.data();
+    const lastSeenAt = typeof d.lastSeenAt === "number" ? d.lastSeenAt : 0;
+    if (lastSeenAt < cutoff) continue; // stale — skip (ghost keke)
+    if (typeof d.currentLat === "number" && typeof d.currentLng === "number") {
+      kekes.push({
+        id: doc.id,
+        lat: d.currentLat,
+        lng: d.currentLng,
+        capacity: typeof d.capacity === "number" ? d.capacity : DEFAULT_CAPACITY,
+        seatsTaken: typeof d.seatsTaken === "number" ? d.seatsTaken : 0,
+        poolFromStop: d.poolFromStop as string | undefined,
+        poolToStop: d.poolToStop as string | undefined,
+        poolStarted: d.poolStarted === true,
+      });
+    }
+  }
+  return kekes;
+}
+
+/**
+ * Seat-aware matcher (§6a). Prefers JOINING an existing pool on the SAME lane —
+ * same pickup (`from`) AND same destination (`toStop`) — with room and not yet
+ * started (§20.10); otherwise opens a NEW pool on the nearest fully-free keke.
+ * Pooling on both stops keeps a keke a single "fromStop → toStop" trip (no zigzag
+ * pickup run). `excludeDriverId` skips a keke (used on driver-cancel re-match).
+ */
+export function matchKeke(
+  from: Stop,
+  toStop: string,
+  seats: number,
+  kekes: OnlineKeke[],
+  excludeDriverId?: string,
+): MatchedKeke | null {
+  const pool = excludeDriverId ? kekes.filter((k) => k.id !== excludeDriverId) : kekes;
+  const freeSeats = (k: OnlineKeke) => k.capacity - k.seatsTaken;
+
+  // 1) Existing pools on the same lane (from + to) with room, not yet started — nearest wins.
+  const joinable = pool.filter(
+    (k) =>
+      k.seatsTaken > 0 &&
+      k.poolFromStop === from.id &&
+      k.poolToStop === toStop &&
+      !k.poolStarted &&
+      freeSeats(k) >= seats,
+  );
+  const join = findNearest(from, joinable);
+  if (join) return { ...join, joining: true };
+
+  // 2) Otherwise a fully-free keke that can seat the party — nearest wins.
+  const idle = pool.filter((k) => k.seatsTaken === 0 && freeSeats(k) >= seats);
+  const fresh = findNearest(from, idle);
+  if (fresh) return { ...fresh, joining: false };
+
+  return null;
+}
+
+/**
+ * Releases a ride's seats back to its keke when the ride ends (complete/cancel/
+ * expire/re-match). Decrements `seatsTaken` transactionally, flooring at 0, and
+ * clears `poolToStop` + `poolStarted` once the keke is empty. No-op with no driver.
+ */
+export async function freeSeats(ride: Pick<Ride, "driverId" | "seats">): Promise<void> {
+  if (!ride.driverId) return;
+  const db = adminDb();
+  const driverRef = db.collection("drivers").doc(ride.driverId);
+  await db.runTransaction(async (tx) => {
+    const snap = await tx.get(driverRef);
+    if (!snap.exists) return;
+    const d = snap.data() ?? {};
+    const seatsTaken = typeof d.seatsTaken === "number" ? d.seatsTaken : 0;
+    const seats = typeof ride.seats === "number" ? ride.seats : 1;
+    const next = Math.max(0, seatsTaken - seats);
+    tx.update(driverRef, {
+      seatsTaken: next,
+      ...(next === 0
+        ? {
+            poolFromStop: FieldValue.delete(),
+            poolToStop: FieldValue.delete(),
+            poolStarted: FieldValue.delete(),
+          }
+        : {}),
+    });
+  });
+}
+
+/**
+ * Lazily expires unpaid `assigned` holds whose window has lapsed (§20.1): marks
+ * them `expired`, frees their seats, and pings the driver. Indexed range query
+ * (rides[status ASC, expiresAt ASC]) — no in-memory scan. No cron: call this on
+ * the booking path so lapsed seats free up before matching. Best-effort per ride.
+ */
+export async function sweepExpiredRides(): Promise<number> {
+  const db = adminDb();
+  const now = Date.now();
+  const snap = await db
+    .collection("rides")
+    .where("status", "==", "assigned")
+    .where("expiresAt", "<=", now)
+    .get();
+
+  let swept = 0;
+  for (const doc of snap.docs) {
+    const ride = doc.data() as Ride;
+    if (ride.paymentStatus === "PAID") continue; // paid rides never expire
+    await doc.ref.update({ status: "expired", cancelledBy: "system", cancelReason: "payment_timeout" });
+    await freeSeats(ride);
+    if (ride.driverId) {
+      await pingDriver(
+        ride.driverId,
+        "⌛ Pickup cancelled",
+        `Ride ${ride.id} lapsed (rider didn't pay in time). Seat freed.`,
+      ).catch(() => undefined);
+    }
+    swept++;
+  }
+  return swept;
+}
+
+function stopById(id: string): Stop | undefined {
+  return CAMPUS_STOPS.find((s) => s.id === id);
+}
+
+/** True while a (naira/transfer) ride still needs a confirmed payment (§20.2). */
+function ridePaid(ride: Pick<Ride, "paymentStatus">): boolean {
+  return ride.paymentStatus === "PAID";
+}
+
+export type RematchResult = { rematched: boolean; newDriverId?: string; refundPending?: boolean };
+
+/**
+ * Tries to move a ride to another keke on the same lane (driver-cancel §20.4, or a
+ * stale-driver rescue §21/H5). On success: same rideId + payment, fresh QR/PIN, new
+ * driver dispatched, ride back to `assigned`. On failure: the ride is stranded
+ * (`requested`), a HIGH incident is raised, and a paid ride is flagged for refund.
+ * Best-effort and self-contained so both the route and the sweep can call it safely.
+ */
+export async function rematchRide(ride: Ride): Promise<RematchResult> {
+  const db = adminDb();
+  const ref = db.collection("rides").doc(ride.id);
+  const from = stopById(ride.fromStop);
+  const to = stopById(ride.toStop);
+
+  if (from && to) {
+    const kekes = await onlineKekes();
+    const rematch = matchKeke(from, ride.toStop, ride.seats, kekes, ride.driverId);
+    if (rematch) {
+      try {
+        const newDriverRef = db.collection("drivers").doc(rematch.id);
+        await db.runTransaction(async (tx) => {
+          const dSnap = await tx.get(newDriverRef);
+          const d = dSnap.data() ?? {};
+          const capacity = typeof d.capacity === "number" ? d.capacity : DEFAULT_CAPACITY;
+          const seatsTaken = typeof d.seatsTaken === "number" ? d.seatsTaken : 0;
+          if (capacity - seatsTaken < ride.seats) throw new Error("filled");
+          tx.update(newDriverRef, {
+            seatsTaken: seatsTaken + ride.seats,
+            poolFromStop: ride.fromStop,
+            poolToStop: ride.toStop,
+          });
+          tx.update(ref, {
+            driverId: rematch.id,
+            status: "assigned",
+            qrToken: mintQrToken(),
+            completionPin: mintCompletionPin(),
+            cancelledBy: FieldValue.delete(),
+            // A paid ride keeps its payment; an unpaid one gets a fresh hold.
+            ...(ridePaid(ride) ? {} : { expiresAt: Date.now() + PAYMENT_WINDOW_MS }),
+          });
+        });
+
+        if (!rematch.joining) {
+          await dispatchToDriver({
+            driverId: rematch.id,
+            rideId: ride.id,
+            fromName: from.name,
+            toName: to.name,
+            driverBonusKobo: driverPriorityBonusKobo(ride.priorityFee),
+          }).catch(() => undefined);
+        }
+        return { rematched: true, newDriverId: rematch.id };
+      } catch {
+        // Lost the seat race — fall through and strand the rider.
+      }
+    }
+  }
+
+  const refundPending = ridePaid(ride);
+  await ref.update({
+    driverId: "",
+    status: "requested",
+    cancelledBy: "system",
+    ...(refundPending ? { refundPending: true } : {}),
+    expiresAt: FieldValue.delete(),
+  });
+  if (from) {
+    await raiseIncident({
+      riderId: ride.riderId,
+      type: "stranded",
+      message: `No replacement keke for ride ${ride.id} (${ride.fromStop} → ${ride.toStop})${refundPending ? " (paid — refund pending)" : ""}.`,
+      location: `${from.name} (${from.lat},${from.lng})`,
+      rideId: ride.id,
+    }).catch(() => undefined);
+  }
+  return { rematched: false, refundPending };
+}
+
+/**
+ * Rescues PAID active rides whose driver has gone stale (§21/H5): a driver who
+ * force-closes the app leaves a paid rider stuck (paid rides never expire, and the
+ * one-active-ride guard blocks re-booking). Re-matches them to a fresh keke, or
+ * strands + flags a refund. Lazy, like the expiry sweep — call it on the booking path.
+ */
+export async function sweepStaleDriverRides(): Promise<number> {
+  const db = adminDb();
+  const cutoff = Date.now() - DRIVER_HEARTBEAT_MS;
+  const snap = await db
+    .collection("rides")
+    .where("status", "in", ["assigned", "arriving"])
+    .get();
+
+  let rescued = 0;
+  for (const doc of snap.docs) {
+    const ride = doc.data() as Ride;
+    if (!ridePaid(ride) || !ride.driverId) continue; // only paid rides with a driver
+    const dSnap = await db.collection("drivers").doc(ride.driverId).get();
+    const d = dSnap.data() ?? {};
+    const lastSeenAt = typeof d.lastSeenAt === "number" ? d.lastSeenAt : 0;
+    if (d.online === true && lastSeenAt >= cutoff) continue; // driver still live
+    await freeSeats(ride);
+    await rematchRide(ride).catch(() => undefined);
+    rescued++;
+  }
+  return rescued;
+}

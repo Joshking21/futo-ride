@@ -71,20 +71,20 @@ DRIVER MODE
 
 ### 6. Ride Options / Confirm — *MVP (core)*
 - **Purpose:** confirm the matched ride and how to pay.
-- **Elements:** nearest available keke(s) with **ETA + distance**; **fare** (base ₦); **IF surge is active:** optional **priority-fee** toggle/stepper (with a plain note like "skip the queue"); **payment method** selector (**Naira** / **cNGN**); **Confirm** button.
+- **Elements:** nearest available keke(s) with **ETA + distance**; **fare** (₦, flat per seat); seat count (1–4); **IF surge is active:** optional **priority-fee** toggle/stepper (with a plain note like "skip the queue"); **Confirm** button. *(Payment is naira via Partna — no method selector; cNGN removed, §21.)*
 - **Data shown:** matched driver/vehicle, ETA, fare, surge state.
 - **Actions:** set priority (if shown), choose pay method, confirm → Payment.
 - **States:** no kekes available, surge banner on/off, recalculating fare.
 
-### 7. Payment — *MVP (Naira) · cNGN optional*
+### 7. Payment — *MVP (Naira via Partna)*
 - **Purpose:** pay so the fare is collected.
-- **Elements:** amount summary (fare + priority fee); **Naira:** Monnify checkout (card / bank transfer / virtual account); **cNGN (optional):** wallet balance + pay button (Privy loads here only); pay action.
+- **Elements:** amount summary (fare + priority fee); **Partna hosted onramp** opened from `checkoutUrl` (rider pays NGN by bank transfer) in a WebView/browser; a countdown to `expiresAt` (~10 min); pay action → then verify.
 - **Actions:** pay → on success, fare locked → Live Tracking.
 - **States:** processing, success, failure + retry.
 
 ### 8. Live Tracking — *MVP (core)*
 - **Purpose:** watch the keke approach and ride.
-- **Elements:** map with keke moving toward pickup; **driver card** (name, plate, vehicle, rating); **ETA countdown**; **trip status** (assigned → arriving → arrived → started); **Cancel ride**; **persistent SOS**.
+- **Elements:** map with keke moving toward pickup; **driver card** (name, plate, vehicle, rating); **ETA countdown**; **trip status** (assigned → arriving → started → completed); **Cancel ride**; **persistent SOS**.
 - **Data shown:** live driver position, status, ETA (realtime).
 - **Actions:** cancel ride, trigger SOS; at dropoff → Scan QR.
 - **States:** searching/assigning, arriving, in-trip, cancelled.
@@ -114,7 +114,7 @@ DRIVER MODE
 
 ### 13. Profile / Account — *MVP*
 - **Purpose:** manage account.
-- **Elements:** name, email, role; payment methods; Telegram connection status; (wallet info if cNGN used); **Log out**.
+- **Elements:** name, email, role; Telegram connection status; (driver: withdrawal wallet/bank for cashout); **Log out**.
 - **Actions:** edit basics, log out.
 
 ### 14. Ride History — *MVP*
@@ -147,7 +147,7 @@ DRIVER MODE
 
 ### 18. Driver — Earnings — *Optional*
 - **Purpose:** track money.
-- **Elements:** completed trips + payouts list; balance; cashout (if cNGN).
+- **Elements:** completed trips + earnings list (GET /drivers/me/earnings); balance; **Withdraw** (POST /drivers/me/withdraw — bank or wallet).
 
 ---
 

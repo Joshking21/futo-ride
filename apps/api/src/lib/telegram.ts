@@ -15,6 +15,23 @@ function apiUrl(method: string): string {
   return `https://api.telegram.org/bot${botToken()}/${method}`;
 }
 
+let cachedUsername: string | null = null;
+
+/** The bot's @username (cached), for building t.me deep links (§20.9). */
+export async function getBotUsername(): Promise<string> {
+  if (cachedUsername) return cachedUsername;
+  const res = await fetch(apiUrl("getMe"));
+  if (!res.ok) {
+    const detail = await res.text().catch(() => "unknown");
+    throw new Error(`Telegram getMe failed (${res.status}): ${detail}`);
+  }
+  const json = (await res.json()) as { result?: { username?: string } };
+  const username = json.result?.username;
+  if (!username) throw new Error("Telegram getMe: bot has no username");
+  cachedUsername = username;
+  return username;
+}
+
 /** Sends a plain-text message to a chat. */
 export async function sendMessage(chatId: number | string, text: string): Promise<void> {
   const res = await fetch(apiUrl("sendMessage"), {

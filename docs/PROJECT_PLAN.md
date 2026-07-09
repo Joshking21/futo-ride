@@ -46,8 +46,8 @@ FUTO's SUG just introduced campus **kekes (tricycles)** — live next semester �
 | **App data** | **Firebase Firestore** | Rides, users, ratings, incidents, history. |
 | **In-app push** | **FCM** | Native notifications via `@react-native-firebase/messaging`. |
 | **Incident + social push** | **Alerta → Telegram** | SOS/incidents to SUG security; opt-in rider alerts. |
-| **Naira payments** | **Monnify (Moniepoint)** | Primary. Sandbox to build (`MK_TEST_`, `sandbox.monnify.com`). |
-| **Solana (optional)** | **cNGN direct transfer on devnet** + **Privy** wallet | Light touch only. No escrow. Cut freely. |
+| **Payments** | **Partna V4** (onramp/offramp) | Rider pays **NGN** by bank transfer; Partna settles **USDC on Solana** into the platform treasury. Collect → ledger → batch withdraw (§21). Staging: `staging-api.getpartna.com`. **Replaces Monnify + cNGN.** |
+| **Solana settlement** | **USDC on Solana** (via Partna) + **Privy** wallet (driver payout) | The chain layer is now real: treasury holds USDC, drivers can withdraw on-chain. No escrow program. cNGN is **dropped** (Partna doesn't support it). |
 | **AI triage** | **LLM API** (eg Claude) | Severity + summary + false-alarm filtering (§11). |
 | **Geo math** | **Turf.js** | Distance, nearest, geofence. Free, no infra. |
 | **Maps** | **`react-native-maps`** | Mobile-side (frontend dev's domain). |
@@ -65,7 +65,7 @@ futo-ride/
 │   └── api/             Fastify backend (ours)
 │       └── src/
 │           ├── server.ts
-│           ├── lib/     http.ts · firebase-admin.ts · auth.ts (Layer 0) · monnify · alerta · ai-triage · geo · campus-stops
+│           ├── lib/     http.ts · firebase-admin.ts · auth.ts (Layer 0) · partna · alerta · ai-triage · geo · campus-stops
 │           ├── types/   shared data models
 │           └── routes/  Fastify route modules
 ├── docs/                PROJECT_PLAN · BACKEND_INTEGRATION · FRONTEND_SCREENS · UI_PROMPTS · API.md
@@ -100,13 +100,18 @@ Real campus kekes carry **up to 4 students sharing a destination**, not one priv
 The keke model is therefore **shared-seat pooling**, decided as follows (locked):
 
 - **Capacity:** every keke has **4 seats** (`capacity: 4`, `seatsTaken: 0..4`).
-- **Pool by destination:** riders are pooled onto the same keke **only when they share the
-  same `toStop`** (e.g. everyone heading to Town). No directional/along-the-way matching —
-  same destination keeps matching and fare-split simple and correct.
-- **On-demand dispatch:** the **first** rider to a destination is assigned the nearest online
-  keke with a free seat, opening a *pool* for that `toStop`. Later riders to the **same
-  `toStop`** **join that same keke** (seat by seat) until it is full (4). When full, the keke
-  is no longer offered; a new rider opens a fresh pool on the next available keke. No waiting
+- **Pool by LANE (`fromStop` + `toStop`) — v6 correction:** riders are pooled onto the same
+  keke **only when they share the same pickup AND the same destination** (e.g. everyone at
+  SEET heading to Town). Destination-only pooling (the original v5 rule) was wrong: it would
+  pool riders picked up at *different* buildings onto one keke, forcing an unrealistic zigzag
+  pickup run. Keying on both stops makes a keke a single **`fromStop → toStop` trip** — it
+  gathers at one stop and drives to one destination. Keeps the flat per-seat fare, one ETA,
+  and one clean departure correct.
+- **On-demand dispatch:** the **first** rider on a lane is assigned the nearest online keke
+  with a free seat, opening a *pool* for that `fromStop → toStop` lane. Later riders on the
+  **same lane** **join that same keke** (seat by seat) until it is full (4) or its trip
+  **starts** (§20.10 — a rolling keke takes no new joins). When full/started, the keke is no
+  longer offered; a new rider opens a fresh pool on the next available keke. No waiting
   timer — the keke is dispatched immediately on the first booking.
 - **Flat per-seat fare:** each rider pays a **flat fare per seat** (`SEAT_FARE_KOBO`,
   distance-independent) — this is how campus kekes actually charge ("₦X to Town").
@@ -166,18 +171,24 @@ const etaMin = (km / 20) * 60;   // ~20 km/h keke speed
 
 **Fee split (locked): split with the driver — default 50/50** (tunable). The driver's half is broadcast as a "surge bonus active — log on" signal via Telegram, which **pulls more kekes onto the road** exactly when supply is short, easing the surge instead of just taxing students. Driver's share = a real **tip**; platform's share = a **priority/service fee** (honest naming).
 
+**Live read + grace window (v6):** `GET /surge/:zone` now **re-evaluates surge live** (not just reads the last stored state), so it can't get stuck "on" all quiet morning after a busy night. Because surge can flip in the seconds between the rider reading it and booking, `POST /rides` **honors a submitted `priorityFee` if surge is on *or* was on within a short grace window (~60s)** — the rider is never charged a fee the driver doesn't get, and never silently loses a fee they opted into. `priorityFee` is capped (anti-abuse).
+
 **Politics:** base FCFS always works, so non-payers are never stranded. Framing is always *"skip the queue,"* never *"pay or wait."*
 
 ---
 
 ## 9. Payments
 
-**Completion proof = QR scan.** The **driver's phone shows a per-trip QR**; the **rider scans it at dropoff**. This proves both were present, marks the trip complete, and **triggers the driver payout**. (No escrow — payout is a backend action.)
+**Completion proof = QR scan (or PIN fallback).** The **driver's phone shows a per-trip QR *and* a short numeric PIN**; the **rider scans the QR at dropoff** — or types the PIN if the camera fails (cracked screen, night glare, cheap Android). Either proves both were present, marks the trip complete, and **credits the driver's earnings ledger**. (No escrow.) See §20 for the PIN fallback and the ledger.
 
-- **Naira (Monnify) — primary.** Platform collects the fare; on QR-confirmed completion, it disburses to the driver.
-- **cNGN (optional, devnet) — light Solana touch.** Rider may pay by sending cNGN on Solana devnet via their Privy wallet (a direct transfer, **no escrow program**). Purely a "we used the chain" showing; cut freely.
+> **Payments are now Partna V4 (was Monnify + cNGN). Full architecture + endpoint detail in §21.** The lifecycle rules below (payment gates completion, ledger payout, TTL) are unchanged — only the *edge* (who collects the naira and where it settles) changed.
 
-> Crypto is **not** legal tender in Nigeria → naira (Monnify) is always the primary path; cNGN is opt-in only.
+- **Payment gates completion.** A ride can only be completed **after** its payment is confirmed `PAID` — the backend links the Partna onramp to the ride and rejects completion until then (402). Closes the "ride free by skipping payment" hole.
+- **Collect 100% → ledger → batch withdraw (the aggregator model).** The rider pays the **full fare in NGN**; Partna converts it to **USDC** and deposits it in the **platform treasury** (Solana). On completion the driver is credited **95%** (seat fare − 5% welfare cut) + their surge-bonus share into an `earnings` **ledger**; the 5% platform cut is recorded per ride (`treasuryContributions`). This dodges the **micro-transaction trap**: per-ride bank payouts (fees ₦10–25) would eat a ₦150 fare, so payout is **batched** — drivers withdraw at end of shift/week, not per ride.
+- **Payout = an earnings ledger, not a live per-ride disbursement.** Drivers withdraw via `POST /drivers/me/withdraw` — **offramp** to a bank (Partna `cryptoToFiat`) or **on-chain USDC** to their Privy wallet. The ledger debit is built + transactional; the actual payout leg is the documented deferred step (like refunds).
+- **Refunds = tiered rider-cancel policy (§21/H4).** Cancel while `assigned` → full refund; while `arriving` → cancellation fee to the driver, rest refunded; after `started` → no refund, driver earns as if completed. Refunds are flagged (`refundPending`), settled via the same deferred payout leg.
+
+> Crypto is **not** legal tender in Nigeria → the rider always pays in **naira**; the USDC settlement is invisible to them (a treasury/liquidity implementation detail, exactly like Uber). Partna does **not** support cNGN, so cNGN is dropped and **USDC on Solana** is the settlement asset.
 
 ---
 
@@ -280,17 +291,25 @@ An **LLM sits between the event and Alerta** and makes the alert intelligent —
 // /types
 type User    = { id; name; email; role; chatId?; privyWallet? };
 type Driver  = { id; name; plate; vehicleType: "keke"|"bus"; online;
-                 currentLat; currentLng; routeId? };       // routeId for buses
+                 currentLat; currentLng; lastSeenAt?;        // heartbeat (§20)
+                 capacity?; seatsTaken?; poolFromStop?; poolToStop?; poolStarted?;
+                 ratingSum?; ratingCount?; earningsKobo?;    // ledger (§20)
+                 routeId? };                                 // routeId for buses
 type Stop    = { id; name; lat; lng };                      // hardcoded buildings
 type Route   = { id; name; stopIds: string[] };             // bus: ordered stops → town
 type Ride    = { id; riderId; driverId; fromStop; toStop; status;
-                 fare; priorityFee; payMethod; qrToken; createdAt };
+                 fare; priorityFee; payMethod; qrToken; completionPin;
+                 paymentStatus?; expiresAt?; cancelledBy?; cancelReason?;
+                 seats; createdAt };
 type Incident= { id; rideId?; type; severity; aiSeverity; aiSummary;
                  location; status; createdAt };
 type Payment = { id; rideId; method; amount; status; ref };
 type Rating  = { id; rideId; driverId; stars; comment? };
+type Earning = { id; driverId; rideId; amount; createdAt };  // §20 payout ledger
+type TelegramLink = { nonce; uid; expiresAt };               // §20 handshake token
 ```
-`Ride.status`: `requested | assigned | arriving | started | completed | cancelled`
+`Ride.status`: `requested | assigned | arriving | started | completed | cancelled | expired`
+(`expired` = the payment window lapsed before the rider paid — seats auto-freed, §20.)
 
 ---
 
@@ -337,8 +356,19 @@ Privy wallet on payment screen + optional cNGN direct transfer on devnet. Leave 
 | Map SDK | **Google Maps** |
 | Town buses | **Fixed routes** → transit-tracker model |
 | Poof.new | **Not used** |
+| Payment provider | **Partna V4** (onramp collect NGN→USDC; offramp payout) — replaces Monnify + cNGN (§21) |
+| Settlement asset | **USDC on Solana** (cNGN dropped — unsupported by Partna) |
+| Platform fee | **5% welfare cut** of the seat fare (`PLATFORM_FEE_BPS`), driver keeps 95% (§21/P2) |
+| Rider-cancel refund | **Tiered:** grace (full) / en-route (fee) / mid-trip (none) (§21/H4) |
+| Payment window (TTL) | **10 min** `assigned` hold, then auto-`expired` (bank transfers are slower than cards) (§20/§21) |
+| Driver heartbeat timeout | **2 min** silent → not matchable (§20) |
+| Surge grace window | **60 s** after last "on" still honors a `priorityFee` (§20) |
+| Completion fallback | **QR *or* numeric PIN** (§20) |
+| Driver onboarding | **whitelist-gated `POST /drivers/register`** (§20) |
+| Driver payout (MVP) | **earnings ledger** (real disbursement deferred) (§20) |
+| Rate limiting | **on `/sos`, `/incidents/report`, `/rides`** (§20) |
 
-**Still to confirm:** real campus stop coordinates; final list of bus routes; whether rider & driver share one app or split into two.
+**Still to confirm:** real campus stop coordinates; final list of bus routes; whether rider & driver share one app or split into two; the exact source of the driver whitelist (env list vs SUG-seeded Firestore collection).
 
 ---
 
@@ -361,4 +391,173 @@ Privy wallet on payment screen + optional cNGN direct transfer on devnet. Leave 
 2. **Backend + data doc:** Fastify route modules per resource, Firestore collections as TS types, Security Rules, and the Alerta/Monnify/AI client modules.
 3. Then scaffold the monorepo and build Phase 1.
 
-*End of v4 — consolidated, all decisions locked.*
+---
+
+## 20. Reliability & Lifecycle Hardening (v6) — flow-gap audit fixes
+
+> A project-wide audit of the rider **and** driver flows surfaced link gaps where a
+> ride, a seat, or a payment could get stuck, stolen, or skipped. These fixes close
+> them. Everything below is **additive to the contract** except two intentional,
+> flagged changes: the stranded case now returns **200 (with a rideId)** instead of
+> 409, and completion now requires **payment + `started`**. The prize-winning
+> Alerta/AI layer is untouched except to make it **more** robust (SOS never dies).
+
+**20.1 Payment-abandonment TTL (the deadlock).**
+A booked `assigned` ride carries `expiresAt = createdAt + 3 min`. If the rider never
+pays within the window, the hold is **lazily swept**: the next booking or ride read
+flags it `expired`, **frees the seat(s)**, and pings the driver that the pickup
+dropped. No cron/infra — expiry is enforced on the read/booking paths. A `PAID` ride
+never expires.
+
+**20.2 Payment actually gates the ride.**
+`/payments/verify` **and** a new Monnify **webhook** (`POST /payments/webhook`, verified
+by Monnify signature — confirm the exact header/algorithm against Monnify's live docs)
+link the payment back to the ride (`ride.paymentStatus`). Verify **checks the amount
+paid == fare and status == PAID** before stamping it. `/payments/init` is **idempotent**
+(reuses an open payment for the ride instead of minting duplicates → no double-charge).
+`/rides/:id/complete` returns **402** until the ride is `PAID` (naira path). The
+driver **also can't advance the trip** (`/rides/:id/status` → `arriving`/`started`)
+until the ride is paid (**402**) — an unpaid booking can't tie up a driver; it just
+lapses on its expiry. On a shared keke the status fan-out advances only the **paid**
+riders; unpaid peers stay `assigned` and expire.
+
+**20.3 QR PIN fallback (broken-camera trap).**
+Alongside `qrToken`, each ride mints a short numeric **`completionPin`**. `GET
+/rides/:id/qr` returns **both**; the rider app offers "enter PIN manually". `POST
+/rides/:id/complete` accepts **`qrToken` OR `pin`** (constant-time compare, exactly one
+required). A dead camera no longer strands a paid trip.
+
+**20.4 Driver cancellation is no longer a black hole.**
+`cancel` records **`cancelledBy`** (`rider | driver | system`). If the **driver**
+cancels, the backend **auto re-matches** the rider to the next keke on the same
+lane (same `fromStop` + `toStop`) — keeps the same rideId + payment, mints a fresh QR/PIN, dispatches the new
+driver, rider's Firestore status flips back to `assigned`). If no keke is free, the
+ride goes `requested` (stranded incident raised) and, **if already paid, a refund is
+flagged** (`refundPending` — real Monnify refund is the same deferred disbursement
+work as payout). If the **rider** cancels, the assigned **driver is pinged** so they
+don't drive to a ghost pickup.
+
+**20.5 Driver heartbeat (ghost keke).**
+`/drivers/online` and `/drivers/location` stamp **`lastSeenAt`**. The matcher and the
+surge seat-count **ignore any keke silent > 2 min** — a driver who force-closes the app
+stops receiving pools even without calling `online:false`. Lazy, like the TTL.
+
+**20.6 Driver identity & vetting (the silent blocker).**
+*No backend path ever set `vehicleType:"keke"`*, so matching would have found **zero**
+kekes. New **`POST /drivers/register { name, plate }`** creates the keke driver doc
+(`vehicleType:"keke"`, `capacity:4`) and is **whitelist-gated** (SUG-approved drivers
+only — `DRIVER_WHITELIST` env for the demo, or an SUG-seeded `allowedDrivers`
+collection). `/drivers/online` now requires a registered keke driver (else 403) — a
+random student can't self-appoint as a driver and receive dispatches.
+
+**20.7 Driver can find their ride (the missing link).**
+The Telegram dispatch had **no rideId**, and there was no way for a driver to list
+their assignment — every driver action needs an id they never had. New **`GET
+/drivers/me/rides`** (active rides on my keke) + the **rideId is now in the dispatch
+message**. A matching Firestore rule lets a driver read rides where `driverId == uid`.
+
+**20.8 SOS never dies (protect the prize).**
+`raiseIncident` wraps AI triage in a fallback: if the LLM errors/times out, it uses a
+safe default (`critical` for SOS) and **still persists + still alerts Telegram**. A
+Gemini outage can no longer turn an SOS into a 500 with nobody notified.
+
+**20.9 Telegram handshake can't be hijacked.**
+uids leak (a rider sees a `driverId`), so the old `?start=<uid>` deep link let anyone
+bind a driver's dispatch channel to their own chat. Replaced with a **one-time nonce**:
+`POST /me/telegram-link` mints a short-lived token; the deep link carries the token; the
+webhook resolves **token → uid** (never a raw uid).
+
+**20.10 Booking abuse guards.**
+One **active ride per rider** (no fleet-draining / no self-inflated surge). `priorityFee`
+is **capped**. A pool is **closed to new joins once its trip is `started`** (no joining a
+keke already driving away from your pickup). The **stranded case returns the rideId** (as
+200 + `stranded:true`) so the rider can track/cancel it instead of getting an opaque 409.
+
+**20.11 State-machine edges.**
+`complete` is allowed **only from `started`** (driver must actually start the trip). A
+status change **fans out to all active pooled riders** on the keke (one tap, not three).
+Cancelling **after `started`** is allowed but **raises an incident** (mid-trip drop-off
+is safety-relevant).
+
+**20.12 Rate limiting.**
+`@fastify/rate-limit` on `/sos`, `/incidents/report`, and `/rides` — a loop can't spam
+the security group (or the LLM bill) or hammer the matcher.
+
+**20.13 Bus staleness.**
+Bus positions get **`lastSeenAt`**; proximity subscriptions **auto-disable** once
+delivered / stale so a last-semester opt-in doesn't ping forever.
+
+> **What did NOT change:** the response envelope, the money-is-kobo rule, the
+> Alerta→Telegram incident pipeline shape, the bus ETA math, and the seat-pooling
+> fare model. The frontend's two genuinely breaking deltas are **(a)** stranded is now
+> `200 { stranded:true, rideId }` not `409`, and **(b)** completion needs payment +
+> `started`. Both are called out in `BACKEND_INTEGRATION.md` and `FLOW_GUIDE.txt`.
+
+---
+
+## 21. Payment migration: Monnify + cNGN → Partna (v7)
+
+> A full re-platform of payments plus a second flow-gap audit (see `docs/AUDIT_REPORT.md`
+> for the finding-by-finding detail and verified Partna facts). **Monnify and cNGN are
+> removed.** The rider still pays naira; the plumbing beneath is now Partna. Everything in
+> §9/§20 (payment gates completion, ledger, TTL, QR) survives — only the edge changed.
+
+**21.1 Why Partna (verified 2026-07-09 against docs.getpartna.com/v4).**
+Partna connects NGN to stablecoins. Auth = `x-api-key` + `x-api-user` headers (no signing).
+The core primitive is `POST /v4/ramp` — `fiatToCrypto` (onramp) / `cryptoToFiat` (offramp).
+Two facts shape everything: **(a) cNGN is not a supported currency** (USDC/USDT/BTC/ETH are;
+USDC-on-Solana is), so cNGN is dropped for **USDC on Solana**; **(b) there is no split field**
+— 100% of an onramp lands at one address, so any 95/5 split is ours to do off-chain.
+
+**21.2 Collection (onramp).** `POST /payments/init` builds a Partna **hosted onramp checkout**
+(`<pay-host>/v4/pay/onramp?amount&from_currency=NGN&to_currency=USDC&to_network=solana&address=<treasury>&merchant&reference`)
+and returns it as `checkoutUrl` (+ our `reference`). The rider pays NGN by bank transfer; Partna
+converts and drops **USDC into the treasury**; a webhook (`pending→received→processing→completed`)
+confirms it. `POST /payments/webhook` verifies Partna's **RSA-PSS/SHA-256 signature over the
+`data` field** (public key, not an HMAC), then reconciles from the authoritative ramp status.
+`POST /payments/verify` is the same reconcile as a fallback. **Demo:** staging + `POST
+/payments/mock-deposit` fires the real webhook with no real naira.
+
+**21.3 The ledger split (95/5).** On completion the driver is credited `seatFare × 95%` +
+surge-bonus share; the platform's **5%** cut (`PLATFORM_FEE_BPS`) is recorded per ride in
+`treasuryContributions`. Batching (below) is what makes 5% of a ₦150 fare viable — a per-ride
+bank payout fee would exceed it.
+
+**21.4 Payout (offramp / on-chain), batched.** `POST /drivers/me/withdraw` debits the earnings
+ledger transactionally (no overdraw) and records a `withdrawals` doc. The real payout leg —
+Partna `cryptoToFiat` to a bank, or an on-chain USDC transfer to a Privy wallet — is the
+**documented deferred step** (same posture as §20.2's disbursement and §20.4's refunds).
+
+**21.5 Second-audit code fixes folded in (detail in AUDIT_REPORT §3):**
+- **C1** cNGN free-ride hole closed (`payMethod` collapsed to `naira`; payment gate is now
+  method-agnostic).
+- **C2** a paid/refund-pending stranded ride is never overwritten by a re-book (payment/refund
+  trail preserved).
+- **C3** a payment that lands **after** the ride expired/cancelled flags `refundPending` instead
+  of reviving a dead ride.
+- **H4** tiered rider-cancel refund policy (grace/en-route-fee/mid-trip).
+- **H5** a paid rider whose driver goes stale is auto-rescued (re-match or strand+refund) on the
+  next booking sweep — no longer stuck forever.
+- **H6** bus drivers need an explicit `POST /buses/register`; `/buses/location` refuses
+  non-registered callers and can't flip a keke driver to `bus`.
+- **M7–M10 / N3–N4** transactional completion (no double-credit), rate-limited completion,
+  Zod-validated LLM triage output, deterministic payment ids, `/payments/verify` ownership check,
+  `/rate` requires a completed ride.
+
+**21.6 Firestore hygiene.** The two in-memory-filter "index bypasses" are gone: `me/earnings`
+and `sweepExpiredRides` now use indexed `orderBy`/range queries, with the composite indexes added
+to `firestore.indexes.json` (`earnings[driverId,createdAt desc]`, `rides[status,expiresAt]`). The
+remaining multi-field queries are equality/`in` and need no composite index.
+
+**21.7 Honest-on-stage caveats (prod, not demo).** Partna limits **one pending ramp per account**
+(concurrent riders need per-rider Partna accounts / KYC — the demo is serial); riders complete a
+one-time **KYC** in production (staging uses test BVN/OTP); the ledger is naira-denominated while
+the treasury holds USDC, so the platform carries **NGN/USDC FX** (usually favorable). The **Kamino**
+idle-float yield play is a V2 pitch line, **not built**.
+
+**21.8 What did NOT change:** the response envelope, kobo-internally rule, the Alerta→Telegram
+incident pipeline, seat pooling, surge, bus tracking, and the QR/PIN completion proof.
+
+---
+
+*End of v4 — consolidated, all decisions locked. (v6 hardening in §20; v7 Partna migration in §21.)*
