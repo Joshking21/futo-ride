@@ -70,7 +70,7 @@ Notes: backend-authoritative position used for matching; also refreshes lastSeen
 
 ### GET /drivers/me/rides
 Auth:  required (the driver)
-200:   { ok: true, data: { rides: [{ rideId, fromStop, toStop, status, seats, riderId, etaMin? }] } }
+200:   { ok: true, data: { rides: [{ rideId, fromStop, toStop, status, seats, riderId }] } }
 Notes: (§20.7) the ACTIVE rides (assigned | arriving | started) on the caller's keke — how the driver app opens the trip it was dispatched. The dispatch Telegram message also carries the rideId now.
 
 ### GET /drivers/me/earnings

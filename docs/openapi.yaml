@@ -1,0 +1,1456 @@
+openapi: 3.0.3
+
+info:
+  title: FUTO-Ride API
+  version: 1.0.0
+  description: |
+    Backend for FUTO-Ride — campus keke pooling, bus tracking, payments (Partna
+    NGN onramp → USDC treasury), safety incidents and Telegram alerts.
+
+    Generated from `apps/api/src/routes` + `apps/api/src/schemas`. Zod schemas are the
+    source of truth; this document mirrors them for the frontend.
+
+    ## Conventions
+    - **Envelope.** Every response is `{ ok: true, data: <T> }` on success or
+      `{ ok: false, error: string }` on failure. `data` shapes are the `*Data` schemas below.
+    - **Money.** Every amount is **integer kobo** (1 naira = 100 kobo). The frontend renders
+      kobo→naira for display and sends kobo back. The backend converts to naira only internally
+      at the Partna payment edge.
+    - **Auth.** Most endpoints require a Firebase ID token: `Authorization: Bearer <idToken>`.
+      Webhooks use their own header/signature auth (not a Firebase token). A few read-only
+      endpoints are public.
+    - **Validation errors** return **400** `{ ok:false, error }` with `error` shaped as
+      `"<field>: <message>"` (first Zod issue).
+    - **Rate limits.** `POST /rides`, `POST /rides/{id}/complete`, `POST /sos`, and
+      `POST /incidents/report` are rate-limited **per user** (keyed by the bearer token).
+      On breach they return **429** `{ ok:false, error }`.
+    - **Coordinates.** `lat` ∈ [-90, 90], `lng` ∈ [-180, 180].
+
+servers:
+  - url: http://localhost:3001
+    description: Local dev (default PORT=3001)
+  - url: "{baseUrl}"
+    description: Deployed API — set your host
+    variables:
+      baseUrl:
+        default: http://localhost:3001
+
+tags:
+  - name: System
+    description: Health and static reference data (public)
+  - name: Drivers
+    description: Keke driver onboarding, availability, earnings, ratings
+  - name: Rides
+    description: Booking, lifecycle, completion, QR/PIN, rating
+  - name: Payments
+    description: Partna onramp init/verify, webhook, staging mock
+  - name: Buses
+    description: Bus routes, live ETA, driver onboarding, proximity alerts
+  - name: Incidents
+    description: SOS and incident reporting
+  - name: Surge
+    description: Live surge state per pickup zone
+  - name: Me
+    description: Per-user actions (Telegram linking)
+  - name: Webhooks
+    description: Server-to-server callbacks (Partna, Telegram)
+
+security:
+  - firebaseAuth: []
+
+paths:
+  /health:
+    get:
+      tags: [System]
+      summary: Health check
+      security: []
+      responses:
+        "200":
+          description: Service is up
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+
+  /stops:
+    get:
+      tags: [System]
+      summary: List campus stops
+      description: All campus stops (buildings + town) for the keke From/To pickers. Hardcoded in `lib/campus-stops.ts`.
+      security: []
+      responses:
+        "200":
+          description: Stops list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StopsResponse"
+
+  /drivers/register:
+    post:
+      tags: [Drivers]
+      summary: Register as a keke driver
+      description: |
+        Onboards a KEKE driver (§20.6) — creates/updates the driver doc with
+        `vehicleType:"keke"` and `capacity:4`. Gated by the driver whitelist
+        (`DRIVER_WHITELIST` env or an SUG-seeded `allowedDrivers` collection).
+        Must be called once before going online.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterDriver"
+      responses:
+        "200":
+          description: Driver registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DriverResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Not an approved driver (not on whitelist)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /drivers/online:
+    post:
+      tags: [Drivers]
+      summary: Go online / offline
+      description: Toggle availability (§20.5). Optionally seeds current location. Requires a registered keke driver.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GoOnline"
+      responses:
+        "200":
+          description: Availability updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OnlineResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Not registered as a keke driver
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /drivers/location:
+    post:
+      tags: [Drivers]
+      summary: Update driver location (heartbeat)
+      description: Posts the driver's live position and refreshes `lastSeenAt`. Not rate-limited (heartbeat).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateLocation"
+      responses:
+        "200":
+          description: Location updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /drivers/me/rides:
+    get:
+      tags: [Drivers]
+      summary: My active rides (driver)
+      description: All rides currently assigned/arriving/started for the calling driver.
+      responses:
+        "200":
+          description: Active rides
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DriverRidesResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /drivers/me/earnings:
+    get:
+      tags: [Drivers]
+      summary: My earnings ledger (driver)
+      description: Running ledger total plus the 10 most recent credits.
+      responses:
+        "200":
+          description: Earnings summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EarningsResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /drivers/me/withdraw:
+    post:
+      tags: [Drivers]
+      summary: Withdraw earnings (driver)
+      description: |
+        Debits the earnings ledger transactionally and records a `pending` withdrawal
+        (§21/P3). The real payout (bank offramp or on-chain USDC) is deferred — the
+        record stays `pending`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WithdrawEarnings"
+      responses:
+        "200":
+          description: Withdrawal recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WithdrawResponse"
+        "400":
+          description: Missing bank/wallet fields for the chosen method
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: Driver not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "409":
+          description: Insufficient balance
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /drivers/{id}/rating:
+    get:
+      tags: [Drivers]
+      summary: Driver rating summary
+      description: Average (1 decimal, `null` if none) and count of ratings for a driver. Public.
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/DriverId"
+      responses:
+        "200":
+          description: Rating summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RatingSummaryResponse"
+        "404":
+          description: Driver not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /rides:
+    post:
+      tags: [Rides]
+      summary: Book a keke ride
+      description: |
+        Books a pooled keke seat (§20). Matches an online keke on the same lane (joining an
+        existing pool or opening a new one). One active ride per rider. If no keke is
+        available the ride is recorded as **stranded** and returned with `stranded:true`,
+        `driverId:null` (HTTP 200, not 409) so the rider can track/cancel it.
+        **Rate-limited** (30/min per user).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BookRide"
+      responses:
+        "200":
+          description: Ride booked (matched or stranded)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BookRideResponse"
+        "400":
+          description: Unknown stop, or from == to
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          description: Already have an active ride, or the keke just filled/left
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "429":
+          $ref: "#/components/responses/RateLimited"
+
+  /rides/{id}/cancel:
+    post:
+      tags: [Rides]
+      summary: Cancel a ride
+      description: |
+        Cancels a ride (§20.4). Callable by the rider OR the assigned driver.
+        - **Rider cancels:** tiered refund policy — full refund pre-arrival, partial
+          (minus a cancellation fee) once the driver is `arriving`, none mid-trip.
+        - **Driver cancels:** the rider is auto re-matched to another keke on the same lane,
+          or stranded with `refundPending` if none is available.
+
+        No request body required.
+      parameters:
+        - $ref: "#/components/parameters/RideId"
+      responses:
+        "200":
+          description: Ride cancelled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CancelResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Not your ride
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "404":
+          description: Ride not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "409":
+          description: Ride already closed (completed/cancelled/expired)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /rides/{id}/status:
+    post:
+      tags: [Rides]
+      summary: Advance ride status (driver)
+      description: |
+        Driver advances the trip through mid-ride states: `assigned → arriving → started`
+        (§20.11). One tap advances every PAID pooled rider at the same stage; unpaid peers
+        stay put. Requires the ride to be PAID (402 otherwise).
+      parameters:
+        - $ref: "#/components/parameters/RideId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateRideStatus"
+      responses:
+        "200":
+          description: Status advanced
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "402":
+          description: Rider hasn't paid yet
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "403":
+          description: Not your ride
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "404":
+          description: Ride not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "409":
+          description: Ride closed, or illegal transition
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /rides/{id}/complete:
+    post:
+      tags: [Rides]
+      summary: Complete a ride (rider)
+      description: |
+        The rider completes the trip by presenting the driver's QR token OR the typed PIN —
+        exactly one (§20.3). Requires the ride to be `started` and PAID. **Rate-limited**
+        (30/min per user).
+      parameters:
+        - $ref: "#/components/parameters/RideId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CompleteRide"
+      responses:
+        "200":
+          description: Ride completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CompleteResponse"
+        "400":
+          description: Invalid QR code or PIN (or not exactly one supplied)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "402":
+          description: Payment not confirmed
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "403":
+          description: Only the rider can complete
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "404":
+          description: Ride not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "409":
+          description: Ride already completed, or not started yet
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "429":
+          $ref: "#/components/responses/RateLimited"
+
+  /rides/{id}/qr:
+    get:
+      tags: [Rides]
+      summary: Get ride QR token + PIN (driver)
+      description: Returns the completion QR token and PIN for the driver to show the rider. Driver-only.
+      parameters:
+        - $ref: "#/components/parameters/RideId"
+      responses:
+        "200":
+          description: QR + PIN
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QrResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Not your ride
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "404":
+          description: Ride not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /rides/{id}/rate:
+    post:
+      tags: [Rides]
+      summary: Rate a completed ride (rider)
+      description: One rating per ride (rating doc id = ride id). Requires a completed ride. Rider-only.
+      parameters:
+        - $ref: "#/components/parameters/RideId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RateRide"
+      responses:
+        "200":
+          description: Rating recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Only the rider can rate
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "404":
+          description: Ride not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "409":
+          description: Ride not completed, or already rated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /payments/init:
+    post:
+      tags: [Payments]
+      summary: Initialize payment (Partna onramp)
+      description: |
+        Creates (idempotently, one payment doc per ride) a Partna hosted-onramp checkout for
+        the ride fare and returns the `checkoutUrl` and `reference`. The rider pays NGN;
+        Partna settles USDC to the platform treasury (§21).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InitPayment"
+      responses:
+        "200":
+          description: Checkout created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InitPaymentResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Not your ride
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "404":
+          description: Ride not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "409":
+          description: Ride is not payable (wrong status)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "500":
+          description: Payment not configured (missing treasury address / Partna keys)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /payments/verify:
+    post:
+      tags: [Payments]
+      summary: Verify payment status
+      description: |
+        Reconciles a Partna onramp against the stored payment by reading the authoritative
+        ramp status server-to-server. Marks the ride PAID when settled and covering the fare.
+        The `reference` must belong to the caller's ride.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VerifyPayment"
+      responses:
+        "200":
+          description: Reconciled status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VerifyPaymentResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Not your payment
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "404":
+          description: Payment not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /payments/webhook:
+    post:
+      tags: [Payments, Webhooks]
+      summary: Partna onramp webhook (server-to-server)
+      description: |
+        Called by Partna on onramp status changes. The request **body** carries a `signature`
+        field — an RSA-PSS/SHA-256 signature over `JSON.stringify(data)`, verified with Partna's
+        public key (`PARTNA_WEBHOOK_PUBLIC_KEY`). **Not** a Firebase token and **not** a header.
+        Reconciles from the authoritative ramp status; idempotent by reference. Always returns 200
+        once handled (401 on bad/missing signature) so Partna doesn't retry a settled event.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PartnaWebhook"
+      responses:
+        "200":
+          description: Handled (idempotent)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResponse"
+        "401":
+          description: Invalid signature
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /payments/mock-deposit:
+    post:
+      tags: [Payments]
+      summary: Simulate a fiat deposit (staging only)
+      description: |
+        Staging-only demo helper (§21): simulates the rider's NGN bank transfer so Partna fires
+        the real onramp webhook, without a human completing the hosted checkout. Returns **403**
+        unless `PARTNA_BASE_URL` points at a staging host.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InitPayment"
+      responses:
+        "200":
+          description: Mock deposit triggered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Not your ride, or not a staging environment
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "404":
+          description: Ride not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /sos:
+    post:
+      tags: [Incidents]
+      summary: Trigger SOS
+      description: Raises a safety incident with the rider's location. **Rate-limited** (10/min per user).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Sos"
+      responses:
+        "200":
+          description: Incident raised
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IncidentResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+
+  /incidents/report:
+    post:
+      tags: [Incidents]
+      summary: Report an incident
+      description: Files a typed incident report with location. **Rate-limited** (10/min per user).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReportIncident"
+      responses:
+        "200":
+          description: Incident raised
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IncidentResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+
+  /buses/routes:
+    get:
+      tags: [Buses]
+      summary: List bus routes
+      description: All bus routes with their ordered stops. Public.
+      security: []
+      responses:
+        "200":
+          description: Routes list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BusRoutesResponse"
+
+  /buses/routes/{id}/eta:
+    get:
+      tags: [Buses]
+      summary: ETA to remaining stops from a live bus position
+      description: |
+        Given a live bus position (`lat`,`lng` query params), returns the ETA to each stop
+        ahead of it along the route. Public — the app reads live positions from RTDB and passes
+        them in.
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/RouteId"
+        - name: lat
+          in: query
+          required: true
+          schema: { type: number, minimum: -90, maximum: 90 }
+          description: Live bus latitude
+        - name: lng
+          in: query
+          required: true
+          schema: { type: number, minimum: -180, maximum: 180 }
+          description: Live bus longitude
+      responses:
+        "200":
+          description: ETA per upcoming stop
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BusEtaResponse"
+        "404":
+          description: Unknown route
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /buses/register:
+    post:
+      tags: [Buses]
+      summary: Register as a bus driver
+      description: |
+        Explicit bus-driver onboarding (§21/H6) — call once before posting positions. No
+        whitelist, but refuses to convert an existing keke driver.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterBus"
+      responses:
+        "200":
+          description: Bus driver registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BusDriverResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: Unknown route
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "409":
+          description: Already registered as a keke driver
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /buses/location:
+    post:
+      tags: [Buses]
+      summary: Post bus location (bus driver)
+      description: |
+        Updates the bus's live position and fires proximity pings to subscribed riders whose
+        stop the bus just reached. Requires a registered bus driver.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BusLocation"
+      responses:
+        "200":
+          description: Location updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Not registered as a bus driver
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "404":
+          description: Unknown route
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /buses/proximity:
+    post:
+      tags: [Buses]
+      summary: Opt in/out of bus proximity alerts
+      description: |
+        Subscribes (or unsubscribes) the caller to a Telegram ping when the route's bus nears a
+        given stop (§20.13). Subscriptions auto-expire after 24h idle and are refreshed on each opt-in.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProximityOptIn"
+      responses:
+        "200":
+          description: Subscription updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProximityResponse"
+        "400":
+          description: Stop is not on this route
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: Unknown route
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /surge/{zone}:
+    get:
+      tags: [Surge]
+      summary: Live surge state for a zone
+      description: Current surge state (`on`/`off`) for a pickup stop id — drives the rider's priority button (§20). Public.
+      security: []
+      parameters:
+        - name: zone
+          in: path
+          required: true
+          schema: { type: string, minLength: 1 }
+          description: Pickup stop id (e.g. `seet`)
+      responses:
+        "200":
+          description: Surge state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SurgeResponse"
+
+  /me/telegram-link:
+    post:
+      tags: [Me]
+      summary: Mint a Telegram deep-link
+      description: |
+        Mints a one-time nonce for the Telegram `/start` handshake (§20.9) and returns a
+        `t.me` deep link carrying the nonce (never the raw uid). Valid for 10 minutes.
+      responses:
+        "200":
+          description: Deep link
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TelegramLinkResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /telegram/webhook:
+    post:
+      tags: [Me, Webhooks]
+      summary: Telegram bot webhook (server-to-server)
+      description: |
+        Receives the Telegram `/start` handshake and stores the user's chat id for personal
+        pings. Authenticated by the `X-Telegram-Bot-Api-Secret-Token` header (set via
+        setWebhook) — **not** a Firebase token. Always returns 200 to Telegram (401 on bad secret).
+      security:
+        - telegramSecret: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TelegramUpdate"
+      responses:
+        "200":
+          description: Handled (no-op on a bad/expired update)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResponse"
+        "401":
+          description: Missing/invalid secret token
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+components:
+  securitySchemes:
+    firebaseAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: "Firebase ID token — `Authorization: Bearer <idToken>`."
+    telegramSecret:
+      type: apiKey
+      in: header
+      name: X-Telegram-Bot-Api-Secret-Token
+      description: Shared secret configured on the Telegram bot webhook.
+  parameters:
+    RideId:
+      name: id
+      in: path
+      required: true
+      description: Ride id
+      schema: { type: string, minLength: 1 }
+    DriverId:
+      name: id
+      in: path
+      required: true
+      description: Driver id (uid)
+      schema: { type: string, minLength: 1 }
+    RouteId:
+      name: id
+      in: path
+      required: true
+      description: Bus route id (e.g. `town-a`)
+      schema: { type: string, minLength: 1 }
+
+  responses:
+    Unauthorized:
+      description: Missing or invalid Firebase token
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    RateLimited:
+      description: Too many requests (per-user rate limit)
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+
+  schemas:
+    # ---- Envelope ----
+    Error:
+      type: object
+      required: [ok, error]
+      properties:
+        ok: { type: boolean, enum: [false] }
+        error: { type: string, example: "toStop: from and to must differ" }
+
+    OkResponse:
+      type: object
+      required: [ok, data]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        data:
+          type: object
+          required: [ok]
+          properties:
+            ok: { type: boolean, enum: [true] }
+
+    # ---- Shared value objects ----
+    Stop:
+      type: object
+      required: [id, name, lat, lng]
+      properties:
+        id: { type: string, example: seet }
+        name: { type: string, example: SEET }
+        lat: { type: number, example: 5.387 }
+        lng: { type: number, example: 6.998 }
+
+    StopEta:
+      allOf:
+        - $ref: "#/components/schemas/Stop"
+        - type: object
+          required: [distKm, etaMin]
+          properties:
+            distKm: { type: number, description: Cumulative km from the bus, example: 1.2 }
+            etaMin: { type: number, description: Minutes at bus cruising speed, example: 3 }
+
+    RideStatus:
+      type: string
+      enum: [requested, assigned, arriving, started, completed, cancelled, expired]
+
+    # ---- System ----
+    HealthResponse:
+      type: object
+      required: [ok, data]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        data:
+          type: object
+          properties:
+            status: { type: string, example: ok }
+
+    StopsResponse:
+      type: object
+      required: [ok, data]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        data:
+          type: object
+          properties:
+            stops:
+              type: array
+              items: { $ref: "#/components/schemas/Stop" }
+
+    # ---- Drivers ----
+    RegisterDriver:
+      type: object
+      required: [name, plate]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 100, example: "Chidi Okafor" }
+        plate: { type: string, minLength: 1, maxLength: 20, example: "ABC-123-KE" }
+
+    DriverResponse:
+      type: object
+      required: [ok, data]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        data:
+          type: object
+          properties:
+            id: { type: string }
+            name: { type: string }
+            plate: { type: string }
+            vehicleType: { type: string, enum: [keke] }
+            capacity: { type: integer, example: 4 }
+
+    GoOnline:
+      type: object
+      required: [online]
+      properties:
+        online: { type: boolean }
+        lat: { type: number, minimum: -90, maximum: 90 }
+        lng: { type: number, minimum: -180, maximum: 180 }
+
+    OnlineResponse:
+      type: object
+      required: [ok, data]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        data:
+          type: object
+          properties:
+            online: { type: boolean }
+
+    UpdateLocation:
+      type: object
+      required: [lat, lng]
+      properties:
+        lat: { type: number, minimum: -90, maximum: 90 }
+        lng: { type: number, minimum: -180, maximum: 180 }
+
+    DriverRidesResponse:
+      type: object
+      required: [ok, data]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        data:
+          type: object
+          properties:
+            rides:
+              type: array
+              items:
+                type: object
+                properties:
+                  rideId: { type: string }
+                  fromStop: { type: string }
+                  toStop: { type: string }
+                  status: { $ref: "#/components/schemas/RideStatus" }
+                  seats: { type: integer }
+                  riderId: { type: string }
+
+    EarningsResponse:
+      type: object
+      required: [ok, data]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        data:
+          type: object
+          properties:
+            totalKobo: { type: integer, description: Running ledger total in kobo, example: 142500 }
+            recent:
+              type: array
+              items:
+                type: object
+                properties:
+                  rideId: { type: string }
+                  amount: { type: integer, description: Kobo credited for this ride }
+                  createdAt: { type: integer, description: Epoch ms }
+
+    WithdrawEarnings:
+      type: object
+      required: [amountKobo, method]
+      properties:
+        amountKobo: { type: integer, minimum: 1, description: "Amount to withdraw, in kobo" }
+        method: { type: string, enum: [bank, wallet] }
+        accountNumber: { type: string, description: Required when method=bank }
+        bankCode: { type: string, description: Required when method=bank }
+        walletAddress: { type: string, description: Required when method=wallet }
+      description: |
+        `bank` withdrawal requires `accountNumber` + `bankCode`; `wallet` withdrawal requires `walletAddress`.
+
+    WithdrawResponse:
+      type: object
+      required: [ok, data]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        data:
+          type: object
+          properties:
+            withdrawalId: { type: string }
+            status: { type: string, enum: [pending] }
+            amountKobo: { type: integer }
+
+    RatingSummaryResponse:
+      type: object
+      required: [ok, data]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        data:
+          type: object
+          properties:
+            average:
+              type: number
+              nullable: true
+              description: Mean stars to 1 decimal, or null if unrated
+              example: 4.6
+            count: { type: integer, example: 12 }
+
+    # ---- Rides ----
+    BookRide:
+      type: object
+      required: [fromStop, toStop]
+      properties:
+        fromStop: { type: string, minLength: 1, example: seet }
+        toStop: { type: string, minLength: 1, example: town }
+        payMethod: { type: string, enum: [naira], default: naira }
+        priorityFee:
+          type: integer
+          minimum: 0
+          maximum: 500000
+          description: Optional surge priority fee in kobo (capped). Honored only when surge is on.
+        seats:
+          type: integer
+          minimum: 1
+          maximum: 4
+          default: 1
+          description: Seats to book (4 = charter the whole keke)
+      description: "`fromStop` and `toStop` must differ."
+
+    BookRideResponse:
+      type: object
+      required: [ok, data]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        data:
+          oneOf:
+            - $ref: "#/components/schemas/BookRideMatched"
+            - $ref: "#/components/schemas/BookRideStranded"
+
+    BookRideMatched:
+      type: object
+      description: A keke was matched.
+      properties:
+        rideId: { type: string }
+        driverId: { type: string }
+        etaMin: { type: number, example: 4 }
+        fare: { type: integer, description: Total fare in kobo }
+        seats: { type: integer }
+        seatsTaken: { type: integer, description: Seats now taken on the matched keke }
+        pooled: { type: boolean, description: true if joining an existing pool }
+        expiresAt: { type: integer, description: Epoch ms — unpaid hold lapses after this }
+        stranded: { type: boolean, enum: [false] }
+
+    BookRideStranded:
+      type: object
+      description: No keke available — request recorded so the rider can track/cancel.
+      properties:
+        rideId: { type: string }
+        driverId: { type: string, nullable: true, enum: [null] }
+        fare: { type: integer }
+        seats: { type: integer }
+        pooled: { type: boolean, enum: [false] }
+        stranded: { type: boolean, enum: [true] }
+
+    CancelResponse:
+      type: object
+      required: [ok, data]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        data:
+          type: object
+          description: |
+            Rider cancel → `{ ok, refundPending }`. Driver cancel → `{ ok, rematched, ... }`:
+            when rematched `{ ok, rematched:true, newDriverId }`, otherwise
+            `{ ok, rematched:false, refundPending }`.
+          properties:
+            ok: { type: boolean, enum: [true] }
+            refundPending: { type: boolean }
+            rematched: { type: boolean }
+            newDriverId: { type: string }
+
+    UpdateRideStatus:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string, enum: [arriving, started] }
+
+    StatusResponse:
+      type: object
+      required: [ok, data]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        data:
+          type: object
+          properties:
+            status: { type: string, enum: [arriving, started] }
+            affected: { type: integer, description: Number of pooled riders advanced }
+
+    CompleteRide:
+      type: object
+      properties:
+        qrToken: { type: string, minLength: 1, description: Scanned QR token }
+        pin: { type: string, minLength: 1, description: Typed completion PIN }
+      description: Provide exactly one of `qrToken` or `pin`.
+
+    CompleteResponse:
+      type: object
+      required: [ok, data]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        data:
+          type: object
+          properties:
+            ok: { type: boolean, enum: [true] }
+            fare: { type: integer, description: Fare paid in kobo }
+
+    QrResponse:
+      type: object
+      required: [ok, data]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        data:
+          type: object
+          properties:
+            qrToken: { type: string }
+            pin: { type: string }
+
+    RateRide:
+      type: object
+      required: [stars]
+      properties:
+        stars: { type: integer, minimum: 1, maximum: 5 }
+        comment: { type: string, maxLength: 500 }
+
+    # ---- Payments ----
+    InitPayment:
+      type: object
+      required: [rideId]
+      properties:
+        rideId: { type: string, minLength: 1 }
+
+    InitPaymentResponse:
+      type: object
+      required: [ok, data]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        data:
+          type: object
+          properties:
+            checkoutUrl: { type: string, format: uri, description: Partna hosted onramp link }
+            reference: { type: string, example: "futoride-<rideId>" }
+
+    VerifyPayment:
+      type: object
+      required: [reference]
+      properties:
+        reference: { type: string, minLength: 1 }
+
+    VerifyPaymentResponse:
+      type: object
+      required: [ok, data]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        data:
+          type: object
+          properties:
+            status: { type: string, description: Partna ramp status (or "PAID") }
+            amount: { type: integer, description: Onramp amount in kobo }
+            paid: { type: boolean }
+
+    PartnaWebhook:
+      type: object
+      description: Partna server-to-server event. Signature verified over `data`.
+      properties:
+        event: { type: string, example: onramp }
+        data:
+          type: object
+          properties:
+            rampReference: { type: string, example: "futoride-<rideId>" }
+          additionalProperties: true
+        signature: { type: string, description: "RSA-PSS/SHA-256 signature over JSON.stringify(data), base64" }
+      required: [data, signature]
+      additionalProperties: true
+
+    # ---- Incidents ----
+    Sos:
+      type: object
+      required: [lat, lng]
+      properties:
+        rideId: { type: string, minLength: 1 }
+        message: { type: string, maxLength: 500 }
+        lat: { type: number, minimum: -90, maximum: 90 }
+        lng: { type: number, minimum: -180, maximum: 180 }
+
+    ReportIncident:
+      type: object
+      required: [type, message, lat, lng]
+      properties:
+        rideId: { type: string, minLength: 1 }
+        type: { type: string, minLength: 1, example: "harassment" }
+        message: { type: string, minLength: 1, maxLength: 500 }
+        lat: { type: number, minimum: -90, maximum: 90 }
+        lng: { type: number, minimum: -180, maximum: 180 }
+
+    IncidentResponse:
+      type: object
+      required: [ok, data]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        data:
+          type: object
+          properties:
+            incidentId: { type: string }
+
+    # ---- Buses ----
+    BusRoutesResponse:
+      type: object
+      required: [ok, data]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        data:
+          type: object
+          properties:
+            routes:
+              type: array
+              items:
+                type: object
+                properties:
+                  id: { type: string, example: town-a }
+                  name: { type: string, example: "Campus → Town" }
+                  stops:
+                    type: array
+                    items: { $ref: "#/components/schemas/Stop" }
+
+    BusEtaResponse:
+      type: object
+      required: [ok, data]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        data:
+          type: object
+          properties:
+            routeId: { type: string }
+            stops:
+              type: array
+              items: { $ref: "#/components/schemas/StopEta" }
+
+    RegisterBus:
+      type: object
+      required: [name, plate, routeId]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 100 }
+        plate: { type: string, minLength: 1, maxLength: 20 }
+        routeId: { type: string, minLength: 1, example: town-a }
+
+    BusDriverResponse:
+      type: object
+      required: [ok, data]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        data:
+          type: object
+          properties:
+            id: { type: string }
+            name: { type: string }
+            plate: { type: string }
+            vehicleType: { type: string, enum: [bus] }
+            routeId: { type: string }
+
+    BusLocation:
+      type: object
+      required: [routeId, lat, lng]
+      properties:
+        routeId: { type: string, minLength: 1 }
+        lat: { type: number, minimum: -90, maximum: 90 }
+        lng: { type: number, minimum: -180, maximum: 180 }
+
+    ProximityOptIn:
+      type: object
+      required: [routeId, stopId]
+      properties:
+        routeId: { type: string, minLength: 1 }
+        stopId: { type: string, minLength: 1 }
+        enabled: { type: boolean, default: true }
+
+    ProximityResponse:
+      type: object
+      required: [ok, data]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        data:
+          type: object
+          properties:
+            enabled: { type: boolean }
+
+    # ---- Surge ----
+    SurgeResponse:
+      type: object
+      required: [ok, data]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        data:
+          type: object
+          properties:
+            zone: { type: string }
+            surge: { type: string, enum: [on, off] }
+
+    # ---- Me / Telegram ----
+    TelegramLinkResponse:
+      type: object
+      required: [ok, data]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        data:
+          type: object
+          properties:
+            url: { type: string, description: "t.me deep link carrying the one-time nonce", example: "https://t.me/FutoRideBot?start=AbC123nonce" }
+            nonce: { type: string }
+            expiresAt: { type: integer, description: Epoch ms (10 min TTL) }
+
+    TelegramUpdate:
+      type: object
+      description: Telegram Bot API update payload (subset used — the `/start <nonce>` handshake).
+      properties:
+        message:
+          type: object
+          properties:
+            chat:
+              type: object
+              properties:
+                id: { type: integer }
+            text: { type: string, example: "/start AbC123nonce" }
+      additionalProperties: true
