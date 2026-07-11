@@ -20,10 +20,16 @@ info:
       Webhooks use their own header/signature auth (not a Firebase token). A few read-only
       endpoints are public.
     - **Validation errors** return **400** `{ ok:false, error }` with `error` shaped as
-      `"<field>: <message>"` (first Zod issue).
+      `"<field>: <message>"` (first Zod issue), e.g. `"toStop: from and to must differ"`.
+    - **Auth failures** return **401** with the exact string `"Missing authentication token"`
+      (no bearer token) or `"Invalid or expired token"` (token present but rejected). The
+      Partna and Telegram webhooks instead return the literal `"Unauthorized"` on a bad
+      signature/secret.
     - **Rate limits.** `POST /rides`, `POST /rides/{id}/complete`, `POST /sos`, and
       `POST /incidents/report` are rate-limited **per user** (keyed by the bearer token).
-      On breach they return **429** `{ ok:false, error }`.
+      On breach they return **429** with the exact string `"Too many requests, slow down"`.
+    - **Unhandled errors** (anything that isn't an `HttpError`/`ZodError`, e.g. a missing
+      Partna/treasury env var) return **500** with the generic string `"Something went wrong"`.
     - **Coordinates.** `lat` ∈ [-90, 90], `lng` ∈ [-180, 180].
 
 servers:
@@ -115,6 +121,7 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
+              example: { ok: false, error: "Not an approved driver" }
 
   /drivers/online:
     post:
@@ -141,6 +148,7 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
+              example: { ok: false, error: "Register as a keke driver first" }
 
   /drivers/location:
     post:
@@ -219,6 +227,7 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
+              example: { ok: false, error: "method: bank withdrawal needs accountNumber+bankCode; wallet withdrawal needs walletAddress" }
         "401":
           $ref: "#/components/responses/Unauthorized"
         "404":
@@ -226,11 +235,13 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
+              example: { ok: false, error: "Driver not found" }
         "409":
           description: Insufficient balance
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
+              example: { ok: false, error: "Insufficient balance" }
 
   /drivers/{id}/rating:
     get:
@@ -252,6 +263,7 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
+              example: { ok: false, error: "Driver not found" }
 
   /rides:
     post:
@@ -281,6 +293,13 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
+              examples:
+                unknownStop:
+                  summary: fromStop/toStop is not a known campus stop
+                  value: { ok: false, error: "Unknown stop" }
+                sameStop:
+                  summary: fromStop equals toStop (Zod refine)
+                  value: { ok: false, error: "toStop: from and to must differ" }
         "401":
           $ref: "#/components/responses/Unauthorized"
         "409":
@@ -288,6 +307,16 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
+              examples:
+                activeRide:
+                  summary: Rider already has an in-progress ride
+                  value: { ok: false, error: "You already have an active ride" }
+                kekeOffline:
+                  summary: Matched keke went offline mid-transaction
+                  value: { ok: false, error: "Keke just went offline, try again" }
+                kekeFilled:
+                  summary: Matched keke filled up / left the lane mid-transaction
+                  value: { ok: false, error: "Keke just filled up, try again" }
         "429":
           $ref: "#/components/responses/RateLimited"
 
@@ -319,16 +348,19 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
+              example: { ok: false, error: "Not your ride" }
         "404":
           description: Ride not found
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
+              example: { ok: false, error: "Ride not found" }
         "409":
           description: Ride already closed (completed/cancelled/expired)
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
+              example: { ok: false, error: "Ride already closed" }
 
   /rides/{id}/status:
     post:
@@ -360,21 +392,31 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
+              example: { ok: false, error: "Rider hasn't paid yet" }
         "403":
           description: Not your ride
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
+              example: { ok: false, error: "Not your ride" }
         "404":
           description: Ride not found
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
+              example: { ok: false, error: "Ride not found" }
         "409":
           description: Ride closed, or illegal transition
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
+              examples:
+                closed:
+                  summary: Ride already completed/cancelled/expired
+                  value: { ok: false, error: "Ride already closed" }
+                illegalTransition:
+                  summary: Not the legal next state (message interpolates the actual states)
+                  value: { ok: false, error: "Cannot move from assigned to started" }
 
   /rides/{id}/complete:
     post:
@@ -404,6 +446,13 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
+              examples:
+                invalidCode:
+                  summary: Supplied QR token / PIN did not match
+                  value: { ok: false, error: "Invalid QR code or PIN" }
+                notExactlyOne:
+                  summary: Neither or both of qrToken/pin supplied (Zod refine)
+                  value: { ok: false, error: "qrToken: provide exactly one of qrToken or pin" }
         "401":
           $ref: "#/components/responses/Unauthorized"
         "402":
@@ -411,21 +460,31 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
+              example: { ok: false, error: "Payment not confirmed" }
         "403":
           description: Only the rider can complete
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
+              example: { ok: false, error: "Only the rider can complete" }
         "404":
           description: Ride not found
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
+              example: { ok: false, error: "Ride not found" }
         "409":
           description: Ride already completed, or not started yet
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
+              examples:
+                alreadyCompleted:
+                  summary: Ride is already completed
+                  value: { ok: false, error: "Ride already completed" }
+                notStarted:
+                  summary: Ride has not reached `started`
+                  value: { ok: false, error: "Ride not started yet" }
         "429":
           $ref: "#/components/responses/RateLimited"
 
@@ -450,11 +509,13 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
+              example: { ok: false, error: "Not your ride" }
         "404":
           description: Ride not found
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
+              example: { ok: false, error: "Ride not found" }
 
   /rides/{id}/rate:
     post:
@@ -483,16 +544,25 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
+              example: { ok: false, error: "Only the rider can rate" }
         "404":
           description: Ride not found
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
+              example: { ok: false, error: "Ride not found" }
         "409":
           description: Ride not completed, or already rated
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
+              examples:
+                notCompleted:
+                  summary: Ride is not yet completed
+                  value: { ok: false, error: "Rate only after the ride is completed" }
+                alreadyRated:
+                  summary: A rating already exists for this ride
+                  value: { ok: false, error: "Ride already rated" }
 
   /payments/init:
     post:
@@ -522,21 +592,27 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
+              example: { ok: false, error: "Not your ride" }
         "404":
           description: Ride not found
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
+              example: { ok: false, error: "Ride not found" }
         "409":
           description: Ride is not payable (wrong status)
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
+              example: { ok: false, error: "Ride is not payable" }
         "500":
-          description: Payment not configured (missing treasury address / Partna keys)
+          description: |
+            Payment not configured (missing `TREASURY_SOLANA_ADDRESS` / Partna keys). These
+            surface as a plain `Error`, so the global handler returns the generic 500 string.
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
+              example: { ok: false, error: "Something went wrong" }
 
   /payments/verify:
     post:
@@ -566,11 +642,13 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
+              example: { ok: false, error: "Not your payment" }
         "404":
           description: Payment not found
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
+              example: { ok: false, error: "Payment not found" }
 
   /payments/webhook:
     post:
@@ -597,10 +675,11 @@ paths:
               schema:
                 $ref: "#/components/schemas/OkResponse"
         "401":
-          description: Invalid signature
+          description: Invalid/missing signature (returns the literal `Unauthorized`)
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
+              example: { ok: false, error: "Unauthorized" }
 
   /payments/mock-deposit:
     post:
@@ -630,11 +709,19 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
+              examples:
+                notStaging:
+                  summary: PARTNA_BASE_URL is not a staging host
+                  value: { ok: false, error: "Mock deposit is staging-only" }
+                notYourRide:
+                  summary: Ride belongs to another rider
+                  value: { ok: false, error: "Not your ride" }
         "404":
           description: Ride not found
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
+              example: { ok: false, error: "Ride not found" }
 
   /sos:
     post:
@@ -729,6 +816,7 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
+              example: { ok: false, error: "Unknown route" }
 
   /buses/register:
     post:
@@ -757,11 +845,13 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
+              example: { ok: false, error: "Unknown route" }
         "409":
           description: Already registered as a keke driver
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
+              example: { ok: false, error: "Already registered as a keke driver" }
 
   /buses/location:
     post:
@@ -790,11 +880,13 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
+              example: { ok: false, error: "Register as a bus driver first" }
         "404":
           description: Unknown route
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
+              example: { ok: false, error: "Unknown route" }
 
   /buses/proximity:
     post:
@@ -821,6 +913,7 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
+              example: { ok: false, error: "Stop is not on this route" }
         "401":
           $ref: "#/components/responses/Unauthorized"
         "404":
@@ -828,6 +921,7 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
+              example: { ok: false, error: "Unknown route" }
 
   /surge/{zone}:
     get:
@@ -890,10 +984,11 @@ paths:
               schema:
                 $ref: "#/components/schemas/OkResponse"
         "401":
-          description: Missing/invalid secret token
+          description: Missing/invalid secret token (returns the literal `Unauthorized`)
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
+              example: { ok: false, error: "Unauthorized" }
 
 components:
   securitySchemes:
@@ -933,11 +1028,19 @@ components:
       content:
         application/json:
           schema: { $ref: "#/components/schemas/Error" }
+          examples:
+            missing:
+              summary: No bearer token supplied
+              value: { ok: false, error: "Missing authentication token" }
+            invalid:
+              summary: Token present but invalid/expired
+              value: { ok: false, error: "Invalid or expired token" }
     RateLimited:
       description: Too many requests (per-user rate limit)
       content:
         application/json:
           schema: { $ref: "#/components/schemas/Error" }
+          example: { ok: false, error: "Too many requests, slow down" }
 
   schemas:
     # ---- Envelope ----
