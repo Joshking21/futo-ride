@@ -215,6 +215,20 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/WithdrawEarnings"
+            examples:
+              bank:
+                summary: Bank Withdrawal
+                value:
+                  amountKobo: 500000
+                  method: bank
+                  accountNumber: "0123456789"
+                  bankCode: "058"
+              wallet:
+                summary: Crypto Wallet Withdrawal
+                value:
+                  amountKobo: 500000
+                  method: wallet
+                  walletAddress: "5xoB..."
       responses:
         "200":
           description: Withdrawal recorded
@@ -1196,6 +1210,8 @@ components:
     WithdrawEarnings:
       type: object
       required: [amountKobo, method]
+      discriminator:
+        propertyName: method
       properties:
         amountKobo: { type: integer, minimum: 1, description: "Amount to withdraw, in kobo" }
         method:
@@ -1205,15 +1221,28 @@ components:
             Payout rail:
             - `bank` — naira offramp (planned via Partna `cryptoToFiat` → the driver's bank account).
             - `wallet` — on-chain USDC to a Solana wallet address.
-        accountNumber: { type: string, description: Required when method=bank }
-        bankCode: { type: string, description: Required when method=bank }
-        walletAddress: { type: string, description: Required when method=wallet (Solana address for the USDC transfer) }
       description: |
-        `bank` withdrawal requires `accountNumber` + `bankCode`; `wallet` withdrawal requires `walletAddress`.
+        Withdraw to either a local bank account or a crypto wallet.
         **Payout execution is deferred (§21.4):** this endpoint validates the request and debits
         the earnings ledger transactionally, then records a `pending` withdrawal. The actual
         payout leg — Partna offramp (bank) or the on-chain USDC transfer (wallet) — is **not yet
         performed**, so both methods behave identically today and no funds move until that leg ships.
+      oneOf:
+        - $ref: '#/components/schemas/WithdrawToBank'
+        - $ref: '#/components/schemas/WithdrawToWallet'
+
+    WithdrawToBank:
+      type: object
+      required: [accountNumber, bankCode]
+      properties:
+        accountNumber: { type: string, description: "10-digit NUBAN" }
+        bankCode: { type: string, description: "3-digit CBN bank code" }
+
+    WithdrawToWallet:
+      type: object
+      required: [walletAddress]
+      properties:
+        walletAddress: { type: string, description: "Solana/USDC wallet address" }
 
     WithdrawResponse:
       type: object
