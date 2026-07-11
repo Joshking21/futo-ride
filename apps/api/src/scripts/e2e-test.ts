@@ -135,7 +135,9 @@ async function main() {
   check("rate 5★ → 200", rate.status === 200, rate);
 
   const earn = await call("GET", "/drivers/me/earnings", driver.token);
-  check("driver earnings totalKobo = 15000", earn.status === 200 && earn.data?.totalKobo === 15000, earn);
+  // Driver keeps 95% of the seat fare; the platform takes a 5% welfare cut (§21/P2).
+  // 15000 kobo fare → 14250 driver / 750 platform.
+  check("driver earnings totalKobo = 14250 (95% of 15000)", earn.status === 200 && earn.data?.totalKobo === 14250, earn);
 
   console.log("\n── Lane pooling (from+to) ──");
   const p1 = await call("POST", "/rides", rider.token, { fromStop: "seet", toStop: "town", seats: 1, payMethod: "naira" });
