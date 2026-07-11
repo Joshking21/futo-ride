@@ -1198,12 +1198,22 @@ components:
       required: [amountKobo, method]
       properties:
         amountKobo: { type: integer, minimum: 1, description: "Amount to withdraw, in kobo" }
-        method: { type: string, enum: [bank, wallet] }
+        method:
+          type: string
+          enum: [bank, wallet]
+          description: |
+            Payout rail:
+            - `bank` — naira offramp (planned via Partna `cryptoToFiat` → the driver's bank account).
+            - `wallet` — on-chain USDC to a Solana wallet address.
         accountNumber: { type: string, description: Required when method=bank }
         bankCode: { type: string, description: Required when method=bank }
-        walletAddress: { type: string, description: Required when method=wallet }
+        walletAddress: { type: string, description: Required when method=wallet (Solana address for the USDC transfer) }
       description: |
         `bank` withdrawal requires `accountNumber` + `bankCode`; `wallet` withdrawal requires `walletAddress`.
+        **Payout execution is deferred (§21.4):** this endpoint validates the request and debits
+        the earnings ledger transactionally, then records a `pending` withdrawal. The actual
+        payout leg — Partna offramp (bank) or the on-chain USDC transfer (wallet) — is **not yet
+        performed**, so both methods behave identically today and no funds move until that leg ships.
 
     WithdrawResponse:
       type: object
@@ -1214,7 +1224,13 @@ components:
           type: object
           properties:
             withdrawalId: { type: string }
-            status: { type: string, enum: [pending] }
+            status:
+              type: string
+              enum: [pending]
+              description: |
+                Always `pending` on creation. The stored `Withdrawal` record also defines
+                `paid` and `failed`, but those are reserved for the deferred payout leg and are
+                never returned by this endpoint yet — nothing transitions a withdrawal off `pending`.
             amountKobo: { type: integer }
 
     RatingSummaryResponse:
