@@ -186,6 +186,27 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
 
+  /drivers/me/rides/history:
+    get:
+      tags: [Drivers]
+      summary: My past rides (driver)
+      description: |
+        The caller's **terminal** rides (`completed`, `cancelled`, `expired`), newest first.
+        Cursor-paginated on `createdAt` (pass the previous page's `nextCursor` back as `cursor`).
+        Active rides are served by `GET /drivers/me/rides` instead.
+      parameters:
+        - $ref: "#/components/parameters/HistoryLimit"
+        - $ref: "#/components/parameters/HistoryCursor"
+      responses:
+        "200":
+          description: Past rides page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DriverRideHistoryResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
   /drivers/me/earnings:
     get:
       tags: [Drivers]
@@ -278,6 +299,27 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
               example: { ok: false, error: "Driver not found" }
+
+  /rides/history:
+    get:
+      tags: [Rides]
+      summary: My past rides (rider)
+      description: |
+        The caller's **terminal** rides (`completed`, `cancelled`, `expired`), newest first.
+        Cursor-paginated on `createdAt` (pass the previous page's `nextCursor` back as `cursor`).
+        The rider's in-progress ride is not included here (track it from the booking response).
+      parameters:
+        - $ref: "#/components/parameters/HistoryLimit"
+        - $ref: "#/components/parameters/HistoryCursor"
+      responses:
+        "200":
+          description: Past rides page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RiderRideHistoryResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
 
   /rides:
     post:
@@ -1035,6 +1077,18 @@ components:
       required: true
       description: Bus route id (e.g. `town-a`)
       schema: { type: string, minLength: 1 }
+    HistoryLimit:
+      name: limit
+      in: query
+      required: false
+      description: Page size (1–50).
+      schema: { type: integer, minimum: 1, maximum: 50, default: 20 }
+    HistoryCursor:
+      name: cursor
+      in: query
+      required: false
+      description: "`createdAt` (epoch ms) of the last item from the previous page — results page after it."
+      schema: { type: integer, minimum: 1 }
 
   responses:
     Unauthorized:
@@ -1188,6 +1242,65 @@ components:
                   status: { $ref: "#/components/schemas/RideStatus" }
                   seats: { type: integer }
                   riderId: { type: string }
+
+    RideHistoryItem:
+      type: object
+      required: [rideId, fromStop, toStop, status, seats, fare, createdAt]
+      properties:
+        rideId: { type: string }
+        fromStop: { type: string }
+        toStop: { type: string }
+        status: { $ref: "#/components/schemas/RideStatus" }
+        seats: { type: integer }
+        fare: { type: integer, description: Total fare in kobo }
+        createdAt: { type: integer, description: Epoch ms }
+
+    DriverRideHistoryResponse:
+      type: object
+      required: [ok, data]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        data:
+          type: object
+          required: [rides, nextCursor]
+          properties:
+            rides:
+              type: array
+              items:
+                allOf:
+                  - $ref: "#/components/schemas/RideHistoryItem"
+                  - type: object
+                    properties:
+                      riderId: { type: string, description: The rider on this ride }
+            nextCursor:
+              type: integer
+              nullable: true
+              description: Pass back as `cursor` for the next page; `null` when there are no more.
+
+    RiderRideHistoryResponse:
+      type: object
+      required: [ok, data]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        data:
+          type: object
+          required: [rides, nextCursor]
+          properties:
+            rides:
+              type: array
+              items:
+                allOf:
+                  - $ref: "#/components/schemas/RideHistoryItem"
+                  - type: object
+                    properties:
+                      driverId:
+                        type: string
+                        nullable: true
+                        description: The keke driver, or `null` for a ride that never matched (expired/cancelled while stranded)
+            nextCursor:
+              type: integer
+              nullable: true
+              description: Pass back as `cursor` for the next page; `null` when there are no more.
 
     EarningsResponse:
       type: object

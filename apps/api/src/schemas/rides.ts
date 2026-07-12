@@ -39,5 +39,12 @@ export const RideId = z.object({
   id: z.string().min(1),
 });
 
+/** Paginated ride-history query (driver + rider). `cursor` = the `createdAt` of the last
+ * item from the previous page (epoch ms); results are newest-first, so page after it. */
+export const RideHistoryQuery = z.object({
+  limit: z.coerce.number().int().min(1).max(50).default(20),
+  cursor: z.coerce.number().int().positive().optional(),
+});
+
 export type BookRideInput = z.infer<typeof BookRide>;
 export type RateRideInput = z.infer<typeof RateRide>;
