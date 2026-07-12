@@ -73,6 +73,12 @@ Auth:  required (the driver)
 200:   { ok: true, data: { rides: [{ rideId, fromStop, toStop, status, seats, riderId }] } }
 Notes: (§20.7) the ACTIVE rides (assigned | arriving | started) on the caller's keke — how the driver app opens the trip it was dispatched. The dispatch Telegram message also carries the rideId now.
 
+### GET /drivers/me/rides/history
+Auth:  required (the driver)
+Query: limit? (1..50, default 20) · cursor? (createdAt epoch ms of the last item on the previous page)
+200:   { ok: true, data: { rides: [{ rideId, fromStop, toStop, status, seats, fare, riderId, createdAt }], nextCursor: number | null } }
+Notes: the driver's PAST rides — terminal states only (completed | cancelled | expired), newest first. Cursor-paginated on createdAt: pass the previous page's `nextCursor` back as `cursor`; `nextCursor` is null when there are no more. Active rides are served by GET /drivers/me/rides. Needs composite index rides[driverId ASC, status ASC, createdAt DESC].
+
 ### GET /drivers/me/earnings
 Auth:  required (the driver)
 200:   { ok: true, data: { totalKobo: number, recent: [{ rideId, amount, createdAt }] } }
@@ -92,6 +98,12 @@ Auth:  none
 Notes: average stars (1 dp) + number of ratings, maintained as a running aggregate on the driver doc. average is null until the first rating.
 
 ---
+
+### GET /rides/history
+Auth:  required (Firebase ID token, rider)
+Query: limit? (1..50, default 20) · cursor? (createdAt epoch ms of the last item on the previous page)
+200:   { ok: true, data: { rides: [{ rideId, fromStop, toStop, status, seats, fare, driverId, createdAt }], nextCursor: number | null } }
+Notes: the rider's PAST rides — terminal states only (completed | cancelled | expired), newest first. Cursor-paginated on createdAt (pass the previous page's `nextCursor` back as `cursor`; null when done). `driverId` is null for a ride that never matched a keke (expired/cancelled while stranded). The rider's in-progress ride is NOT here — track it from the booking response. Needs composite index rides[riderId ASC, status ASC, createdAt DESC].
 
 ### POST /rides
 Auth:  required (Firebase ID token, rider)

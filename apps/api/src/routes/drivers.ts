@@ -5,10 +5,12 @@ import { adminDb } from "../lib/firestore.js";
 import { ok, HttpError } from "../lib/http.js";
 import { isApprovedDriver } from "../lib/whitelist.js";
 import { GoOnline, UpdateLocation, DriverId, RegisterDriver, WithdrawEarnings } from "../schemas/drivers.js";
+import { RideHistoryQuery } from "../schemas/rides.js";
 import type { Ride, RideStatus } from "../types/index.js";
 
 const DEFAULT_CAPACITY = 4;
 const ACTIVE_STATUSES: RideStatus[] = ["assigned", "arriving", "started"];
+const TERMINAL_STATUSES: RideStatus[] = ["completed", "cancelled", "expired"];
 
 /** Driver availability + location. The driver doc id is the driver's uid. */
 export default async function driverRoutes(app: FastifyInstance) {
@@ -90,6 +92,37 @@ export default async function driverRoutes(app: FastifyInstance) {
       };
     });
     return ok({ rides });
+  });
+
+  app.get("/drivers/me/rides/history", async (req) => {
+    const user = await verifyRequest(req);
+    const { limit, cursor } = RideHistoryQuery.parse(req.query);
+
+    // Terminal rides (completed | cancelled | expired), newest first. Cursor-paginated on
+    // createdAt. Needs composite index rides[driverId ASC, status ASC, createdAt DESC].
+    let query = adminDb()
+      .collection("rides")
+      .where("driverId", "==", user.uid)
+      .where("status", "in", TERMINAL_STATUSES)
+      .orderBy("createdAt", "desc");
+    if (cursor !== undefined) query = query.startAfter(cursor);
+
+    const snap = await query.limit(limit).get();
+    const rides = snap.docs.map((doc) => {
+      const r = doc.data() as Ride;
+      return {
+        rideId: r.id,
+        fromStop: r.fromStop,
+        toStop: r.toStop,
+        status: r.status,
+        seats: r.seats,
+        fare: r.fare,
+        riderId: r.riderId,
+        createdAt: r.createdAt,
+      };
+    });
+    const nextCursor = rides.length === limit ? rides[rides.length - 1].createdAt : null;
+    return ok({ rides, nextCursor });
   });
 
   app.get("/drivers/me/earnings", async (req) => {

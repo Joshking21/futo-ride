@@ -25,10 +25,11 @@ import {
 } from "../lib/matching.js";
 import { dispatchToDriver, pingDriver } from "../lib/dispatch.js";
 import { raiseIncident } from "../lib/incidents.js";
-import { BookRide, CompleteRide, RateRide, RideId, UpdateRideStatus } from "../schemas/rides.js";
+import { BookRide, CompleteRide, RateRide, RideId, RideHistoryQuery, UpdateRideStatus } from "../schemas/rides.js";
 import type { Ride, RideStatus } from "../types/index.js";
 
 const ACTIVE_STATUSES: RideStatus[] = ["assigned", "arriving", "started"];
+const TERMINAL_STATUSES: RideStatus[] = ["completed", "cancelled", "expired"];
 const RATE_LIMIT = { config: { rateLimit: { max: 30, timeWindow: "1 minute" } } };
 
 function stopById(id: string): Stop | undefined {
@@ -63,6 +64,39 @@ async function creditDriver(driverId: string, rideId: string, amountKobo: number
 }
 
 export default async function rideRoutes(app: FastifyInstance) {
+  // Rider's past rides (terminal: completed | cancelled | expired), newest first,
+  // cursor-paginated on createdAt. Needs composite index
+  // rides[riderId ASC, status ASC, createdAt DESC]. Static path — declared before the
+  // `/rides/:id/*` routes so it can never be shadowed by an `:id` match.
+  app.get("/rides/history", async (req) => {
+    const user = await verifyRequest(req);
+    const { limit, cursor } = RideHistoryQuery.parse(req.query);
+
+    let query = adminDb()
+      .collection("rides")
+      .where("riderId", "==", user.uid)
+      .where("status", "in", TERMINAL_STATUSES)
+      .orderBy("createdAt", "desc");
+    if (cursor !== undefined) query = query.startAfter(cursor);
+
+    const snap = await query.limit(limit).get();
+    const rides = snap.docs.map((doc) => {
+      const r = doc.data() as Ride;
+      return {
+        rideId: r.id,
+        fromStop: r.fromStop,
+        toStop: r.toStop,
+        status: r.status,
+        seats: r.seats,
+        fare: r.fare,
+        driverId: r.driverId || null,
+        createdAt: r.createdAt,
+      };
+    });
+    const nextCursor = rides.length === limit ? rides[rides.length - 1].createdAt : null;
+    return ok({ rides, nextCursor });
+  });
+
   app.post("/rides", RATE_LIMIT, async (req) => {
     const user = await verifyRequest(req);
     const body = BookRide.parse(req.body);
