@@ -130,10 +130,12 @@ POST /drivers/register       onboard a keke driver         → { id, name, plate
 POST /drivers/online         driver go on/off (+ position) → { online }
 POST /drivers/location       driver position update        → { ok }
 GET  /drivers/me/rides       driver's active assignments   → { rides }
+GET  /drivers/me/rides/history driver's past rides (paged) → { rides, nextCursor }
 GET  /drivers/me/earnings    driver earnings ledger        → { totalKobo, recent }
 POST /drivers/me/withdraw    driver cashout (offramp/wallet)→ { withdrawalId, status, amountKobo }
 GET  /drivers/:id/rating     driver avg rating + count     → { average, count }
 
+GET  /rides/history          rider's past rides (paged)    → { rides, nextCursor }
 POST /rides                  book keke seat(s), pooled     → { rideId, driverId, etaMin, fare, seats, seatsTaken, pooled, expiresAt, stranded }
 POST /rides/:id/cancel       cancel a ride                 → { ok, rematched?, newDriverId?, refundPending? }
 POST /rides/:id/status       driver: arriving / started    → { status, affected }
