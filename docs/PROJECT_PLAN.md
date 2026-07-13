@@ -220,6 +220,7 @@ x-api-secret: <secret>
 ```
 ```json
 {
+  "channelRef": "<SUG Security channelRef — from the Alerta dashboard/env ALERTA_TELEGRAM_TARGET>",
   "title": "🔴 SOS — student needs help",
   "severity": "critical",
   "message": "Chioma A. triggered SOS during ride KEKE-2381.",
@@ -231,6 +232,15 @@ x-api-secret: <secret>
   }
 }
 ```
+> **Recipient field (verified live 2026-07-12):** the request body **must** include
+> `channelRef` (the Telegram target). Sending it under any other key (we previously used
+> `target`) returns `400 {"message":["channelRef should not be empty"]}`; an unregistered/
+> wrong value returns `400 {"message":"Invalid Telegram channelRef"}`. **`channelRef` is an
+> Alerta channel reference (format `TG_ALT_xxxxx`), NOT the raw Telegram chat id** — copy it
+> from the Alerta dashboard → Channels after connecting your bot + selecting the group. Alerta
+> relays through **your own** BotFather bot (you paste its token into Alerta), so that bot must
+> be a member of the SUG Security group. Documented body: `channelRef`, `title`, `severity`
+> (Title-case), `message`, optional `metadata`.
 
 > **Demo money-shot:** SOS → a real Telegram message landing in the security group, live on stage.
 

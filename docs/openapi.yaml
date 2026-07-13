@@ -783,7 +783,12 @@ paths:
     post:
       tags: [Incidents]
       summary: Trigger SOS
-      description: Raises a safety incident with the rider's location. **Rate-limited** (10/min per user).
+      description: |
+        Raises a safety incident with the caller's location, triaged by AI and sent to the SUG
+        Security Telegram group (via Alerta). The alert carries the reporter's identity (name +
+        role) and, when a ride is attached, the driver plate + route. **Rate-limited** (10/min per
+        user). `rideId` is optional; if supplied it **must be the caller's own ride** (they are its
+        rider or driver) — a `rideId` is private, so a foreign one is rejected.
       requestBody:
         required: true
         content:
@@ -799,6 +804,18 @@ paths:
                 $ref: "#/components/schemas/IncidentResponse"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: The supplied rideId is not the caller's ride
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+              example: { ok: false, error: "Not your ride" }
+        "404":
+          description: The supplied rideId does not exist
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+              example: { ok: false, error: "Ride not found" }
         "429":
           $ref: "#/components/responses/RateLimited"
 
@@ -806,7 +823,11 @@ paths:
     post:
       tags: [Incidents]
       summary: Report an incident
-      description: Files a typed incident report with location. **Rate-limited** (10/min per user).
+      description: |
+        Files a typed incident report with location (same AI-triage → Alerta → SUG Security
+        pipeline as `/sos`; the alert carries the reporter's identity and ride context).
+        **Rate-limited** (10/min per user). `rideId` is optional; if supplied it **must be the
+        caller's own ride** — a foreign `rideId` is rejected.
       requestBody:
         required: true
         content:
@@ -822,6 +843,18 @@ paths:
                 $ref: "#/components/schemas/IncidentResponse"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: The supplied rideId is not the caller's ride
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+              example: { ok: false, error: "Not your ride" }
+        "404":
+          description: The supplied rideId does not exist
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+              example: { ok: false, error: "Ride not found" }
         "429":
           $ref: "#/components/responses/RateLimited"
 

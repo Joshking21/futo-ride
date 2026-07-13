@@ -85,6 +85,9 @@ export type Ride = {
 export type Incident = {
   id: string;
   rideId?: string;
+  reporterUid: string; // the authenticated caller who raised it (rider or driver)
+  reporterName?: string; // resolved from users/{uid} for the alert (best-effort)
+  reporterRole?: string; // "rider" | "driver" (best-effort)
   type: string;
   severity: Severity;
   aiSeverity: Severity;

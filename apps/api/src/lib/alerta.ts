@@ -26,6 +26,9 @@ export async function sendTelegramAlert(
     throw new Error("Missing Alerta credentials");
   }
 
+  // Map to Alerta's documented /v2/telegram/send schema (docs.encrisoft.com):
+  // `channelRef` (the Alerta channel ref, e.g. TG_ALT_xxxxx — NOT a raw chat id),
+  // Title-case `severity`, and `metadata` (not `meta`).
   const res = await fetch(`${BASE_URL}/telegram/send`, {
     method: "POST",
     headers: {
@@ -33,7 +36,13 @@ export async function sendTelegramAlert(
       "x-api-key": apiKey,
       "x-api-secret": apiSecret,
     },
-    body: JSON.stringify({ ...payload, target: resolvedTarget }),
+    body: JSON.stringify({
+      channelRef: resolvedTarget,
+      title: payload.title,
+      severity: payload.severity.charAt(0).toUpperCase() + payload.severity.slice(1),
+      message: payload.message,
+      ...(payload.meta ? { metadata: payload.meta } : {}),
+    }),
   });
 
   if (!res.ok) {

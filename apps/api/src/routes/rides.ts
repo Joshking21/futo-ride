@@ -167,7 +167,7 @@ export default async function rideRoutes(app: FastifyInstance) {
 
       if (!reuseRef) {
         await raiseIncident({
-          riderId: user.uid,
+          reporterUid: user.uid,
           type: "stranded",
           message: `No keke seat available for a rider requesting ${from.name} → ${to.name} (${body.seats} seat(s)).`,
           location: `${from.name} (${from.lat},${from.lng})`,
@@ -284,7 +284,7 @@ export default async function rideRoutes(app: FastifyInstance) {
     // Mid-trip cancellation is safety-relevant — flag it (§20.11).
     if (wasStarted && from) {
       await raiseIncident({
-        riderId: ride.riderId,
+        reporterUid: user.uid,
         type: "mid-trip-cancel",
         message: `Ride ${ride.id} cancelled mid-trip by ${isRider ? "rider" : "driver"} (${ride.fromStop} → ${ride.toStop}).`,
         location: `${from.name} (${from.lat},${from.lng})`,
