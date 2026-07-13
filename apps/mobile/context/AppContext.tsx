@@ -1,10 +1,30 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
-import { auth, db, rtdb } from "../config/firebaseConfig";
 import { onAuthStateChanged } from "firebase/auth";
-import { doc, onSnapshot, getDoc, collection, query, where } from "firebase/firestore";
-import { ref, set } from "firebase/database";
+import {
+  collection,
+  doc,
+  getDoc,
+  onSnapshot,
+  query,
+  where,
+} from "firebase/firestore";
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
+import { Alert, Linking } from "react-native";
 import { apiRequest } from "../config/apiHelper";
-import { Linking, Alert } from "react-native";
+import { auth, db } from "../config/firebaseConfig";
+
+/** A campus stop as returned by GET /stops. */
+export interface CampusStop {
+  id: string;
+  name: string;
+  lat: number;
+  lng: number;
+}
 
 export interface Ride {
   id: string;
@@ -25,7 +45,13 @@ export interface AlertNotification {
   timestamp: string;
   type: "proximity" | "general";
   read: boolean;
-  category?: "ride_arriving" | "trip_complete" | "queue_update" | "security_alert" | "reward" | "service_update";
+  category?:
+    | "ride_arriving"
+    | "trip_complete"
+    | "queue_update"
+    | "security_alert"
+    | "reward"
+    | "service_update";
 }
 
 export interface TripState {
@@ -38,7 +64,13 @@ export interface TripState {
   driverPhone: string;
   vehicleNumber: string;
   eta: string;
-  status: "idle" | "searching" | "confirmed" | "tracking" | "arrived" | "completed";
+  status:
+    | "idle"
+    | "searching"
+    | "confirmed"
+    | "tracking"
+    | "arrived"
+    | "completed";
   stepIndex: number; // 0: Arrived, 1: Start Trip, 2: At Dropoff, 3: Complete Trip
   rideId?: string;
   driverId?: string;
@@ -48,24 +80,61 @@ export interface TripState {
 }
 
 interface AppContextType {
+  locationDriver: [number, number] | null;
+  setLocationDriver: (location: [number, number] | null) => void;
+  locationRider: [number, number] | null;
+  setLocationRider: (location: [number, number] | null) => void;
   userRole: "rider" | "driver";
   setRole: (role: "rider" | "driver") => void;
-  isOnline: boolean;
-  setOnline: (online: boolean) => Promise<void>;
+  // isOnline: boolean;
+  // setOnline: (online: boolean, lat?: number, lng?: number) => Promise<void>;
   rideHistory: Ride[];
   notifications: AlertNotification[];
   activeTrip: TripState;
-  startBooking: (pickup: string, destination: string, rideType: "keke" | "bus") => void;
-  confirmBooking: (isPriority?: boolean, paymentMethod?: "naira" | "cngn", seats?: number) => Promise<void>;
+  bookedRequest: BookedRideResponse | null;
+  setBookedRequest: (request: BookedRideResponse | null) => void;
+  /** Campus stops fetched from the backend (GET /stops). */
+  campusStops: CampusStop[];
+  isSurgeActive: boolean;
+  setIsSurgeActive: (active: boolean) => void;
+  /** Map a display name to a backend stop id (e.g. "FUTO Main Gate" → "gate"). */
+  getStopId: (displayName: string) => string;
+  /** Map a backend stop id to a display name (e.g. "gate" → "FUTO Main Gate"). */
+  getStopName: (stopId: string) => string;
+  // startBooking: (pickup: string, destination: string, rideType: "keke" | "bus") => void;
+  confirmBooking: (
+    isPriority?: boolean,
+    paymentMethod?: "naira" | "cngn",
+    seats?: number,
+    pickupOverride?: string,
+    destinationOverride?: string,
+    rideTypeOverride?: "keke" | "bus",
+  ) => Promise<void>;
   cancelBooking: () => Promise<void>;
   progressDriverTrip: () => Promise<void>;
   completeTrip: (scannedQrToken?: string) => Promise<void>;
-  addNotification: (title: string, body: string, type?: "proximity" | "general", category?: AlertNotification["category"]) => void;
+  addNotification: (
+    title: string,
+    body: string,
+    type?: "proximity" | "general",
+    category?: AlertNotification["category"],
+  ) => void;
   clearActiveTrip: () => void;
   earnings: { daily: number; tripsCount: number; onlineTime: string };
   triggerMockIncomingRequest: () => void;
 }
 
+export interface BookedRideResponse {
+  driverId: string | null;
+  etaMin?: string;
+  fare: number;
+  pooled?: boolean;
+  rideId: string;
+  seats: number;
+  seatsTaken?: number;
+  stranded: boolean;
+  expiresAt?: number;
+}
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 const INITIAL_TRIP_STATE: TripState = {
@@ -82,17 +151,82 @@ const INITIAL_TRIP_STATE: TripState = {
   stepIndex: 0,
 };
 
-export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+/** Hardcoded fallback in case the /stops fetch fails on first load. */
+const FALLBACK_STOPS: CampusStop[] = [
+  { id: "seet", name: "SEET", lat: 5.387, lng: 6.998 },
+  { id: "library", name: "Main Library", lat: 5.3875, lng: 6.9972 },
+  { id: "gate", name: "Main Gate", lat: 5.3858, lng: 6.999 },
+  { id: "town", name: "Town (Owerri)", lat: 5.4833, lng: 7.0333 },
+];
+
+export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const [userRole, setUserRole] = useState<"rider" | "driver">("rider");
   const [isOnline, setIsOnline] = useState<boolean>(false);
   const [rideHistory, setRideHistory] = useState<Ride[]>([]);
   const [notifications, setNotifications] = useState<AlertNotification[]>([]);
   const [activeTrip, setActiveTrip] = useState<TripState>(INITIAL_TRIP_STATE);
+  const [campusStops, setCampusStops] = useState<CampusStop[]>(FALLBACK_STOPS);
+  const [isSurgeActive, setIsSurgeActive] = useState<boolean>(false);
   const [earnings, setEarnings] = useState({
     daily: 0,
     tripsCount: 0,
     onlineTime: "0h 0m",
   });
+  const [locationRider, setLocationRider] = useState<[number, number] | null>(
+    null,
+  );
+  const [locationDriver, setLocationDriver] = useState<[number, number] | null>(
+    null,
+  );
+  const [bookedRequest, setBookedRequest] = useState<BookedRideResponse | null>(null);
+
+  // ── Fetch campus stops from the backend on mount ──
+  // useEffect(() => {
+  //   const fetchStops = async () => {
+  //     try {
+  //       const res = await apiRequest<{ stops: CampusStop[] }>("/stops");
+  //       console.log(res.stops, "stops")
+  //       console.log(res)
+  //       if (res.stops?.length) setCampusStops(res.stops);
+  //       // return res
+  //     } catch (e) {
+  //       console.warn("Failed to fetch /stops, using fallback:", e);
+  //     }
+  //   };
+  //   fetchStops();
+  // }, []);
+
+  /** Map a display name → backend stop id (best-effort fuzzy match). */
+  const getStopId = useCallback(
+    (displayName: string): string => {
+      const lower = displayName.toLowerCase();
+      // Try exact match first
+      const exact = campusStops.find((s) => s.name.toLowerCase() === lower);
+      if (exact) return exact.id;
+      // Fuzzy: check if the display name contains a stop name or vice-versa
+      const fuzzy = campusStops.find(
+        (s) =>
+          lower.includes(s.name.toLowerCase()) ||
+          s.name.toLowerCase().includes(lower),
+      );
+      if (fuzzy) return fuzzy.id;
+      // Last resort: match by id substring
+      const idMatch = campusStops.find((s) => lower.includes(s.id));
+      return idMatch?.id ?? campusStops[0]?.id ?? "seet";
+    },
+    [campusStops],
+  );
+
+  /** Map a backend stop id → display name (e.g. "gate" → "Main Gate"). */
+  const getStopName = useCallback(
+    (stopId: string): string => {
+      const found = campusStops.find((s) => s.id === stopId);
+      return found?.name ?? "Campus Stop";
+    },
+    [campusStops],
+  );
 
   // 1. Sync User Role Automatically from Firestore Profile
   useEffect(() => {
@@ -107,7 +241,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               setUserRole(data.userType === "driver" ? "driver" : "rider");
             }
           },
-          (err) => console.error("Error reading profile:", err)
+          (err) => console.error("Error reading profile:", err),
         );
         return () => unsubProfile();
       } else {
@@ -201,7 +335,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           price: ride.fare / 100,
         }));
       },
-      (err) => console.error("Error listening to ride:", err)
+      (err) => console.error("Error listening to ride:", err),
     );
 
     return () => unsubRide();
@@ -217,7 +351,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const q = query(
       collection(db, "rides"),
       where("driverId", "==", auth.currentUser?.uid),
-      where("status", "in", ["assigned", "arriving", "started"])
+      where("status", "in", ["assigned", "arriving", "started"]),
     );
 
     const unsubAssignments = onSnapshot(
@@ -261,8 +395,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
 
         setActiveTrip({
-          pickup: ride.fromStop === "gate" ? "FUTO Main Gate" : ride.fromStop === "seet" ? "SEET Head" : ride.fromStop === "library" ? "Main Library" : "Campus Stop",
-          destination: ride.toStop === "gate" ? "FUTO Main Gate" : ride.toStop === "seet" ? "SEET Head" : ride.toStop === "library" ? "Main Library" : ride.toStop === "town" ? "Town (Owerri)" : "Campus Stop",
+          pickup: getStopName(ride.fromStop),
+          destination: getStopName(ride.toStop),
           rideType: "keke",
           price: ride.fare / 100,
           driverName: riderName, //Passenger Name
@@ -277,103 +411,63 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           qrToken: ride.qrToken,
         });
       },
-      (err) => console.error("Error listening to driver matches:", err)
+      (err) => console.error("Error listening to driver matches:", err),
     );
 
     return () => unsubAssignments();
   }, [userRole, isOnline]);
 
   // 4. Driver: Live Location posting (Firestore + Realtime Database)
-  useEffect(() => {
-    if (userRole !== "driver" || !isOnline) return;
+  // useEffect(() => {
+  //   if (userRole !== "driver" || !isOnline) return;
 
-    let lat = 5.387; // SEET center
-    let lng = 6.998;
+  //   let lat = 5.387; // SEET center
+  //   let lng = 6.998;
 
-    const postLocation = async () => {
-      // Simulate moving around campus
-      lat += (Math.random() - 0.5) * 0.0003;
-      lng += (Math.random() - 0.5) * 0.0003;
+  //   const postLocation = async () => {
+  //     // Simulate moving around campus
+  //     lat += (Math.random() - 0.5) * 0.0003;
+  //     lng += (Math.random() - 0.5) * 0.0003;
 
-      try {
-        // Backend Firestore write
-        await apiRequest("/drivers/location", "POST", { lat, lng });
+  //     try {
+  //       // Backend Firestore write
+  //       await apiRequest("/drivers/location", "POST", { lat, lng });
+  //       }
+  //     catch (e) {
+  //       console.error("Error updating location:", e);
+  //     }
+  //   };
 
-        // Direct RTDB write for client live mapping
-        if (auth.currentUser) {
-          const locationRef = ref(rtdb, `drivers/${auth.currentUser.uid}`);
-          await set(locationRef, {
-            id: auth.currentUser.uid,
-            lat,
-            lng,
-            online: true,
-            vehicleType: "keke",
-            updatedAt: new Date().toISOString(),
-          });
-        }
-      } catch (e) {
-        console.error("Error updating location:", e);
-      }
-    };
+  //   postLocation();
+  //   const interval = setInterval(postLocation, 10000);
 
-    postLocation();
-    const interval = setInterval(postLocation, 10000);
-
-    return () => {
-      clearInterval(interval);
-      if (auth.currentUser) {
-        const locationRef = ref(rtdb, `drivers/${auth.currentUser.uid}`);
-        set(locationRef, null).catch(err => console.error("Error clearing RTDB driver:", err));
-      }
-    };
-  }, [userRole, isOnline]);
+  //   return () => {
+  //     clearInterval(interval);
+  //     if (auth.currentUser) {
+  //       const locationRef = ref(rtdb, `drivers/${auth.currentUser.uid}`);
+  //       set(locationRef, null).catch(err => console.error("Error clearing RTDB driver:", err));
+  //     }
+  //   };
+  // }, [userRole, isOnline]);
 
   const setRole = (role: "rider" | "driver") => {
     setUserRole(role);
   };
-
-  // Driver go online/offline
-  const setOnline = async (online: boolean) => {
-    try {
-      await apiRequest("/drivers/online", "POST", {
-        online,
-        lat: 5.387,
-        lng: 6.998,
-      });
-      setIsOnline(online);
-    } catch (e: any) {
-      Alert.alert("Failed to change status", e.message || "Failed to update availability");
-    }
-  };
-
-  const startBooking = (pickup: string, destination: string, rideType: "keke" | "bus") => {
-    setActiveTrip((prev) => ({
-      ...prev,
-      pickup,
-      destination,
-      rideType,
-      status: "searching",
-    }));
-  };
-
   const confirmBooking = async (
     isPriority?: boolean,
     paymentMethod?: "naira" | "cngn",
-    seatsCount?: number
+    seatsCount?: number,
+    pickupOverride?: string,
+    destinationOverride?: string,
+    rideTypeOverride?: "keke" | "bus",
   ) => {
     try {
-      // Map stops to IDs matching backend stops (gate, library, seet, town)
-      const getStopId = (name: string) => {
-        const lower = name.toLowerCase();
-        if (lower.includes("gate")) return "gate";
-        if (lower.includes("library")) return "library";
-        if (lower.includes("seet")) return "seet";
-        if (lower.includes("town")) return "town";
-        return "seet"; // default
-      };
+      const actualPickup = pickupOverride || activeTrip.pickup;
+      const actualDestination = destinationOverride || activeTrip.destination;
+      const actualRideType = rideTypeOverride || activeTrip.rideType;
 
-      const fromStop = getStopId(activeTrip.pickup);
-      const toStop = getStopId(activeTrip.destination);
+      const fromStop = getStopId(actualPickup);
+      const toStop = getStopId(actualDestination);
 
       const requestBody = {
         fromStop,
@@ -394,7 +488,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       if (paymentMethod === "naira") {
         // Init payment transaction
-        const payRes = await apiRequest<{ checkoutUrl: string; reference: string }>("/payments/init", "POST", {
+        const payRes = await apiRequest<{
+          checkoutUrl: string;
+          reference: string;
+        }>("/payments/init", "POST", {
           rideId: matchRes.rideId,
         });
 
@@ -403,6 +500,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
         setActiveTrip((prev) => ({
           ...prev,
+          pickup: actualPickup,
+          destination: actualDestination,
+          rideType: actualRideType,
           rideId: matchRes.rideId,
           driverId: matchRes.driverId,
           price: matchRes.fare / 100,
@@ -413,6 +513,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       } else {
         setActiveTrip((prev) => ({
           ...prev,
+          pickup: actualPickup,
+          destination: actualDestination,
+          rideType: actualRideType,
           rideId: matchRes.rideId,
           driverId: matchRes.driverId,
           price: matchRes.fare / 100,
@@ -422,7 +525,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     } catch (e: any) {
       setActiveTrip(INITIAL_TRIP_STATE);
-      Alert.alert("Booking Request Failed", e.message || "No kekes are currently available.");
+      Alert.alert(
+        "Booking Request Failed",
+        e.message || "No kekes are currently available.",
+      );
+      throw e;
     }
   };
 
@@ -451,9 +558,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     try {
-      await apiRequest(`/rides/${activeTrip.rideId}/status`, "POST", { status: nextStatus });
+      await apiRequest(`/rides/${activeTrip.rideId}/status`, "POST", {
+        status: nextStatus,
+      });
     } catch (e: any) {
-      Alert.alert("Cannot Update Trip", e.message || "Failed to update trip progress.");
+      Alert.alert(
+        "Cannot Update Trip",
+        e.message || "Failed to update trip progress.",
+      );
     }
   };
 
@@ -475,7 +587,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (activeTrip.paymentReference) {
         await apiRequest("/payments/verify", "POST", {
           reference: activeTrip.paymentReference,
-        }).catch(err => console.error("Verify payment warning:", err));
+        }).catch((err) => console.error("Verify payment warning:", err));
       }
 
       setActiveTrip((prev) => ({ ...prev, status: "idle", stepIndex: 0 }));
@@ -492,7 +604,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     title: string,
     body: string,
     type: "proximity" | "general" = "general",
-    category?: AlertNotification["category"]
+    category?: AlertNotification["category"],
   ) => {
     const newNotif: AlertNotification = {
       id: `notif-${Math.random().toString(36).substring(2, 9)}`,
@@ -514,13 +626,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     <AppContext.Provider
       value={{
         userRole,
+        locationDriver,
+        setLocationDriver,
+        locationRider,
+        setLocationRider,
         setRole,
-        isOnline,
-        setOnline,
+        // isOnline,
+        // setOnline,
         rideHistory,
         notifications,
         activeTrip,
-        startBooking,
+        bookedRequest,
+        setBookedRequest,
+        campusStops,
+        isSurgeActive,
+        setIsSurgeActive,
+        getStopId,
+        getStopName,
+        // startBooking,
         confirmBooking,
         cancelBooking,
         progressDriverTrip,

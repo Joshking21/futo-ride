@@ -2,18 +2,17 @@ import { Modal, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useRouter } from "expo-router";
-import { ArrowLeft, Calendar, ChevronRight, Clock, Filter, MapPin, X } from "lucide-react-native";
+import { ArrowLeft, ChevronRight, Clock, Filter, X } from "lucide-react-native";
 import React, { useState } from "react";
 import { Pressable } from "react-native";
 
 interface Trip {
-  id: string;
-  time: string;
-  pickup: string;
-  destination: string;
-  distance: string;
-  price: number;
+  rideId: string;
+  fromStop: string;
+  toStop: string;
   status: string;
+  seats: number;
+  riderId: string;
 }
 
 const COMPLETED_TRIPS_MOCK: Trip[] = [
@@ -79,6 +78,8 @@ export default function DriverRides() {
     "Today" | "This Week" | "This Month" | "Custom"
   >("Today");
   const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
+  const [activeRides, setActiveRides] = useState<Trip[]>([]);
+  
 
   function formatCurrency(amount: number): string {
     return new Intl.NumberFormat("ng-NG", {
@@ -86,6 +87,8 @@ export default function DriverRides() {
       currency: "NGN",
     }).format(amount);
   }
+
+
 
   return (
     <SafeAreaView
@@ -301,7 +304,10 @@ export default function DriverRides() {
                 {/* Metrics Grid */}
                 <View className="flex-row gap-3">
                   {/* Fare */}
-                  <View className="flex-1 bg-[#eff3ff] p-4 rounded-2xl  border-[#eff3ff]/20" style={{elevation:1}}>
+                  <View
+                    className="flex-1 bg-[#eff3ff] p-4 rounded-2xl  border-[#eff3ff]/20"
+                    style={{ elevation: 1 }}
+                  >
                     <Text className="text-secondary text-[11px] font-bold font-jakarta">
                       FARE
                     </Text>
@@ -311,7 +317,10 @@ export default function DriverRides() {
                   </View>
 
                   {/* Distance */}
-                  <View className="flex-1 bg-surface-bright  border-outline-variant/10 p-4 rounded-2xl" style={{elevation:1}}>
+                  <View
+                    className="flex-1 bg-surface-bright  border-outline-variant/10 p-4 rounded-2xl"
+                    style={{ elevation: 1 }}
+                  >
                     <Text className="text-secondary text-[11px] font-bold font-jakarta">
                       DISTANCE
                     </Text>
@@ -348,7 +357,10 @@ export default function DriverRides() {
                     <Text className="text-secondary text-body-sm font-medium font-jakarta">
                       Payment Status
                     </Text>
-                    <View className="bg-[#e6f9ed] px-3 py-1 rounded-full " style={{elevation:1}}>
+                    <View
+                      className="bg-[#e6f9ed] px-3 py-1 rounded-full "
+                      style={{ elevation: 1 }}
+                    >
                       <Text className="text-success text-[11px] font-bold font-jakarta">
                         {selectedTrip.status}
                       </Text>

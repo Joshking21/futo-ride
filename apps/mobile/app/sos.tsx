@@ -1,12 +1,16 @@
+import { apiRequest } from "@/config/apiHelper";
+import { useApp } from "@/context/AppContext";
+import * as Location from "expo-location";
 import { useRouter } from "expo-router";
 import { Lock, Shield, ShieldAlert, X } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
-import { Image, Pressable, ScrollView, Text, View } from "react-native";
+import { Alert, Image, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function SOSScreen() {
   const router = useRouter();
   const [isPulsing, setIsPulsing] = useState(false);
+  const { locationRider, setLocationRider,bookedRequest } = useApp();
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -15,11 +19,41 @@ export default function SOSScreen() {
     return () => clearInterval(interval);
   }, []);
 
-  const handleSendSOS = () => {
-    alert(
-      "Emergency SOS Transmitted! Campus Security Team has been notified of your live coordinates.",
-    );
-    router.back();
+  const handleSendSOS = async () => {
+    try {
+      let lat: number | undefined = undefined;
+      let lng: number | undefined = undefined;
+
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert(
+          "Location permission required",
+          "Futo-Ride needs location access to track your Keke while you're online.",
+        );
+        return;
+      }
+      const loc = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+      setLocationRider([loc.coords.latitude, loc.coords.longitude]);
+      lat = loc.coords.latitude;
+      lng = loc.coords.longitude;
+      const response = await apiRequest("/drivers/sos", "POST", {
+        rideId: bookedRequest?.rideId ?? "22222",
+        message: "",
+        lat: locationRider?.[0],
+        lng: locationRider?.[1],
+      });
+      console.log(response);
+      Alert.alert(
+        "SOS Sent",
+        "Campus Security Team has been notified of your live coordinates.",
+      );
+      router.back();
+    } catch (error: any) {
+      // Alert.alert("Failed to send SOS", error.message || "Failed to send SOS");
+      console.log(error)
+    }
   };
 
   return (

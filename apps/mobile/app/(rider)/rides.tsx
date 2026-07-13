@@ -1,73 +1,120 @@
-import React, { useState } from "react";
-import { View, Text, ScrollView, Pressable } from "react-native";
+import React, { useEffect, useState } from "react";
+import { View, Text, ScrollView, Pressable, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { ArrowLeft, ChevronRight, Filter, User } from "lucide-react-native";
+import { apiRequest } from "../../config/apiHelper";
+import { useApp } from "../../context/AppContext";
+
+interface RideRecord {
+  rideId: string;
+  fromStop: string;
+  toStop: string;
+  status: string;
+  seats: number;
+  fare: number;
+  driverId: string | null;
+  createdAt: number;
+}
+
+interface RideHistoryResponse {
+  rides: RideRecord[];
+  nextCursor: number | null;
+}
+
+const DUMMY_RIDES: RideRecord[] = [
+  {
+    rideId: "dummy-1",
+    fromStop: "seet",
+    toStop: "gate",
+    status: "completed",
+    seats: 2,
+    fare: 35000,
+    driverId: "drv-1",
+    createdAt: Date.now() - 3600000 * 2, // 2 hours ago
+  },
+  {
+    rideId: "dummy-2",
+    fromStop: "library",
+    toStop: "seet",
+    status: "completed",
+    seats: 1,
+    fare: 15000,
+    driverId: "drv-2",
+    createdAt: Date.now() - 3600000 * 24, // 1 day ago
+  },
+  {
+    rideId: "dummy-3",
+    fromStop: "gate",
+    toStop: "library",
+    status: "cancelled",
+    seats: 1,
+    fare: 15000,
+    driverId: null,
+    createdAt: Date.now() - 3600000 * 28, // 1.2 days ago
+  },
+  {
+    rideId: "dummy-4",
+    fromStop: "library",
+    toStop: "gate",
+    status: "completed",
+    seats: 3,
+    fare: 50000,
+    driverId: "drv-3",
+    createdAt: Date.now() - 3600000 * 48, // 2 days ago
+  },
+  {
+    rideId: "dummy-5",
+    fromStop: "seet",
+    toStop: "town",
+    status: "completed",
+    seats: 1,
+    fare: 20000,
+    driverId: "drv-4",
+    createdAt: Date.now() - 3600000 * 72, // 3 days ago
+  },
+];
 
 export default function RideHistory() {
   const router = useRouter();
+  const { getStopName } = useApp();
   const [filter, setFilter] = useState<"all" | "completed" | "cancelled">("all");
+  const [rides, setRides] = useState<RideRecord[]>(DUMMY_RIDES);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const rides = [
-    {
-      id: "1",
-      driverName: "Chinedu (KEK-1234)",
-      date: "May 16, 2025 • 10:18 AM",
-      pickup: "New Hall",
-      destination: "Main Gate",
-      price: "150.00",
-      status: "completed",
-    },
-    {
-      id: "2",
-      driverName: "Usman (KEK-5678)",
-      date: "May 15, 2025 • 4:42 PM",
-      pickup: "Library Complex",
-      destination: "Engineering Building",
-      price: "120.00",
-      status: "completed",
-    },
-    {
-      id: "3",
-      driverName: "Aminu (KEK-9012)",
-      date: "May 15, 2025 • 1:15 PM",
-      pickup: "Hostel 7",
-      destination: "Student Union",
-      price: "100.00",
-      status: "completed",
-    },
-    {
-      id: "4",
-      driverName: "Chinedu (KEK-1234)",
-      date: "May 14, 2025 • 6:30 PM",
-      pickup: "Science Building",
-      destination: "Parañaque City Gate",
-      price: "150.00",
-      status: "cancelled",
-    },
-    {
-      id: "5",
-      driverName: "Usman (KEK-5678)",
-      date: "May 14, 2025 • 11:05 AM",
-      pickup: "Sports Complex",
-      destination: "New Hall",
-      price: "130.00",
-      status: "completed",
-    },
-    {
-      id: "6",
-      driverName: "Aminu (KEK-9012)",
-      date: "May 13, 2025 • 8:20 AM",
-      pickup: "Main Gate",
-      destination: "ICT Building",
-      price: "110.00",
-      status: "completed",
-    },
-  ];
+  useEffect(() => {
+    const fetchHistory = async () => {
+      try {
+        setLoading(true);
+        const res = await apiRequest<RideHistoryResponse>("/rides/history");
+        console.log("Ride history response:", res);
+        setRides([...(res.rides || []), ...DUMMY_RIDES]);
+      } catch (e: any) {
+        console.error("Failed to fetch ride history, using fallback:", e);
+        setRides(DUMMY_RIDES);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchHistory();
+  }, []);
 
-  const filteredRides = rides.filter((ride) => {
+  const formatDate = (timestamp: number) => {
+    return new Date(timestamp).toLocaleString(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
+  };
+
+  const filteredRides = rides?.filter((ride) => {
+    const mappedStatus = ride.status === "completed" ? "completed" : "cancelled";
     if (filter === "all") return true;
-    return ride.status === filter;
+    return mappedStatus === filter;
   });
 
   return (
@@ -183,114 +230,125 @@ export default function RideHistory() {
           Recent Rides
         </Text>
 
-        {/* List of Ride Cards */}
-        <View className="px-margin-mobile gap-4 pb-8">
-          {filteredRides.map((ride) => {
-            const isCompleted = ride.status === "completed";
-            return (
-              <View
-                key={ride.id}
-                className="bg-white rounded-3xl p-5 flex-row items-center justify-between"
-                // style={{ elevation: 1 }}
-              >
-                {/* Left side: Timeline & Route Info */}
-                <View className="flex-row items-stretch gap-4 flex-1">
-                  {/* Timeline Graphic Column */}
-                  <View className="items-center justify-between py-1.5 w-4">
-                    {/* Pickup dot (green border) */}
-                    <View
-                      style={{
-                        width: 12,
-                        height: 12,
-                        borderRadius: 6,
-                        borderWidth: 2,
-                        borderColor: "#10b981",
-                        backgroundColor: "#ffffff",
-                      }}
-                    />
-                    {/* Dashed connector line */}
-                    <View
-                      style={{
-                        flex: 1,
-                        width: 1,
-                        borderStyle: "dashed",
-                        borderWidth: 0.8,
-                        borderColor: "rgba(117, 118, 135, 0.3)",
-                        marginVertical: 4,
-                      }}
-                    />
-                    {/* Dropoff dot (blue border for completed, red for cancelled) */}
-                    <View
-                      style={{
-                        width: 12,
-                        height: 12,
-                        borderRadius: 6,
-                        borderWidth: 2,
-                        borderColor: isCompleted ? "#001caa" : "#ba1a1a",
-                        backgroundColor: "#ffffff",
-                      }}
-                    />
-                  </View>
+        {loading ? (
+          <View className="py-12 items-center justify-center">
+            <ActivityIndicator size="large" color="#001caa" />
+          </View>
+        ) : error ? (
+          <View className="py-12 items-center justify-center px-6">
+            <Text className="text-secondary font-jakarta text-center">{error}</Text>
+          </View>
+        ) : filteredRides.length === 0 ? (
+          <View className="py-12 items-center justify-center px-6">
+            <Text className="text-secondary font-jakarta text-center">No rides found.</Text>
+          </View>
+        ) : (
+          <View className="px-margin-mobile gap-4 pb-8">
+            {filteredRides.map((ride) => {
+              const isCompleted = ride.status === "completed";
+              return (
+                <View
+                  key={ride.rideId}
+                  className="bg-white rounded-3xl p-5 flex-row items-center justify-between"
+                >
+                  {/* Left side: Timeline & Route Info */}
+                  <View className="flex-row items-stretch gap-4 flex-1">
+                    {/* Timeline Graphic Column */}
+                    <View className="items-center justify-between py-1.5 w-4">
+                      {/* Pickup dot (green border) */}
+                      <View
+                        style={{
+                          width: 12,
+                          height: 12,
+                          borderRadius: 6,
+                          borderWidth: 2,
+                          borderColor: "#10b981",
+                          backgroundColor: "#ffffff",
+                        }}
+                      />
+                      {/* Dashed connector line */}
+                      <View
+                        style={{
+                          flex: 1,
+                          width: 1,
+                          borderStyle: "dashed",
+                          borderWidth: 0.8,
+                          borderColor: "rgba(117, 118, 135, 0.3)",
+                          marginVertical: 4,
+                        }}
+                      />
+                      {/* Dropoff dot (blue border for completed, red for cancelled) */}
+                      <View
+                        style={{
+                          width: 12,
+                          height: 12,
+                          borderRadius: 6,
+                          borderWidth: 2,
+                          borderColor: isCompleted ? "#001caa" : "#ba1a1a",
+                          backgroundColor: "#ffffff",
+                        }}
+                      />
+                    </View>
 
-                  {/* Address Details */}
-                  <View className="flex-1 justify-between">
-                    <Text className="text-body-sm font-bold text-on-surface font-jakarta leading-5">
-                      {ride.pickup}
-                    </Text>
-                    <Text className="text-body-sm font-bold text-on-surface font-jakarta leading-5 mt-2">
-                      {ride.destination}
-                    </Text>
-                    {/* Date/Time text */}
-                    <Text className="text-[12px] text-[#757687] font-jakarta mt-3">
-                      {ride.date}
-                    </Text>
-                    {/* Driver details with User icon */}
-                    <View className="flex-row items-center gap-1.5 mt-1.5">
-                      <User color="#757687" size={14} />
-                      <Text className="text-[12px] text-[#757687] font-jakarta font-medium">
-                        {ride.driverName}
+                    {/* Address Details */}
+                    <View className="flex-1 justify-between">
+                      <Text className="text-body-sm font-bold text-on-surface font-jakarta leading-5">
+                        {getStopName(ride.fromStop)}
                       </Text>
+                      <Text className="text-body-sm font-bold text-on-surface font-jakarta leading-5 mt-2">
+                        {getStopName(ride.toStop)}
+                      </Text>
+                      {/* Date/Time text */}
+                      <Text className="text-[12px] text-[#757687] font-jakarta mt-3">
+                        {formatDate(ride.createdAt)}
+                      </Text>
+                      {/* Driver details with User icon */}
+                      <View className="flex-row items-center gap-1.5 mt-1.5">
+                        <User color="#757687" size={14} />
+                        <Text className="text-[12px] text-[#757687] font-jakarta font-medium">
+                          Driver
+                        </Text>
+                      </View>
                     </View>
                   </View>
-                </View>
 
-                {/* Right side: Price & Status & Chevron */}
-                <View className="flex-row  gap-3 pl-3  h-full">
-                  <View className="items-end gap-4  flex">
-                    <Text className="text-body-sm font-bold text-on-surface font-jakarta">
-                      ₦{ride.price}
-                    </Text>
-                    <View
-                      style={{
-                        backgroundColor: isCompleted
-                          ? "rgba(16, 185, 129, 0.1)"
-                          : "rgba(186, 26, 26, 0.1)",
-                        paddingHorizontal: 8,
-                        paddingVertical: 4,
-                        borderRadius: 6,
-                      }}
-                    >
-                      <Text
+                  {/* Right side: Price & Status & Chevron */}
+                  <View className="flex-row gap-3 pl-3 h-full">
+                    <View className="items-end gap-4 flex">
+                      <Text className="text-body-sm font-bold text-on-surface font-jakarta">
+                        ₦{(ride.fare / 100).toFixed(2)}
+                      </Text>
+                      <View
                         style={{
-                          color: isCompleted ? "#10b981" : "#ba1a1a",
-                          fontSize: 8,
-                          fontWeight: "700",
-                          fontFamily: "Plus Jakarta Sans",
+                          backgroundColor: isCompleted
+                            ? "rgba(16, 185, 129, 0.1)"
+                            : "rgba(186, 26, 26, 0.1)",
+                          paddingHorizontal: 8,
+                          paddingVertical: 4,
+                          borderRadius: 6,
                         }}
                       >
-                        {isCompleted ? "Completed" : "Cancelled"}
-                      </Text>
+                        <Text
+                          style={{
+                            color: isCompleted ? "#10b981" : "#ba1a1a",
+                            fontSize: 8,
+                            fontWeight: "700",
+                            fontFamily: "Plus Jakarta Sans",
+                          }}
+                        >
+                          {isCompleted ? "Completed" : "Cancelled"}
+                        </Text>
+                      </View>
                     </View>
                   </View>
-                  
-                </View>
-                <View className=" items-center flex ">
-                  <ChevronRight color="#757687" size={18} />
+                  <View className="items-center flex">
+                    <ChevronRight color="#757687" size={18} />
                   </View>
-              </View>
-            );
-          })}
-        </View>
+                </View>
+              );
+            })}
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
