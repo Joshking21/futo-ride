@@ -41,8 +41,45 @@ export function mapsLink(lat: number, lng: number): string {
   return `https://maps.google.com/?q=${lat},${lng}`;
 }
 
+/**
+ * Best-effort reporter identity + ride context for the alert (§20.8): resolves WHO raised
+ * the incident and WHICH ride/driver it concerns, so security can act. MUST NOT throw — a
+ * failed lookup can never sink an SOS; we alert with whatever we resolved (or just the uid).
+ */
+async function resolveContext(
+  reporterUid: string,
+  rideId?: string,
+): Promise<{ reporterName?: string; reporterRole?: string; driverPlate?: string; route?: string }> {
+  const out: { reporterName?: string; reporterRole?: string; driverPlate?: string; route?: string } = {};
+  try {
+    const db = adminDb();
+    const u = (await db.collection("users").doc(reporterUid).get()).data();
+    if (u) {
+      if (typeof u.name === "string") out.reporterName = u.name;
+      if (typeof u.role === "string") out.reporterRole = u.role;
+    }
+    if (!out.reporterRole && (await db.collection("drivers").doc(reporterUid).get()).exists) {
+      out.reporterRole = "driver";
+    }
+    if (rideId) {
+      const r = (await db.collection("rides").doc(rideId).get()).data();
+      if (r) {
+        out.route = `${r.fromStop} → ${r.toStop}`;
+        // The ride's driver plate (useful when a rider reports their driver going off-course).
+        if (typeof r.driverId === "string" && r.driverId && r.driverId !== reporterUid) {
+          const drv = (await db.collection("drivers").doc(r.driverId).get()).data();
+          if (typeof drv?.plate === "string") out.driverPlate = drv.plate;
+        }
+      }
+    }
+  } catch {
+    // best-effort — return whatever we managed to resolve
+  }
+  return out;
+}
+
 export interface RaiseIncidentParams {
-  riderId: string;
+  reporterUid: string;
   type: string;
   message: string;
   location: string;
@@ -56,16 +93,23 @@ export interface RaiseIncidentParams {
  * about whether the event has GPS coords.
  */
 export async function raiseIncident(params: RaiseIncidentParams): Promise<string> {
-  const { riderId, type, message, location, rideId } = params;
+  const { reporterUid, type, message, location, rideId } = params;
   const now = new Date();
-
   const timeOfDay = now.toTimeString().slice(0, 5);
-  const triage = await safeTriage({ type, message, location, timeOfDay, rideId });
+
+  // Triage + reporter/ride context in parallel; both are best-effort (never sink an SOS).
+  const [triage, ctx] = await Promise.all([
+    safeTriage({ type, message, location, timeOfDay, rideId }),
+    resolveContext(reporterUid, rideId),
+  ]);
 
   const ref = adminDb().collection("incidents").doc();
   const incident: Incident = {
     id: ref.id,
     ...(rideId ? { rideId } : {}),
+    reporterUid,
+    ...(ctx.reporterName ? { reporterName: ctx.reporterName } : {}),
+    ...(ctx.reporterRole ? { reporterRole: ctx.reporterRole } : {}),
     type,
     severity: triage.severity,
     aiSeverity: triage.severity,
@@ -74,18 +118,25 @@ export async function raiseIncident(params: RaiseIncidentParams): Promise<string
     status: "open",
     createdAt: now.getTime(),
   };
-  await ref.set({ ...incident, riderId });
+  await ref.set(incident);
 
   // Best-effort: the incident is already persisted, so a Telegram failure must not
   // sink the alert path (§20.8) — log it, still return the incidentId.
   const tag = triage.isLikelyFalseAlarm ? " (AI: possible false alarm)" : "";
+  const reporter = ctx.reporterName
+    ? `${ctx.reporterName}${ctx.reporterRole ? ` (${ctx.reporterRole})` : ""}`
+    : reporterUid;
   await sendTelegramAlert({
     title: `${SEVERITY_EMOJI[triage.severity]} ${type.toUpperCase()}${tag}`,
     severity: triage.severity,
     message: `AI: ${triage.summary} — ${triage.action}`,
     meta: {
       incident_id: ref.id,
+      reporter,
+      reporter_uid: reporterUid,
       ...(rideId ? { ride_id: rideId } : {}),
+      ...(ctx.route ? { route: ctx.route } : {}),
+      ...(ctx.driverPlate ? { driver: ctx.driverPlate } : {}),
       location,
       time: timeOfDay,
       ai_confidence: triage.confidence,

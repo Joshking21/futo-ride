@@ -779,9 +779,14 @@ Flow for /sos and /incidents/report:
     location link, and the ride id. It returns: a severity (critical/high/medium/
     info), a one-line actionable SUMMARY, a recommended ACTION, a false-alarm
     flag, and a confidence number. Night + off-route escalates severity.
-  • The incident is saved to Firestore (incidents collection).
-  • Alerta sends the AI summary + meta (incident id, ride, a Google Maps location
-    link, time, AI confidence) to the SUG Security Telegram group.
+  • The incident is saved to Firestore (incidents collection) with the REPORTER's
+    identity (reporterUid, name, role) so security knows who raised it.
+  • Alerta sends the AI summary + meta — incident id, **reporter (name + role)**, ride,
+    **driver plate + route** (when a ride is attached), a Google Maps location link, time,
+    AI confidence — to the SUG Security Telegram group.
+  • rideId is OPTIONAL (a location-only SOS is fine). If supplied it MUST be the caller's
+    own ride (they're its rider or driver) — a rideId is private, so a foreign one is
+    rejected (403), not accepted. This stops anyone reporting on a ride they aren't on.
   • A likely false alarm is STILL sent, just tagged "(AI: possible false alarm)" —
     we never silently drop a possible real emergency.
   • (§20.8) THE AI CANNOT SINK AN SOS: if the LLM errors or times out, triage falls
@@ -796,11 +801,16 @@ dashboard is optional/later).
 
 ## 11. TELEGRAM HANDSHAKE (chatId) — needed for pings to actually deliver
 
-A Telegram bot CANNOT message someone who hasn't started a chat with it. So:
-  • SUG SECURITY group pings (SOS / incidents) use ALERTA_TELEGRAM_TARGET (a
-    backend env value) — works as soon as that's configured. No per-user step.
-  • RIDER pings (bus proximity) and DRIVER dispatch go to that person's OWN
-    Telegram chatId, which must be stored on their doc:
+A Telegram bot CANNOT message a chat that hasn't started/added THAT bot. There are TWO
+bots, so the transport differs by recipient:
+  • SUG SECURITY group alerts (SOS / incidents) go through ALERTA (Encrisoft's bot),
+    which must be a MEMBER of the group; the recipient is ALERTA_TELEGRAM_TARGET (the
+    group's channelRef, from the Alerta dashboard). No per-user step. Our own bot being
+    in the group does NOT help — the incident pipeline sends via Alerta, not our bot.
+  • RIDER pings (bus proximity) and DRIVER dispatch are personal DMs sent through OUR
+    OWN bot (native sendMessage) — the user did the /start handshake with our bot, so
+    only our bot can reach them (Alerta's bot can't DM a user who never started it).
+    Their chatId is stored on their doc:
         users/{uid}.chatId      (rider, for bus proximity)
         drivers/{uid}.chatId     (driver, for dispatch / surge bonus)
   • Until a user connects Telegram, those personal pings are simply skipped

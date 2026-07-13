@@ -242,7 +242,7 @@ export async function rematchRide(ride: Ride): Promise<RematchResult> {
   });
   if (from) {
     await raiseIncident({
-      riderId: ride.riderId,
+      reporterUid: ride.riderId,
       type: "stranded",
       message: `No replacement keke for ride ${ride.id} (${ride.fromStop} → ${ride.toStop})${refundPending ? " (paid — refund pending)" : ""}.`,
       location: `${from.name} (${from.lat},${from.lng})`,
