@@ -4,7 +4,7 @@ import { adminDb } from "../lib/firestore.js";
 import { ok, HttpError } from "../lib/http.js";
 import { BUS_ROUTES } from "../lib/routes.js";
 import { resolveRoute, etaAlongRoute, isBusNearStop } from "../lib/bus.js";
-import { sendTelegramAlert } from "../lib/alerta.js";
+import { sendMessage } from "../lib/telegram.js";
 import { RouteId, RouteEtaQuery, ProximityOptIn, BusLocation, RegisterBus } from "../schemas/buses.js";
 
 type LatLng = { lat: number; lng: number };
@@ -52,14 +52,11 @@ async function notifyProximity(routeId: string, busPos: LatLng): Promise<void> {
       const chatId = userSnap.data()?.chatId as string | undefined;
       if (chatId) {
         const stop = route?.stops.find((s) => s.id === sub.stopId);
-        // Best-effort: a Telegram failure must not fail the bus location update.
-        await sendTelegramAlert(
-          {
-            title: "🚌 Bus approaching",
-            severity: "info",
-            message: `The ${routeName} bus is near ${stop?.name ?? sub.stopId}.`,
-          },
+        // Personal DM via our own bot (the rider started it) — best-effort: a Telegram
+        // failure must not fail the bus location update.
+        await sendMessage(
           chatId,
+          `🚌 Bus approaching\nThe ${routeName} bus is near ${stop?.name ?? sub.stopId}.`,
         ).catch(() => undefined);
       }
       await doc.ref.update({ notifiedAt: Date.now() });

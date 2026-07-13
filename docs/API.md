@@ -117,7 +117,7 @@ Notes: SHARED-SEAT POOLING (§6a) + v6 hardening (§20).
   • Seats claimed atomically (no overfill). Fare FLAT PER SEAT: fare = seats × SEAT_FARE_KOBO (+ priorityFee when honored). seats=4 charters the keke.
   • SURGE (§20 / §8): evaluated live per zone (= fromStop). priorityFee honored when surge is on OR was on within the last ~60s (grace window), and is capped; otherwise ignored (fee = 0).
   • TTL: a matched ride sets `expiresAt = now + 10 min` (§21 — bank transfers are slower than cards). If unpaid by then it's lazily swept to `expired`, seats freed, driver pinged (§20.1). A PAID ride never expires.
-  • DISPATCH: a NEW pool pings the driver on Telegram (pickup→dropoff **+ rideId**, blind to bidding, + surge bonus when applicable); joins don't re-ping.
+  • DISPATCH: a NEW pool pings the driver on Telegram — a **personal DM via our own bot** (native sendMessage, NOT Alerta): pickup→dropoff **+ rideId**, blind to bidding, + surge bonus when applicable; joins don't re-ping. Needs the driver to have connected Telegram (else skipped).
   • STRANDED (§20.10): no keke → returns **200 with `stranded:true` and the rideId** (was 409), records the ride `requested`, and raises a HIGH "stranded" incident (AI triage → Alerta → SUG Security, best-effort). The rider can track/cancel it; it is auto-considered when a keke frees up.
   • Mints a per-ride `qrToken` + `completionPin` (§20.3).
 
@@ -196,16 +196,18 @@ Notes: (§20.9) mints a one-time, short-lived nonce and returns the bot deep lin
 ---
 
 ### POST /sos
-Auth:  required (Firebase ID token, rider)
+Auth:  required (Firebase ID token, rider or driver)
 Body:  { rideId?: string, message?: string, lat: number, lng: number }
 200:   { ok: true, data: { incidentId: string } }
-Notes: event → AI triage (severity + summary + false-alarm flag) → Alerta → SUG Security Telegram. A flagged false alarm is still sent, tagged.
+4xx:   403 rideId is not your ride · 404 rideId not found · 429 rate-limited
+Notes: event → AI triage (severity + summary + false-alarm flag) → Alerta → SUG Security Telegram. A flagged false alarm is still sent, tagged. The persisted incident + the Telegram alert now carry the **reporter's identity** (`reporterUid`, name, role) and, when a ride is attached, the driver plate + route — so security knows WHO and WHICH ride (best-effort lookups that can never sink an SOS). `rideId` is optional (a location-only SOS is fine), but **if supplied it must be the caller's own ride** — a `rideId` is private (only the ride's rider/driver has it), so a foreign one is rejected (403), not accepted.
 
 ### POST /incidents/report
-Auth:  required (Firebase ID token)
+Auth:  required (Firebase ID token, rider or driver)
 Body:  { rideId?: string, type: string, message: string, lat: number, lng: number }
 200:   { ok: true, data: { incidentId: string } }
-Notes: manual accident/off-route report; same triage→Alerta pipeline as /sos.
+4xx:   403 rideId is not your ride · 404 rideId not found · 429 rate-limited
+Notes: manual accident/off-route report; same triage→Alerta pipeline as /sos, and the same reporter-identity + rideId-ownership rules (foreign `rideId` → 403).
 
 ---
 
@@ -248,7 +250,7 @@ Auth:  required (Firebase ID token, a REGISTERED bus driver)
 Body:  { routeId: string, lat: number, lng: number }
 200:   { ok: true, data: { ok: true } }
 4xx:   403 not a registered bus driver (call POST /buses/register first) · 404 unknown route
-Notes: bus driver posts its live position; updates the authoritative copy AND fires proximity pings to any rider whose subscribed stop the bus has just reached (de-duped per approach). Telegram delivery is best-effort. (§21/H6) requires a registered bus driver — no longer auto-tags on first call.
+Notes: bus driver posts its live position; updates the authoritative copy AND fires proximity pings to any rider whose subscribed stop the bus has just reached (de-duped per approach). Pings are **personal DMs via our own bot** (native sendMessage, NOT Alerta) — best-effort, and skipped for riders who haven't connected Telegram. (§21/H6) requires a registered bus driver — no longer auto-tags on first call.
 
 ### POST /buses/proximity
 Auth:  required (Firebase ID token)

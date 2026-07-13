@@ -166,7 +166,7 @@ async function main() {
   const earns = await db.collection("earnings").where("driverId", "==", driver.uid).get();
   await Promise.all(earns.docs.map((d) => d.ref.delete()));
   for (const uid of created.riderUids) {
-    const inc = await db.collection("incidents").where("riderId", "==", uid).get();
+    const inc = await db.collection("incidents").where("reporterUid", "==", uid).get();
     await Promise.all(inc.docs.map((d) => d.ref.delete()));
   }
   console.log("  cleaned rides, ratings, driver, users, earnings, incidents");

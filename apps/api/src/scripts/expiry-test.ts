@@ -84,7 +84,7 @@ async function main() {
   await db.collection("drivers").doc(driver.uid).delete().catch(() => {});
   await db.collection("users").doc(rider.uid).delete().catch(() => {});
   await db.collection("users").doc(driver.uid).delete().catch(() => {});
-  const inc = await db.collection("incidents").where("riderId", "==", rider.uid).get();
+  const inc = await db.collection("incidents").where("reporterUid", "==", rider.uid).get();
   await Promise.all(inc.docs.map((d) => d.ref.delete()));
 
   console.log(`\n${fail === 0 ? "🎉 PASSED" : "⚠️ FAILED"} — ${pass} passed, ${fail} failed\n`);

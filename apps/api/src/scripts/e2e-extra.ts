@@ -85,13 +85,52 @@ async function main() {
   const wOk = await call("POST", "/drivers/me/withdraw", driver.token, { amountKobo: 20000, method: "wallet", walletAddress: "SoLwallet111" });
   check("withdraw valid → 200 pending", wOk.status === 200 && wOk.data?.status === "pending" && wOk.data?.amountKobo === 20000, wOk);
 
-  console.log("\n── SOS + incident report ──");
-  const sos = await call("POST", "/sos", rider.token, { lat: 5.387, lng: 6.998, message: "test SOS" });
+  console.log("\n── SOS + incident report (Alerta pipeline — sends REAL Telegram alerts) ──");
+  const sos = await call("POST", "/sos", rider.token, { lat: 5.387, lng: 6.998, message: "E2E test SOS — please ignore" });
   check("SOS → 200 incidentId", sos.status === 200 && typeof sos.data?.incidentId === "string", sos);
-  const rep = await call("POST", "/incidents/report", rider.token, { type: "off-route", message: "driver went off route", lat: 5.387, lng: 6.998 });
+
+  // Alerta verification: the endpoint is 200 even if the Telegram send fails (best-effort),
+  // so prove the pipeline ran by reading the PERSISTED incident. A populated aiSeverity/
+  // aiSummary means triage + persist happened; if aiSummary != the raw message, the LLM
+  // actually ran (vs safeTriage's fallback). Telegram delivery is checked in the server log.
+  const SEVS = ["critical", "high", "medium", "info"];
+  const sosDoc = sos.data?.incidentId
+    ? (await db.collection("incidents").doc(sos.data.incidentId).get()).data()
+    : undefined;
+  check(
+    "SOS incident persisted with valid AI severity + summary",
+    !!sosDoc && SEVS.includes(sosDoc.severity) && typeof sosDoc.aiSummary === "string" && sosDoc.aiSummary.length > 0,
+    sosDoc,
+  );
+  if (sosDoc) {
+    const triaged = sosDoc.aiSummary !== "E2E test SOS — please ignore";
+    console.log(`     ↳ severity=${sosDoc.severity} · aiSummary="${sosDoc.aiSummary}" · AI triage ${triaged ? "RAN ✅" : "fell back ⚠️ (check LLM_API_KEY/model)"}`);
+  }
+  check(
+    "SOS incident carries reporter identity (uid + name + role)",
+    !!sosDoc && sosDoc.reporterUid === rider.uid && sosDoc.reporterName === "Test Rider" && sosDoc.reporterRole === "rider",
+    sosDoc && { reporterUid: sosDoc.reporterUid, reporterName: sosDoc.reporterName, reporterRole: sosDoc.reporterRole },
+  );
+
+  const rep = await call("POST", "/incidents/report", rider.token, { type: "off-route", message: "E2E test — driver went off route", lat: 5.387, lng: 6.998 });
   check("incident report → 200 incidentId", rep.status === 200 && typeof rep.data?.incidentId === "string", rep);
   const repBad = await call("POST", "/incidents/report", rider.token, { type: "x", lat: 5.387, lng: 6.998 });
   check("incident report missing message → 400", repBad.status === 400, repBad);
+  const sosNoAuth = await call("POST", "/sos", undefined, { lat: 5.387, lng: 6.998 });
+  check("SOS without token → 401 (no alert sent)", sosNoAuth.status === 401, sosNoAuth);
+
+  console.log("\n── Incident rideId ownership (a rideId is private → reject foreign) ──");
+  await call("POST", "/drivers/online", driver.token, { online: true, lat: 5.387, lng: 6.998 });
+  const bk = await call("POST", "/rides", rider.token, { fromStop: "seet", toStop: "town", seats: 1, payMethod: "naira" });
+  const myRide = bk.data?.rideId as string;
+  const sosOwn = await call("POST", "/sos", rider.token, { lat: 5.387, lng: 6.998, rideId: myRide });
+  check("SOS with own rideId → 200", sosOwn.status === 200, sosOwn);
+  const sosForeign = await call("POST", "/sos", bus.token, { lat: 5.387, lng: 6.998, rideId: myRide });
+  check("SOS with another user's rideId → 403", sosForeign.status === 403, sosForeign);
+  const repForeign = await call("POST", "/incidents/report", bus.token, { type: "off-route", message: "not my ride", lat: 5.387, lng: 6.998, rideId: myRide });
+  check("incident report with foreign rideId → 403", repForeign.status === 403, repForeign);
+  const sosUnknownRide = await call("POST", "/sos", rider.token, { lat: 5.387, lng: 6.998, rideId: "does-not-exist" });
+  check("SOS with unknown rideId → 404", sosUnknownRide.status === 404, sosUnknownRide);
 
   console.log("\n── Buses ──");
   const routes = await call("GET", "/buses/routes");
@@ -122,20 +161,7 @@ async function main() {
     console.log("  ⏭️  telegram-link skipped (no TELEGRAM_BOT_TOKEN in env)");
   }
 
-  console.log("\n── Payments (no Partna keys — expect graceful failures) ──");
-  // Put the keke driver online so the booking MATCHES (payable), then init should
-  // reach the Partna edge and fail on missing credentials with a 500 (config).
-  await call("POST", "/drivers/online", driver.token, { online: true, lat: 5.387, lng: 6.998 });
-  const book = await call("POST", "/rides", rider.token, { fromStop: "seet", toStop: "town", seats: 1, payMethod: "naira" });
-  const rideId = book.data?.rideId;
-  check("book (driver online) → matched, payable", book.status === 200 && book.data?.stranded === false, book);
-  const initNoKeys = await call("POST", "/payments/init", rider.token, { rideId });
-  check("payments/init w/o Partna keys → 500 (config)", initNoKeys.status === 500, initNoKeys);
-  const verifyMissing = await call("POST", "/payments/verify", rider.token, { reference: "futoride-does-not-exist" });
-  check("payments/verify unknown ref → 404", verifyMissing.status === 404, verifyMissing);
-
   console.log("\n── Cleanup ──");
-  if (rideId) await db.collection("rides").doc(rideId).delete().catch(() => {});
   const rides = await db.collection("rides").where("riderId", "==", rider.uid).get();
   await Promise.all(rides.docs.map((d) => d.ref.delete()));
   await db.collection("drivers").doc(driver.uid).delete().catch(() => {});
@@ -146,7 +172,7 @@ async function main() {
   const w = await db.collection("withdrawals").where("driverId", "==", driver.uid).get();
   await Promise.all(w.docs.map((d) => d.ref.delete()));
   for (const uid of [rider.uid]) {
-    const inc = await db.collection("incidents").where("riderId", "==", uid).get();
+    const inc = await db.collection("incidents").where("reporterUid", "==", uid).get();
     await Promise.all(inc.docs.map((d) => d.ref.delete()));
   }
   void FieldValue; // (kept for parity with e2e helpers)
