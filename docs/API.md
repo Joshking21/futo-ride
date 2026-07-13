@@ -170,7 +170,7 @@ Auth:  required (rider on the ride — ownership checked, §21/N3)
 Body:  { reference: string }
 200:   { ok: true, data: { status: string, amount /*kobo*/, paid: boolean } }
 4xx:   403 not your payment · 404 payment not found
-Notes: (§21) reads the authoritative Partna ramp status and reconciles the stored Payment. Marks it PAID + stamps the ride `paymentStatus:"PAID"` (clearing its TTL) ONLY when the onramp is `completed` AND the settled amount ≥ fare. (C3) if the money lands after the ride already expired/cancelled, it flags the ride `refundPending` instead of reviving it.
+Notes: (§21) reads the authoritative Partna ramp status and reconciles the stored Payment. Marks it PAID + stamps the ride `paymentStatus:"PAID"` (clearing its TTL) as soon as the rider's naira is RECEIVED (the `Deposit`/`confirmed` fiat leg, amount ≥ fare) — so completion isn't blocked on the USDC conversion. Full USDC settlement (`completed`) is tracked separately for the treasury. (C3) if the money lands after the ride already expired/cancelled and was never paid, it flags the ride `refundPending` instead of reviving it.
 
 ### POST /payments/webhook
 Auth:  Partna webhook signature (NOT a Firebase token) — Partna is the caller

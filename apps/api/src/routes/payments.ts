@@ -9,6 +9,7 @@ import {
   getRampByReference,
   verifyPartnaWebhook,
   isOnrampSettled,
+  isFiatReceived,
   mockFiatDeposit,
   type PartnaWebhook,
 } from "../lib/partna.js";
@@ -21,11 +22,18 @@ const ACTIVE_STATUSES = new Set<Ride["status"]>(["assigned", "arriving", "starte
 /**
  * Reconciles a Partna onramp against our stored Payment (shared by /verify and the
  * webhook, §21). Reads the authoritative ramp status server-to-server (never trusts a
- * webhook body's amounts). Marks PAID + stamps the ride only when the onramp is settled
- * AND the amount covers the fare. If the money lands for a ride that already
- * expired/cancelled, it flags `refundPending` instead of reviving a dead ride (C3).
+ * webhook body's amounts). TWO TIERS so the rider isn't blocked on the USDC conversion:
+ *   • FIAT RECEIVED (naira in) → stamp the ride PAID and unlock completion immediately.
+ *   • USDC SETTLED (`completed`) → the on-chain leg; recorded here, credits nobody (the
+ *     driver ledger is credited at ride completion, not here).
+ * If money lands for a ride that already expired/cancelled and was never paid, it flags
+ * `refundPending` instead of reviving a dead ride (C3). `event` is the webhook event name
+ * (e.g. "deposit") when called from the webhook — used as the fiat-received signal.
  */
-async function reconcile(reference: string): Promise<{ status: string; amountKobo: number; paid: boolean }> {
+async function reconcile(
+  reference: string,
+  event?: string,
+): Promise<{ status: string; amountKobo: number; paid: boolean }> {
   const ramp = await getRampByReference(reference);
   const db = adminDb();
   const snap = await db.collection("payments").where("ref", "==", reference).limit(1).get();
@@ -33,20 +41,32 @@ async function reconcile(reference: string): Promise<{ status: string; amountKob
 
   const payment = snap.docs[0].data() as Payment;
   const amountKobo = nairaToKobo(ramp.fromAmountNaira);
-  const paid = isOnrampSettled(ramp.status) && amountKobo >= payment.amount;
+  const amountCovers = amountKobo >= payment.amount;
 
-  await snap.docs[0].ref.update({ status: paid ? "PAID" : ramp.status });
-  if (paid) {
+  // Tier 1: the rider's naira is confirmed in — unlock the ride NOW, before USDC settles.
+  const fiatReceived = amountCovers && isFiatReceived(ramp.status, ramp.confirmed, event);
+  // Tier 2: USDC has actually landed on Solana — the treasury leg (blocks no rider).
+  const settled = amountCovers && isOnrampSettled(ramp.status);
+
+  await snap.docs[0].ref.update({ status: settled ? "SETTLED" : fiatReceived ? "PAID" : ramp.status });
+
+  if (fiatReceived) {
     const rideRef = db.collection("rides").doc(payment.rideId);
     const ride = (await rideRef.get()).data() as Ride | undefined;
     if (ride && ACTIVE_STATUSES.has(ride.status)) {
       await rideRef.set({ paymentStatus: "PAID", expiresAt: FieldValue.delete() }, { merge: true });
-    } else {
-      // Money arrived after the ride expired/cancelled — owe a refund, don't revive it (C3).
+    } else if (ride && ride.paymentStatus !== "PAID") {
+      // Money arrived for a ride that already expired/cancelled and was never paid — owe a
+      // refund, don't revive it (C3). A ride already PAID (incl. completed) is left untouched,
+      // so the later `completed` webhook can't mis-flag a settled ride as refund-pending.
       await rideRef.set({ refundPending: true }, { merge: true });
     }
   }
-  return { status: ramp.status, amountKobo, paid };
+
+  // TODO(partna-verify): when the on-chain treasury (PDA) lands, hook the USDC deposit here on
+  // `settled` — the fiat→USDC settlement is what funds the welfare vault. Nothing to credit today.
+
+  return { status: ramp.status, amountKobo, paid: fiatReceived };
 }
 
 /** Naira collection via Partna onramp (NGN → USDC treasury). Kobo internally; naira at the edge. */
@@ -115,8 +135,16 @@ export default async function paymentRoutes(app: FastifyInstance) {
     }
     const event = (body.event ?? "").toLowerCase();
     const reference = body.data?.rampReference as string | undefined;
+    // TODO(partna-verify): confirm on staging that the `Deposit` (fiat-received) event carries
+    // `data.rampReference` so it correlates to our ride — if it uses a different key, map it here.
+    // This log captures the real event/status/confirmed order for that verification.
+    req.log.info(
+      { event, reference, status: body.data?.status, confirmed: body.data?.confirmed },
+      "partna webhook received",
+    );
+    // Deposit = naira received (unlocks the ride early); Onramp = USDC settled (treasury leg).
     if (reference && (event === "onramp" || event === "deposit")) {
-      await reconcile(reference).catch((err) => req.log.error({ err }, "partna webhook reconcile failed"));
+      await reconcile(reference, event).catch((err) => req.log.error({ err }, "partna webhook reconcile failed"));
     }
     return ok({ ok: true });
   });

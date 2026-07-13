@@ -676,8 +676,9 @@ paths:
       summary: Verify payment status
       description: |
         Reconciles a Partna onramp against the stored payment by reading the authoritative
-        ramp status server-to-server. Marks the ride PAID when settled and covering the fare.
-        The `reference` must belong to the caller's ride.
+        ramp status server-to-server. Marks the ride PAID as soon as the rider's naira is
+        received (before USDC settlement completes) and covers the fare, so completion isn't
+        blocked on the on-chain conversion. The `reference` must belong to the caller's ride.
       requestBody:
         required: true
         content:
