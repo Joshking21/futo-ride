@@ -25,6 +25,7 @@ import {
 } from "../lib/matching.js";
 import { dispatchToDriver, pingDriver } from "../lib/dispatch.js";
 import { raiseIncident } from "../lib/incidents.js";
+import { sendPush } from "../lib/fcm.js";
 import { BookRide, CompleteRide, RateRide, RideId, RideHistoryQuery, UpdateRideStatus } from "../schemas/rides.js";
 import type { Ride, RideStatus } from "../types/index.js";
 
@@ -175,6 +176,13 @@ export default async function rideRoutes(app: FastifyInstance) {
         }).catch((err) => req.log.error({ err }, "stranded-student alert failed"));
       }
 
+      // FCM: notify the rider that no keke is available right now.
+      await sendPush(user.uid, {
+        title: "⚠️ No keke available",
+        body: `No keke available for ${from.name} → ${to.name} right now. We're looking.`,
+        data: { type: "stranded", rideId: ref.id },
+      });
+
       return ok({
         rideId: ref.id,
         driverId: null,
@@ -244,6 +252,13 @@ export default async function rideRoutes(app: FastifyInstance) {
       }).catch((err) => req.log.error({ err }, "driver dispatch failed"));
     }
 
+    // FCM: notify the rider that a keke has been assigned.
+    await sendPush(user.uid, {
+      title: "🛺 Keke assigned!",
+      body: `${from.name} → ${to.name} — ETA ~${Math.round(match.etaMin)} min. Pay to confirm.`,
+      data: { type: "ride_assigned", rideId: rideRef.id, driverId: match.id, etaMin: String(Math.round(match.etaMin)) },
+    });
+
     return ok({
       rideId: rideRef.id,
       driverId: match.id,
@@ -296,6 +311,20 @@ export default async function rideRoutes(app: FastifyInstance) {
     // strand + flag a refund (§20.4). Shared helper (also used by the stale-driver sweep).
     if (isDriver) {
       const result = await rematchRide(ride);
+      // FCM: notify the rider about the driver cancel / rematch outcome.
+      if (result.rematched) {
+        await sendPush(ride.riderId, {
+          title: "🔄 New driver assigned",
+          body: `Your previous driver cancelled. A new keke is on the way for ${ride.fromStop} → ${ride.toStop}.`,
+          data: { type: "ride_rematched", rideId: ride.id, newDriverId: result.newDriverId ?? "" },
+        });
+      } else {
+        await sendPush(ride.riderId, {
+          title: "⚠️ No replacement keke",
+          body: `Your driver cancelled and no replacement is available. ${result.refundPending ? "A refund is pending." : ""}`,
+          data: { type: "stranded", rideId: ride.id },
+        });
+      }
       return ok({ ok: true, ...result });
     }
 
@@ -378,9 +407,12 @@ export default async function rideRoutes(app: FastifyInstance) {
 
     const batch = db.batch();
     let affected = 0;
+    const advancedRiderIds: string[] = [];
     for (const doc of peers.docs) {
-      if (needsPayment(doc.data() as Ride)) continue;
+      const peerRide = doc.data() as Ride;
+      if (needsPayment(peerRide)) continue;
       batch.update(doc.ref, { status: body.status });
+      advancedRiderIds.push(peerRide.riderId);
       affected++;
     }
     await batch.commit();
@@ -389,6 +421,21 @@ export default async function rideRoutes(app: FastifyInstance) {
     if (body.status === "started") {
       await db.collection("drivers").doc(user.uid).set({ poolStarted: true }, { merge: true });
     }
+
+    // FCM: notify every advanced rider about the status change.
+    const statusTitle = body.status === "arriving" ? "🛺 Your keke is arriving" : "🛺 Trip started";
+    const statusBody = body.status === "arriving"
+      ? `Your keke is on the way to ${ride.fromStop}.`
+      : `Your trip from ${ride.fromStop} → ${ride.toStop} has started.`;
+    await Promise.all(
+      advancedRiderIds.map((riderId) =>
+        sendPush(riderId, {
+          title: statusTitle,
+          body: statusBody,
+          data: { type: "ride_status", rideId: id, status: body.status },
+        }),
+      ),
+    );
 
     return ok({ status: body.status, affected });
   });
@@ -441,6 +488,13 @@ export default async function rideRoutes(app: FastifyInstance) {
           { merge: true },
         );
     }
+
+    // FCM: notify the rider that the trip is complete with the fare.
+    await sendPush(ride.riderId, {
+      title: "✅ Trip complete!",
+      body: `Your ride from ${ride.fromStop} → ${ride.toStop} is done. Fare: ₦${(ride.fare / 100).toFixed(2)}.`,
+      data: { type: "ride_completed", rideId: ride.id, fare: String(ride.fare) },
+    });
 
     return ok({ ok: true, fare: ride.fare });
   });

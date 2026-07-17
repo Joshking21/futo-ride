@@ -13,6 +13,7 @@ import {
   mockFiatDeposit,
   type PartnaWebhook,
 } from "../lib/partna.js";
+import { sendPush } from "../lib/fcm.js";
 import { InitPayment, VerifyPayment } from "../schemas/payments.js";
 import type { Payment, Ride } from "../types/index.js";
 
@@ -55,6 +56,12 @@ async function reconcile(
     const ride = (await rideRef.get()).data() as Ride | undefined;
     if (ride && ACTIVE_STATUSES.has(ride.status)) {
       await rideRef.set({ paymentStatus: "PAID", expiresAt: FieldValue.delete() }, { merge: true });
+      // FCM: notify the rider that the payment cleared.
+      await sendPush(ride.riderId, {
+        title: "✅ Payment confirmed",
+        body: `We received your ₦${(amountKobo / 100).toFixed(2)} payment. Your driver can see it now.`,
+        data: { type: "payment_confirmed", rideId: ride.id },
+      });
     } else if (ride && ride.paymentStatus !== "PAID") {
       // Money arrived for a ride that already expired/cancelled and was never paid — owe a
       // refund, don't revive it (C3). A ride already PAID (incl. completed) is left untouched,

@@ -193,6 +193,18 @@ Auth:  required (Firebase ID token)
 200:   { ok: true, data: { url: string, nonce: string, expiresAt: number } }
 Notes: (§20.9) mints a one-time, short-lived nonce and returns the bot deep link carrying it (`https://t.me/<bot>?start=<nonce>`). Replaces the old `?start=<uid>` link (uids leak, so a raw-uid link let anyone hijack a driver's dispatch channel). The app opens `url`; on Start, the webhook resolves nonce→uid and binds the chat id.
 
+### POST /me/fcm-token
+Auth:  required (Firebase ID token)
+Body:  { token: string }
+200:   { ok: true, data: { registered: true } }
+Notes: Registers an FCM device token for push notifications. Stores as an array (`fcmTokens`) to support multi-device. Automatically mirrored to the driver doc if the caller is a registered keke driver. Idempotent.
+
+### DELETE /me/fcm-token
+Auth:  required (Firebase ID token)
+Body:  { token: string }
+200:   { ok: true, data: { removed: true } }
+Notes: Removes an FCM device token. Call this when the user logs out or if the token rotates on the client. Idempotent.
+
 ---
 
 ### POST /sos
