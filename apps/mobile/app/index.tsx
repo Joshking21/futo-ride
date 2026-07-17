@@ -56,7 +56,7 @@ export default function Splash() {
     const handleNavigationDecision = () => {
       if (foundUser.current) {
         // Token found! Route smoothly straight into the authenticated Home dashboard
-        router.replace('/(rider)/home');
+        router.replace('/(driver)/home');
       } else {
         // No token found! Drop the loading spinner so the selection buttons appear
         setShowLoader(false);

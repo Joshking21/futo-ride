@@ -18,6 +18,7 @@ import {
   ActivityIndicator,
   Alert,
   Animated,
+  Linking,
   Modal,
   Pressable,
   ScrollView,
@@ -27,6 +28,9 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import KekeIcon from "../../components/KekeIcon";
 import { useApp } from "../../context/AppContext";
+import { auth, db } from "../../config/firebaseConfig";
+import { doc, onSnapshot } from "firebase/firestore";
+import { apiRequest } from "../../config/apiHelper";
 
 const CAMPUS_LOCATIONS = [
   { name: "FUTO Main Gate", desc: "Campus main entrance shuttle park" },
@@ -56,6 +60,47 @@ export default function AlertsScreen() {
   useEffect(() => {
     setNotificationsList(globalNotifications);
   }, [globalNotifications]);
+
+  // Listen to the Firestore user profile for real-time Telegram link state
+  useEffect(() => {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const userRef = doc(db, "users", user.uid);
+    const unsub = onSnapshot(
+      userRef,
+      (snap) => {
+        if (snap.exists()) {
+          const data = snap.data();
+          if (data.chatId) {
+            setConnected((prevConnected) => {
+              if (!prevConnected) {
+                // Add a dynamic notification to the context list!
+                addNotification(
+                  "Telegram Alert Active",
+                  `Proximity alerts enabled. You will receive alerts on Telegram.`,
+                  "proximity",
+                  "ride_arriving",
+                );
+
+                Alert.alert(
+                  "Connected!",
+                  `Proximity alerts have been successfully linked to Telegram.`,
+                  [{ text: "Great!" }],
+                );
+              }
+              return true;
+            });
+          } else {
+            setConnected(false);
+          }
+        }
+      },
+      (err) => console.error("Error reading profile for Telegram link:", err),
+    );
+
+    return () => unsub();
+  }, [addNotification]);
 
   // Pulse animation for the concentric circles in Proximity alert card
   const pulseValue1 = useRef(new Animated.Value(1)).current;
@@ -101,7 +146,7 @@ export default function AlertsScreen() {
     );
   };
 
-  const handleConnectTelegram = () => {
+  const handleConnectTelegram = async () => {
     if (!selectedBuilding) {
       Alert.alert(
         "Select Building",
@@ -114,24 +159,22 @@ export default function AlertsScreen() {
     if (connected) return;
 
     setConnecting(true);
-    setTimeout(() => {
-      setConnecting(false);
-      setConnected(true);
-
-      // Add a dynamic notification to the context list!
-      addNotification(
-        "Telegram Alert Active",
-        `Proximity alerts enabled for ${selectedBuilding}. You will receive alerts on Telegram.`,
-        "proximity",
-        "ride_arriving",
+    try {
+      const res = await apiRequest<{ url: string; nonce: string; expiresAt: number }>(
+        "/me/telegram-link",
+        "POST",
       );
-
+      
+      // Open the Telegram deep link
+      await Linking.openURL(res.url);
+    } catch (error: any) {
       Alert.alert(
-        "Connected!",
-        `Proximity alerts for ${selectedBuilding} have been successfully linked to Telegram.`,
-        [{ text: "Great!" }],
+        "Connection Failed",
+        error.message || "Failed to generate Telegram connection link.",
       );
-    }, 1800);
+    } finally {
+      setConnecting(false);
+    }
   };
 
   const renderNotificationIcon = (category: string | undefined) => {

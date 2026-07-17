@@ -175,7 +175,9 @@ export default function DriverHome() {
           lng,
         });
         console.log("Driver online status updated:", result);
+        setOnline(nextOnline);
       } catch (error: any) {
+        setOnline(false);
         // If driver is not registered, register automatically (if whitelisted) and retry once
         if (
           error.message?.includes("Register as a keke driver first") ||
@@ -849,7 +851,7 @@ export default function DriverHome() {
                 the switch above to get started.
               </Text>
             </View>
-          ) : isRequestPending ? (
+          ) : !isRequestPending ? (
             /* Incoming Request Panel */
             <View style={{ gap: 12 }}>
               <Text

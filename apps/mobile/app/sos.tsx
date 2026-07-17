@@ -51,7 +51,7 @@ export default function SOSScreen() {
       );
       router.back();
     } catch (error: any) {
-      // Alert.alert("Failed to send SOS", error.message || "Failed to send SOS");
+      Alert.alert("Failed to send SOS", error.message || "Failed to send SOS");
       console.log(error)
     }
   };
