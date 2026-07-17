@@ -26,6 +26,7 @@ export type User = {
   role: Role;
   chatId?: string;
   privyWallet?: string;
+  fcmTokens?: string[]; // FCM device tokens for push notifications (multi-device)
 };
 
 export type Driver = {
@@ -46,6 +47,7 @@ export type Driver = {
   earningsKobo?: number; // running earnings ledger total (§20.2)
   ratingSum?: number;
   ratingCount?: number;
+  fcmTokens?: string[]; // FCM device tokens for push notifications (mirrored from User)
 };
 
 export type Stop = {

@@ -115,7 +115,32 @@ export function verifyPartnaWebhook(body: PartnaWebhook): boolean {
 }
 
 /** True once the onramp has fully settled (crypto delivered). Statuses: pending →
- * received → processing → completed. Only `completed` releases the ride (§21). */
+ * received → processing → completed. Only `completed` funds the treasury (§21). */
 export function isOnrampSettled(status: string): boolean {
   return status.toLowerCase() === "completed";
+}
+
+/**
+ * True once Partna has RECEIVED the customer's naira (the fiat leg) — which is EARLIER than
+ * full USDC settlement (`completed`). Gating the ride unlock on THIS instead of `completed`
+ * is what stops the rider waiting on the on-chain conversion (§21).
+ *
+ * Safe default: unlock on the `Deposit` webhook event, on `confirmed`, or once `completed`.
+ * We deliberately do NOT unlock on a bare `processing`/`received` status yet — see the TODO.
+ *
+ * TODO(partna-verify): Partna's public docs don't spell out the exact fiat-received signal.
+ * Confirm on staging (fire POST /payments/mock-deposit, read the logged webhook in
+ * /payments/webhook):
+ *   1. Does the `Deposit` event fire first, and does its payload carry `rampReference`?
+ *   2. What are `status`/`confirmed` at that moment, and is a received deposit ever reversible?
+ * If `status: "processing"` (or "received") reliably means naira-in-and-non-reversible, add it
+ * below to unlock a touch earlier. If a deposit CAN reverse, leave this as-is and keep the
+ * treasury credit on `completed` only (it already is) — an early ride unlock is the only
+ * exposure, and money never lands = no over-credit.
+ */
+export function isFiatReceived(status: string, confirmed: boolean, event?: string): boolean {
+  if (event?.toLowerCase() === "deposit") return true;
+  if (confirmed === true) return true;
+  const s = status.toLowerCase();
+  return s === "completed"; // TODO(partna-verify): consider adding "processing"/"received" here
 }

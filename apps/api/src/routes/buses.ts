@@ -5,6 +5,7 @@ import { ok, HttpError } from "../lib/http.js";
 import { BUS_ROUTES } from "../lib/routes.js";
 import { resolveRoute, etaAlongRoute, isBusNearStop } from "../lib/bus.js";
 import { sendMessage } from "../lib/telegram.js";
+import { sendPush } from "../lib/fcm.js";
 import { RouteId, RouteEtaQuery, ProximityOptIn, BusLocation, RegisterBus } from "../schemas/buses.js";
 
 type LatLng = { lat: number; lng: number };
@@ -13,7 +14,7 @@ type LatLng = { lat: number; lng: number };
 const SUB_TTL_MS = 24 * 60 * 60 * 1000;
 
 /**
- * Fires a Telegram ping to each rider whose subscribed stop the bus has just
+ * Fires a Telegram ping + FCM push to each rider whose subscribed stop the bus has just
  * reached, and re-arms subscriptions once the bus leaves the radius. De-dupes
  * via a `notifiedAt` flag so each approach pings once. Subscriptions past their
  * TTL are auto-disabled so a stale opt-in never pings forever (§20.13).
@@ -48,17 +49,21 @@ async function notifyProximity(routeId: string, busPos: LatLng): Promise<void> {
     const near = isBusNearStop(routeId, sub.stopId, busPos);
 
     if (near && !sub.notifiedAt) {
+      const stop = route?.stops.find((s) => s.id === sub.stopId);
+      const title = "🚌 Bus approaching";
+      const body = `The ${routeName} bus is near ${stop?.name ?? sub.stopId}.`;
+
+      // Telegram DM + FCM push in parallel (both best-effort).
       const userSnap = await db.collection("users").doc(sub.userId).get();
       const chatId = userSnap.data()?.chatId as string | undefined;
-      if (chatId) {
-        const stop = route?.stops.find((s) => s.id === sub.stopId);
-        // Personal DM via our own bot (the rider started it) — best-effort: a Telegram
-        // failure must not fail the bus location update.
-        await sendMessage(
-          chatId,
-          `🚌 Bus approaching\nThe ${routeName} bus is near ${stop?.name ?? sub.stopId}.`,
-        ).catch(() => undefined);
-      }
+      await Promise.all([
+        chatId ? sendMessage(chatId, `${title}\n${body}`).catch(() => undefined) : Promise.resolve(),
+        sendPush(sub.userId, {
+          title,
+          body,
+          data: { type: "bus_proximity", routeId, stopId: sub.stopId },
+        }),
+      ]);
       await doc.ref.update({ notifiedAt: Date.now() });
     } else if (!near && sub.notifiedAt) {
       await doc.ref.update({ notifiedAt: null });
