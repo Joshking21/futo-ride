@@ -170,7 +170,7 @@ Auth:  required (rider on the ride — ownership checked, §21/N3)
 Body:  { reference: string }
 200:   { ok: true, data: { status: string, amount /*kobo*/, paid: boolean } }
 4xx:   403 not your payment · 404 payment not found
-Notes: (§21) reads the authoritative Partna ramp status and reconciles the stored Payment. Marks it PAID + stamps the ride `paymentStatus:"PAID"` (clearing its TTL) ONLY when the onramp is `completed` AND the settled amount ≥ fare. (C3) if the money lands after the ride already expired/cancelled, it flags the ride `refundPending` instead of reviving it.
+Notes: (§21) reads the authoritative Partna ramp status and reconciles the stored Payment. Marks it PAID + stamps the ride `paymentStatus:"PAID"` (clearing its TTL) as soon as the rider's naira is RECEIVED (the `Deposit`/`confirmed` fiat leg, amount ≥ fare) — so completion isn't blocked on the USDC conversion. Full USDC settlement (`completed`) is tracked separately for the treasury. (C3) if the money lands after the ride already expired/cancelled and was never paid, it flags the ride `refundPending` instead of reviving it.
 
 ### POST /payments/webhook
 Auth:  Partna webhook signature (NOT a Firebase token) — Partna is the caller
@@ -192,6 +192,18 @@ Notes: (§21) demo helper — calls Partna's staging `POST /mock/fiat-deposit` t
 Auth:  required (Firebase ID token)
 200:   { ok: true, data: { url: string, nonce: string, expiresAt: number } }
 Notes: (§20.9) mints a one-time, short-lived nonce and returns the bot deep link carrying it (`https://t.me/<bot>?start=<nonce>`). Replaces the old `?start=<uid>` link (uids leak, so a raw-uid link let anyone hijack a driver's dispatch channel). The app opens `url`; on Start, the webhook resolves nonce→uid and binds the chat id.
+
+### POST /me/fcm-token
+Auth:  required (Firebase ID token)
+Body:  { token: string }
+200:   { ok: true, data: { registered: true } }
+Notes: Registers an FCM device token for push notifications. Stores as an array (`fcmTokens`) to support multi-device. Automatically mirrored to the driver doc if the caller is a registered keke driver. Idempotent.
+
+### DELETE /me/fcm-token
+Auth:  required (Firebase ID token)
+Body:  { token: string }
+200:   { ok: true, data: { removed: true } }
+Notes: Removes an FCM device token. Call this when the user logs out or if the token rotates on the client. Idempotent.
 
 ---
 

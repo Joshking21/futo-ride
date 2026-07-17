@@ -596,9 +596,11 @@ THE QR / PIN / "CODE" FLOW (keke only) — how it actually works:
   Send: { reference: string }   // the reference from /payments/init
   Returns: { status: string, amount: number, paid: boolean }   // amount in KOBO
   What it does: (§21) reads the AUTHORITATIVE Partna ramp status and reconciles the
-    stored payment. Only marks PAID + stamps the ride paymentStatus:"PAID" (clearing
-    the expiry) when the onramp is `completed` AND the settled amount ≥ fare. If money
-    lands after the ride already expired/cancelled, it flags refundPending instead (C3).
+    stored payment. Marks PAID + stamps the ride paymentStatus:"PAID" (clearing the
+    expiry) as soon as the rider's naira is RECEIVED (fiat leg, amount ≥ fare) — so
+    completion isn't blocked on the USDC conversion. Full USDC settlement (`completed`)
+    is tracked separately for the treasury. If money lands after the ride already
+    expired/cancelled, it flags refundPending instead (C3).
   Scenario: after the user returns from checkout, call this to confirm before unlocking
     completion. (A Partna webhook also reconciles server-side, so even if the app dies
     here the payment still lands — but call verify for instant UX.)

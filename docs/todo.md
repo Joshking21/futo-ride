@@ -29,6 +29,33 @@
   `@solana/spl-token` code yet — the on-chain *transfer* legs (S1 wallet payout, S2 treasury
   sweep, S3 claim payout) are what this roadmap still adds.
 
+---
+
+## ⚠️ VERIFY ON STAGING — two-tier payment unlock (added: reduce rider wait)
+
+> **What changed:** `reconcile()` now unlocks the ride on **fiat received** (naira in), not on
+> full **USDC settlement** (`completed`) — so the rider isn't blocked on the on-chain conversion.
+> Judges flagged the wait; this fixes it. Fiat-received = `isFiatReceived()` in `lib/partna.ts`;
+> treasury settlement stays on `completed`. Every assumption below is marked `TODO(partna-verify)`
+> in code. **Confirm these before trusting the early unlock in production.**
+
+Run: book a ride → `POST /payments/init` → `POST /payments/mock-deposit` → watch the API logs
+(`"partna webhook received"` line logs `event / status / confirmed`). Then confirm:
+
+- [ ] **Which event fires first?** Does a **`Deposit`** event arrive (fiat received) *before* the
+      **`Onramp`** event (USDC settled)? Note the order and timing gap.
+- [ ] **Does the `Deposit` payload carry `data.rampReference`?** If it uses a different key, the
+      webhook won't correlate it to our ride — map the correct field in `/payments/webhook`.
+- [ ] **What are `status` + `confirmed` at fiat-receipt?** If `status: "processing"` (or
+      `"received"`) reliably means naira-in, add it to `isFiatReceived()` to unlock a touch earlier.
+- [ ] **Is a received deposit ever reversible?** Ask Partna: *"at which event is the customer's
+      fiat non-reversible?"* If it can reverse, keep unlock as-is and NEVER move the treasury
+      credit off `completed` (an early ride unlock is then the only exposure — money never lands
+      = no over-credit).
+- [ ] **Amount check holds** at the fiat tier: received naira ≥ fare (not just requested amount).
+- [ ] **Re-run after `completed`:** the second webhook must NOT flag an already-PAID/completed
+      ride as `refundPending` (guarded — confirm in logs).
+
 So the treasury already fills from real fares; the remaining Solana work is the **on-chain
 transfer legs** (Privy wallet payout, and the AI-verified insurance claims).
 

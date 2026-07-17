@@ -676,8 +676,9 @@ paths:
       summary: Verify payment status
       description: |
         Reconciles a Partna onramp against the stored payment by reading the authoritative
-        ramp status server-to-server. Marks the ride PAID when settled and covering the fare.
-        The `reference` must belong to the caller's ride.
+        ramp status server-to-server. Marks the ride PAID as soon as the rider's naira is
+        received (before USDC settlement completes) and covers the fare, so completion isn't
+        blocked on the on-chain conversion. The `reference` must belong to the caller's ride.
       requestBody:
         required: true
         content:
@@ -1046,6 +1047,52 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/TelegramLinkResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /me/fcm-token:
+    post:
+      tags: [Me]
+      summary: Register an FCM device token
+      description: |
+        Registers a Firebase Cloud Messaging (FCM) device token for push notifications. Stores
+        as an array (`fcmTokens`) to support multi-device. Automatically mirrored to the driver
+        doc if the caller is a registered keke driver. Idempotent.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FcmTokenRequest"
+      responses:
+        "200":
+          description: Token registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FcmTokenRegisteredResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+    delete:
+      tags: [Me]
+      summary: Remove an FCM device token
+      description: |
+        Removes an FCM device token. Call this when the user logs out or if the token rotates
+        on the client. Idempotent.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FcmTokenRequest"
+      responses:
+        "200":
+          description: Token removed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FcmTokenRemovedResponse"
         "401":
           $ref: "#/components/responses/Unauthorized"
 
@@ -1734,6 +1781,32 @@ components:
             url: { type: string, description: "t.me deep link carrying the one-time nonce", example: "https://t.me/FutoRideBot?start=AbC123nonce" }
             nonce: { type: string }
             expiresAt: { type: integer, description: Epoch ms (10 min TTL) }
+
+    FcmTokenRequest:
+      type: object
+      required: [token]
+      properties:
+        token: { type: string, minLength: 1 }
+
+    FcmTokenRegisteredResponse:
+      type: object
+      required: [ok, data]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        data:
+          type: object
+          properties:
+            registered: { type: boolean, enum: [true] }
+
+    FcmTokenRemovedResponse:
+      type: object
+      required: [ok, data]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        data:
+          type: object
+          properties:
+            removed: { type: boolean, enum: [true] }
 
     TelegramUpdate:
       type: object

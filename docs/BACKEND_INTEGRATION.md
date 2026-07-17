@@ -164,6 +164,46 @@ GET  /surge/:zone            live surge state for a zone   → { zone, surge }
 
 **Bus tracking:** subscribe to live bus positions from RTDB as usual. To show ETAs, pass the bus's current `lat`/`lng` to `GET /buses/routes/:id/eta` and you get cumulative ETA to each stop ahead. `GET /buses/routes` (no auth) gives you the route list + stops to populate pickers. `POST /buses/proximity` registers a Telegram proximity alert (needs the Telegram connect step first).
 
+## 6. Realtime Fallbacks & Connectivity (§20.5)
+
+### Connection State
+Watch the Firestore `onSnapshotsInSync` or connection state to detect offline. If offline:
+1. Show a banner ("Offline - Reconnecting...")
+2. DO NOT allow the user to press "Book Ride" or advance statuses.
+3. Rides in flight continue (driver app caches locally, syncs when reconnected).
+
+---
+
+## 7. FCM Push Notifications
+
+The backend supports Firebase Cloud Messaging (FCM) to deliver push notifications for ride updates, bus proximity, and driver dispatch. These fire **alongside** the existing Telegram DMs.
+
+### Registration
+The React Native app must request push permissions and upload its FCM token to the backend:
+1. Get the token from `@react-native-firebase/messaging` (`messaging().getToken()`).
+2. `POST /me/fcm-token` with `{ "token": "<the_token>" }`.
+3. If the token rotates (listens to `onTokenRefresh`), POST the new one.
+4. On logout, call `DELETE /me/fcm-token` with the token.
+
+*Note: The backend stores an array of tokens per user, so a user can be logged into an iPad and an iPhone simultaneously and receive pushes on both.*
+
+### Notification Payloads
+Every push notification includes a flat `data` object that your frontend can use to route the user (e.g., via deep linking) or refresh state.
+
+**Rider Events:**
+- `type: "ride_assigned"` — `rideId`, `driverId`, `etaMin`
+- `type: "ride_status"` — `rideId`, `status` ("arriving" | "started")
+- `type: "ride_completed"` — `rideId`, `fare`
+- `type: "ride_rematched"` — `rideId`, `newDriverId`
+- `type: "ride_expired"` — `rideId`
+- `type: "stranded"` — `rideId`
+- `type: "payment_confirmed"` — `rideId`
+- `type: "bus_proximity"` — `routeId`, `stopId`
+
+**Driver Events:**
+- `type: "dispatch"` — `rideId` (new pickup assigned)
+- `type: "driver_ping"` — Various alerts (e.g., rider cancelled)
+
 **Connecting Telegram (for personal pings):** your "Connect Telegram" button now first asks the backend for a one-time link, then opens it (the old `?start=<uid>` link is gone — uids leak, so it let others hijack a driver's channel):
 ```ts
 import { Linking } from "react-native";

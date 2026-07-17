@@ -12,6 +12,7 @@ import { CAMPUS_STOPS } from "./campus-stops.js";
 import { mintQrToken, mintCompletionPin } from "./qr.js";
 import { driverPriorityBonusKobo } from "./surge.js";
 import { raiseIncident } from "./incidents.js";
+import { sendPush } from "./fcm.js";
 import type { Ride } from "../types/index.js";
 
 export const DEFAULT_CAPACITY = 4;
@@ -159,6 +160,12 @@ export async function sweepExpiredRides(): Promise<number> {
         `Ride ${ride.id} lapsed (rider didn't pay in time). Seat freed.`,
       ).catch(() => undefined);
     }
+    // FCM: notify the rider that their hold expired.
+    await sendPush(ride.riderId, {
+      title: "⌛ Ride expired",
+      body: `Your ride ${ride.fromStop} → ${ride.toStop} expired because payment wasn't received in time.`,
+      data: { type: "ride_expired", rideId: ride.id },
+    });
     swept++;
   }
   return swept;
@@ -249,6 +256,12 @@ export async function rematchRide(ride: Ride): Promise<RematchResult> {
       rideId: ride.id,
     }).catch(() => undefined);
   }
+  // FCM: notify the rider that rematch failed.
+  await sendPush(ride.riderId, {
+    title: "⚠️ No replacement keke",
+    body: `No keke available for ${ride.fromStop} → ${ride.toStop}.${refundPending ? " A refund is pending." : ""}`,
+    data: { type: "stranded", rideId: ride.id },
+  });
   return { rematched: false, refundPending };
 }
 
