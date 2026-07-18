@@ -36,6 +36,22 @@ export default function DriverActiveTrip() {
   useEffect(() => {
     if (!activeTrip.rideId) return;
 
+    // For mock rides (no Firestore document), build rideData from activeTrip context once
+    const isMockRide = activeTrip.rideId.startsWith("mock-");
+    if (isMockRide) {
+      if (!rideData) {
+        setRideData({
+          fromStop: activeTrip.pickup,
+          toStop: activeTrip.destination,
+          seats: activeTrip.seats || 1,
+          fare: activeTrip.fare || 300,
+          status: "assigned",
+          rideId: activeTrip.rideId,
+        });
+      }
+      return;
+    }
+
     const rideRef = doc(db, "rides", activeTrip.rideId);
     const unsub = onSnapshot(
       rideRef,
@@ -91,18 +107,28 @@ export default function DriverActiveTrip() {
   const handleTripAction = async () => {
     if (!activeTrip.rideId || !rideData) return;
 
+    const isMockRide = activeTrip.rideId.startsWith("mock-");
+
     setSubmitting(true);
     try {
       if (rideData.status === "assigned") {
-        // Move to arriving
-        await apiRequest(`/rides/${activeTrip.rideId}/status`, "POST", {
-          status: "arriving",
-        });
+        if (isMockRide) {
+          setRideData((prev: any) => ({ ...prev, status: "arriving" }));
+          setActiveTrip((prev) => ({ ...prev, status: "tracking" }));
+        } else {
+          await apiRequest(`/rides/${activeTrip.rideId}/status`, "POST", {
+            status: "arriving",
+          });
+        }
       } else if (rideData.status === "arriving") {
-        // Move to started
-        await apiRequest(`/rides/${activeTrip.rideId}/status`, "POST", {
-          status: "started",
-        });
+        if (isMockRide) {
+          setRideData((prev: any) => ({ ...prev, status: "started" }));
+          setActiveTrip((prev) => ({ ...prev, status: "arrived" }));
+        } else {
+          await apiRequest(`/rides/${activeTrip.rideId}/status`, "POST", {
+            status: "started",
+          });
+        }
       } else if (rideData.status === "started") {
         // Route to the QR page
         router.push("/(driver)/qr");

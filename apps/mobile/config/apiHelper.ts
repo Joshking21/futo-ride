@@ -1,10 +1,10 @@
 import { auth } from "./firebaseConfig";
 import { Alert } from "react-native";
 
-// Resolve the LAN IP if running in development (so real devices can connect to Metro host),
-// otherwise use the EXPO_PUBLIC_API_URL or fallback to localhost
+// Use EXPO_PUBLIC_API_URL from environment (set in .env.local),
+// falling back to local LAN IP for development
 const getBaseUrl = (): string => {
-  return "http://10.77.240.190:3001";
+  return process.env.EXPO_PUBLIC_API_URL || "http://10.77.240.190:3001";
 };
 
 export const BASE_URL = getBaseUrl();

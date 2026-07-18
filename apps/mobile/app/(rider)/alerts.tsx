@@ -30,7 +30,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import KekeIcon from "../../components/KekeIcon";
 import { apiRequest } from "../../config/apiHelper";
 import { auth, db } from "../../config/firebaseConfig";
-import { useApp } from "../../context/AppContext";
+import { useApp, AlertNotification } from "../../context/AppContext";
 
 const CAMPUS_LOCATIONS = [
   { name: "FUTO Main Gate", desc: "Campus main entrance shuttle park" },
@@ -45,7 +45,7 @@ const CAMPUS_LOCATIONS = [
   { name: "Health Centre", desc: "Campus medical clinic and emergency" },
 ];
 
-const MOCK_NOTIFICATIONS = [
+const MOCK_NOTIFICATIONS: AlertNotification[] = [
   {
     id: "mock-notif-1",
     title: "Telegram Link Active",

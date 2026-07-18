@@ -50,10 +50,32 @@ export default function DriverHome() {
   const [isLoading, setIsLoading] = useState(false);
   const [activeRide, setActiveRide] = useState<any>(null);
 
+  // Mock ride data for demo purposes
+  const MOCK_INCOMING_RIDE = {
+    rideId: "mock-ride-001",
+    fromStop: "seet",
+    toStop: "gate",
+    seats: 2,
+    status: "assigned",
+    fare: 300,
+    passengerName: "Chioma A.",
+    paymentMethod: "naira",
+  };
+
   // Fetch earnings statistics on mount
   useEffect(() => {
     fetchDriverEarnings().catch(() => undefined);
   }, [fetchDriverEarnings]);
+
+  // Auto-populate a mock incoming ride when driver goes online (for demo)
+  useEffect(() => {
+    if (isOnline && !activeRide) {
+      const timeout = setTimeout(() => {
+        setActiveRide(MOCK_INCOMING_RIDE);
+      }, 3000); // Simulate a 3-second delay before a ride comes in
+      return () => clearTimeout(timeout);
+    }
+  }, [isOnline, activeRide]);
 
 
   // Poll for active rides assigned to this driver
@@ -283,11 +305,26 @@ export default function DriverHome() {
   };
 
   const handleAcceptRequest = () => {
-    progressDriverTrip();
+    if (activeRide) {
+      // Sync mock/real ride data into the global activeTrip context
+      setActiveTrip((prev) => ({
+        ...prev,
+        rideId: activeRide.rideId,
+        pickup: getStopName(activeRide.fromStop),
+        destination: getStopName(activeRide.toStop),
+        seats: activeRide.seats || 1,
+        status: "tracking",
+        rideType: "keke",
+        fare: activeRide.fare || 300,
+        qrToken: "mock-qr-token-" + Date.now(),
+        pin: "1234",
+      }));
+    }
     router.push("/(driver)/active");
   };
 
   const handleDeclineRequest = () => {
+    setActiveRide(null);
     clearActiveTrip();
   };
 

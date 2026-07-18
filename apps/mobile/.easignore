@@ -1,0 +1,21 @@
+# Exclude npm dependencies and expo cache
+node_modules/
+.expo/
+dist/
+web-build/
+
+# Exclude heavy temporary native build folders (saves hundreds of megabytes in upload)
+android/app/build/
+android/.gradle/
+android/app/.cxx/
+android/build/
+ios/build/
+ios/Pods/
+.gradle/
+
+# Exclude local environment configs and logs
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+.DS_Store
+*.pem
