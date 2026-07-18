@@ -173,4 +173,47 @@ export default async function paymentRoutes(app: FastifyInstance) {
     await mockFiatDeposit(koboToNaira(ride.fare));
     return ok({ ok: true });
   });
+
+  // Development-only bypass: instantly marks a ride as PAID without dealing with Partna.
+  app.post("/payments/bypass", async (req) => {
+    if (process.env.ENABLE_PAYMENT_BYPASS !== "true") {
+      throw new HttpError("Bypass endpoint is disabled in this environment", 403);
+    }
+    const user = await verifyRequest(req);
+    const body = InitPayment.parse(req.body);
+
+    const db = adminDb();
+    const rideRef = db.collection("rides").doc(body.rideId);
+    const rideSnap = await rideRef.get();
+    
+    if (!rideSnap.exists) throw new HttpError("Ride not found", 404);
+    const ride = rideSnap.data() as Ride;
+    if (ride.riderId !== user.uid) throw new HttpError("Not your ride", 403);
+    if (!ACTIVE_STATUSES.has(ride.status)) throw new HttpError("Ride is not payable", 409);
+
+    // 1. Mark ride as PAID
+    await rideRef.set({ paymentStatus: "PAID", expiresAt: FieldValue.delete() }, { merge: true });
+    
+    // 2. Mock a successful payment document
+    const ref = db.collection("payments").doc(ride.id);
+    const payment: Payment = {
+      id: ref.id,
+      rideId: ride.id,
+      method: "naira",
+      amount: ride.fare,
+      status: "PAID",
+      ref: `bypass-${ride.id}`,
+      checkoutUrl: "",
+    };
+    await ref.set(payment);
+
+    // 3. Send the FCM confirmation
+    await sendPush(ride.riderId, {
+      title: "✅ Payment confirmed",
+      body: `Bypass mode: ₦${(ride.fare / 100).toFixed(2)} payment confirmed. Your driver can see it now.`,
+      data: { type: "payment_confirmed", rideId: ride.id },
+    });
+
+    return ok({ ok: true, bypassed: true });
+  });
 }
