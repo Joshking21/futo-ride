@@ -1,17 +1,36 @@
 import React, { useState } from "react";
-import { View, Text, Pressable, ScrollView, TextInput } from "react-native";
+import { View, Text, Pressable, ScrollView, TextInput, Alert, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useApp } from "../../context/AppContext";
 import { X, Check, Star } from "lucide-react-native";
+import { apiRequest } from "../../config/apiHelper";
 
 export default function TripReceipt() {
   const router = useRouter();
-  const { activeTrip } = useApp();
+  const { activeTrip, clearActiveTrip } = useApp();
   const [rating, setRating] = useState<number>(0);
   const [feedback, setFeedback] = useState<string>("");
+  const [submitting, setSubmitting] = useState<boolean>(false);
 
-  const handleDone = () => {
+  const handleDone = async () => {
+    if (rating > 0 && activeTrip.rideId) {
+      setSubmitting(true);
+      try {
+        await apiRequest(`/rides/${activeTrip.rideId}/rate`, "POST", {
+          stars: rating,
+          comment: feedback.trim() || undefined,
+        });
+      } catch (err: any) {
+        console.error("Failed to submit rating:", err);
+        Alert.alert("Rating Failed", err.message || "Failed to submit rating.");
+        setSubmitting(false);
+        return; // Don't redirect if submission fails so they can retry
+      } finally {
+        setSubmitting(false);
+      }
+    }
+    clearActiveTrip();
     router.replace("/(rider)/home");
   };
 
@@ -110,9 +129,14 @@ export default function TripReceipt() {
         {/* Done Button */}
         <Pressable
           onPress={handleDone}
+          disabled={submitting}
           className="w-full bg-[#0b1c30] h-14 rounded-full flex items-center justify-center shadow-md active:scale-[0.98] mt-2"
         >
-          <Text className="text-white text-action-lg font-bold font-jakarta">Done</Text>
+          {submitting ? (
+            <ActivityIndicator color="white" />
+          ) : (
+            <Text className="text-white text-action-lg font-bold font-jakarta">Done</Text>
+          )}
         </Pressable>
       </ScrollView>
     </SafeAreaView>

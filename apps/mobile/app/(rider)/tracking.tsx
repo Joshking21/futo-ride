@@ -14,16 +14,33 @@ import {
   XCircle,
 } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Image, Pressable, ScrollView, Text, View, Modal } from "react-native";
+import { ActivityIndicator, Alert, Image, Pressable, ScrollView, Text, View, Modal, TextInput } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import KekeIcon from "../../components/KekeIcon";
 import { useApp } from "../../context/AppContext";
 
 export default function LiveTracking() {
   const router = useRouter();
-  const { activeTrip, cancelBooking, completeTrip } = useApp();
+  const { activeTrip, setActiveTrip, cancelBooking, completeTrip } = useApp();
   const [showScanner, setShowScanner] = useState(false);
   const [scanStatus, setScanStatus] = useState("Align QR code within the frame...");
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [pinInput, setPinInput] = useState("");
+  const [verifyingPin, setVerifyingPin] = useState(false);
+
+  const handlePinSubmit = async () => {
+    if (!pinInput.trim()) return;
+    setVerifyingPin(true);
+    try {
+      await completeTrip({ pin: pinInput.trim() });
+      setShowPinModal(false);
+      router.replace("/(rider)/receipt");
+    } catch (err: any) {
+      Alert.alert("Verification Failed", err.message || "Invalid PIN. Please try again.");
+    } finally {
+      setVerifyingPin(false);
+    }
+  };
 
   const driverState = activeTrip.status === "confirmed" ? "assigned"
     : activeTrip.status === "tracking" ? "arriving"
@@ -66,8 +83,15 @@ export default function LiveTracking() {
           text: "Yes, Cancel",
           style: "destructive",
           onPress: async () => {
-            await cancelBooking();
-            router.replace("/(rider)/home");
+            try {
+              await cancelBooking();
+              router.replace("/(rider)/home");
+            } catch (error: any) {
+              Alert.alert(
+                "Cancellation Failed",
+                error.message || "Failed to cancel ride.",
+              );
+            }
           },
         },
       ]
@@ -320,8 +344,40 @@ export default function LiveTracking() {
         >
           <ArrowLeft color="#0B1C30" size={20} />
         </Pressable> */}
-        <Pressable>
-
+        <Pressable
+          onPress={() => {
+            setActiveTrip((prev) => {
+              let nextStatus: typeof prev.status = "confirmed";
+              if (prev.status === "confirmed" || prev.status === "idle" || prev.status === "searching") {
+                nextStatus = "tracking";
+              } else if (prev.status === "tracking") {
+                nextStatus = "arrived";
+              } else if (prev.status === "arrived") {
+                nextStatus = "confirmed";
+              }
+              return { ...prev, status: nextStatus };
+            });
+          }}
+          style={({ pressed }) => ({
+            paddingHorizontal: 10,
+            paddingVertical: 6,
+            borderRadius: 12,
+            backgroundColor: "#eff4ff",
+            borderWidth: 1,
+            borderColor: "#001caa",
+            opacity: pressed ? 0.8 : 1,
+          })}
+        >
+          <Text
+            style={{
+              color: "#001caa",
+              fontSize: 11,
+              fontWeight: "700",
+              fontFamily: "Plus Jakarta Sans",
+            }}
+          >
+            Simulate
+          </Text>
         </Pressable>
 
         <Text
@@ -823,17 +879,46 @@ export default function LiveTracking() {
                   elevation: 2,
                   opacity: pressed ? 0.95 : 1,
                 })}
+                className="flex justify-center items-center"
               >
-                <Maximize color="#ffffff" size={18} />
+                <Maximize color="#000c61" size={35} className=""/>
                 <Text
                   style={{
-                    color: "#ffffff",
+                    color: "#000c61",
                     fontWeight: "700",
                     fontSize: 15,
                     fontFamily: "Plus Jakarta Sans",
                   }}
                 >
                   Scan QR Code
+                </Text>
+              </Pressable>
+
+              <Pressable
+                onPress={() => setShowPinModal(true)}
+                style={({ pressed }) => ({
+                  width: "100%",
+                  borderWidth: 1.5,
+                  borderColor: "#001caa",
+                  height: 56,
+                  borderRadius: 28,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  opacity: pressed ? 0.8 : 1,
+                  marginTop: 4,
+                })}
+              >
+                <Text
+                  style={{
+                    color: "#001caa",
+                    fontWeight: "700",
+                    fontSize: 15,
+                    fontFamily: "Plus Jakarta Sans",
+                  }}
+                >
+                  Enter PIN Instead
                 </Text>
               </Pressable>
             </View>
@@ -972,6 +1057,64 @@ export default function LiveTracking() {
             </Text>
           </View>
         </SafeAreaView>
+      </Modal>
+      {/* PIN Input Modal */}
+      <Modal
+        visible={showPinModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowPinModal(false)}
+      >
+        <View className="flex-1 bg-black/60 items-center justify-center p-6">
+          <View className="bg-white w-full max-w-sm rounded-[32px] p-6 shadow-xl items-center">
+            <Text className="text-[18px] font-bold text-on-surface font-jakarta text-center">
+              Enter Ride PIN
+            </Text>
+            <Text className="text-secondary text-center text-xs font-jakarta mt-2 px-2 leading-4">
+              Ask your driver for the trip completion PIN and enter it below to confirm boarding and pay.
+            </Text>
+
+            <TextInput
+              value={pinInput}
+              onChangeText={setPinInput}
+              keyboardType="number-pad"
+              maxLength={6}
+              placeholder="e.g. 1234"
+              className="w-full bg-slate-50 border border-slate-200 rounded-2xl h-14 text-center text-[18px] font-bold mt-6 font-jakarta"
+              placeholderTextColor="#94a3b8"
+              autoFocus={true}
+              style={{ letterSpacing: 8 }}
+            />
+
+            <View className="flex-row gap-3 w-full mt-6">
+              <Pressable
+                onPress={() => {
+                  setShowPinModal(false);
+                  setPinInput("");
+                }}
+                className="flex-1 border border-outline/20 rounded-2xl h-12 items-center justify-center active:bg-slate-50"
+              >
+                <Text className="text-secondary font-bold text-[14px] font-jakarta">
+                  Cancel
+                </Text>
+              </Pressable>
+
+              <Pressable
+                onPress={handlePinSubmit}
+                disabled={verifyingPin}
+                className="flex-1 bg-primary rounded-2xl h-12 items-center justify-center active:opacity-90"
+              >
+                {verifyingPin ? (
+                  <ActivityIndicator color="white" />
+                ) : (
+                  <Text className="text-white font-bold text-[14px] font-jakarta">
+                    Submit
+                  </Text>
+                )}
+              </Pressable>
+            </View>
+          </View>
+        </View>
       </Modal>
     </SafeAreaView>
   );

@@ -1,4 +1,5 @@
 import { useRouter } from "expo-router";
+import { doc, onSnapshot } from "firebase/firestore";
 import {
   ArrowLeft,
   Bell,
@@ -27,10 +28,9 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import KekeIcon from "../../components/KekeIcon";
-import { useApp } from "../../context/AppContext";
-import { auth, db } from "../../config/firebaseConfig";
-import { doc, onSnapshot } from "firebase/firestore";
 import { apiRequest } from "../../config/apiHelper";
+import { auth, db } from "../../config/firebaseConfig";
+import { useApp } from "../../context/AppContext";
 
 const CAMPUS_LOCATIONS = [
   { name: "FUTO Main Gate", desc: "Campus main entrance shuttle park" },
@@ -147,31 +147,35 @@ export default function AlertsScreen() {
   };
 
   const handleConnectTelegram = async () => {
-    if (!selectedBuilding) {
-      Alert.alert(
-        "Select Building",
-        "Please select a campus building to enable proximity alerts.",
-        [{ text: "OK" }],
-      );
-      return;
-    }
+    // if (!selectedBuilding) {
+    //   Alert.alert(
+    //     "Select Building",
+    //     "Please select a campus building to enable proximity alerts.",
+    //     [{ text: "OK" }],
+    //   );
+    //   return;
+    // }
 
     if (connected) return;
 
     setConnecting(true);
     try {
-      const res = await apiRequest<{ url: string; nonce: string; expiresAt: number }>(
-        "/me/telegram-link",
-        "POST",
-      );
-      
+      const res = await apiRequest<{
+        url: string;
+        nonce: string;
+        expiresAt: number;
+      }>("/me/telegram-link", "POST", undefined);
+      console.log(res);
+
       // Open the Telegram deep link
       await Linking.openURL(res.url);
     } catch (error: any) {
       Alert.alert(
         "Connection Failed",
         error.message || "Failed to generate Telegram connection link.",
+        error.status,
       );
+      console.log(error.status);
     } finally {
       setConnecting(false);
     }
@@ -243,123 +247,123 @@ export default function AlertsScreen() {
           <View className="absolute top-3 right-3 w-2 h-2 rounded-full bg-primary border border-white" />
         </Pressable>
       </View>
-          <View className="flex bg-transparent p-5 pb-0">
-            <View className="bg-[#EEF2FF] rounded-[32px] p-6 border border-outline-variant/5 relative overflow-hidden">
-              <View className="flex-row items-start gap-4">
-                {/* Pulsing Bell Icon */}
-                <View className="w-14 h-14 items-center justify-center shrink-0 relative mr-2">
-                  {/* Outer pulsing ring */}
-                  <Animated.View
-                    style={{
-                      width: 56,
-                      height: 56,
-                      borderRadius: 28,
-                      backgroundColor: "rgba(0, 28, 170, 0.1)",
-                      position: "absolute",
-                      transform: [{ scale: pulseValue1 }],
-                      opacity: pulseValue1.interpolate({
-                        inputRange: [1, 1.25],
-                        outputRange: [0.6, 0],
-                      }),
-                    }}
-                  />
-                  {/* Inner pulsing ring */}
-                  <Animated.View
-                    style={{
-                      width: 44,
-                      height: 44,
-                      borderRadius: 22,
-                      backgroundColor: "rgba(0, 28, 170, 0.1)",
-                      position: "absolute",
-                      transform: [{ scale: pulseValue2 }],
-                      opacity: pulseValue2.interpolate({
-                        inputRange: [1, 1.15],
-                        outputRange: [0.8, 0],
-                      }),
-                    }}
-                  />
-                  {/* Static White Center */}
-                  <View className="w-10 h-10 rounded-full bg-white items-center justify-center shadow-sm z-10">
-                    <Bell color="#001caa" size={20} />
-                  </View>
-                </View>
-    
-                {/* Dynamic Banner Text */}
-                <View className="flex-grow flex-wrap">
-                  <Text className="font-jakarta text-[15px] font-bold text-on-surface leading-[22px]">
-                    Notify me when a{"\n"}keke or bus is{" "}
-                    <Text className="text-primary">
-                      {selectedBuilding
-                        ? `near ${selectedBuilding}`
-                        : "near [building]"}
-                    </Text>
-                  </Text>
-                  <Text className="font-jakarta text-[12px] text-secondary/90 leading-4">
-                    Get a Telegram alert when vehicles{"\n"}are near your selected
-                    building.
-                  </Text>
-                </View>
-              </View>
-    
-              {/* Select Building Dropdown Selector */}
-    
-              <Pressable
-                onPress={() => setShowDropdown(true)}
-                className="bg-white border border-outline-variant/5 rounded-2xl p-4 flex-row items-center justify-between mt-5 active:bg-slate-50"
-              >
-                <View className="flex-row items-center gap-3">
-                  <Building2 color="#5b5e66" size={20} />
-                  <Text
-                    className={`font-jakarta text-[14px] font-semibold ${
-                      selectedBuilding ? "text-on-surface" : "text-secondary"
-                    }`}
-                  >
-                    {selectedBuilding || "Select building"}
-                  </Text>
-                </View>
-                <ChevronDown color="#5b5e66" size={20} />
-              </Pressable>
-    
-              {/* Connect Telegram Primary Button */}
-              <Pressable
-                onPress={handleConnectTelegram}
-                disabled={connecting}
-                className={`flex-row items-center justify-center gap-2 rounded-2xl h-14 mt-4 shadow-sm active:opacity-90 ${
-                  connected ? "bg-green-600" : "bg-primary"
-                }`}
-              >
-                {connecting ? (
-                  <ActivityIndicator color="white" />
-                ) : connected ? (
-                  <>
-                    <Check color="white" size={18} />
-                    <Text className="text-white font-jakarta font-semibold text-[15px]">
-                      Connected to Telegram
-                    </Text>
-                  </>
-                ) : (
-                  <>
-                    <Send
-                      color="white"
-                      size={18}
-                      style={{ transform: [{ rotate: "-30deg" }] }}
-                    />
-                    <Text className="text-white font-jakarta font-semibold text-[15px]">
-                      Connect Telegram
-                    </Text>
-                  </>
-                )}
-              </Pressable>
-    
-              {/* Footer privacy text */}
-              <View className="flex-row items-center justify-center gap-1.5 mt-5">
-                <Lock color="#5b5e66" size={12} style={{ opacity: 0.6 }} />
-                <Text className="text-[11px] text-secondary font-medium font-jakarta opacity-80">
-                  We respect your privacy. No spam, ever.
-                </Text>
+      <View className="flex bg-transparent p-5 pb-0">
+        <View className="bg-[#EEF2FF] rounded-[32px] p-6 border border-outline-variant/5 relative overflow-hidden">
+          <View className="flex-row items-start gap-4">
+            {/* Pulsing Bell Icon */}
+            <View className="w-14 h-14 items-center justify-center shrink-0 relative mr-2">
+              {/* Outer pulsing ring */}
+              <Animated.View
+                style={{
+                  width: 56,
+                  height: 56,
+                  borderRadius: 28,
+                  backgroundColor: "rgba(0, 28, 170, 0.1)",
+                  position: "absolute",
+                  transform: [{ scale: pulseValue1 }],
+                  opacity: pulseValue1.interpolate({
+                    inputRange: [1, 1.25],
+                    outputRange: [0.6, 0],
+                  }),
+                }}
+              />
+              {/* Inner pulsing ring */}
+              <Animated.View
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: 22,
+                  backgroundColor: "rgba(0, 28, 170, 0.1)",
+                  position: "absolute",
+                  transform: [{ scale: pulseValue2 }],
+                  opacity: pulseValue2.interpolate({
+                    inputRange: [1, 1.15],
+                    outputRange: [0.8, 0],
+                  }),
+                }}
+              />
+              {/* Static White Center */}
+              <View className="w-10 h-10 rounded-full bg-white items-center justify-center shadow-sm z-10">
+                <Bell color="#001caa" size={20} />
               </View>
             </View>
+
+            {/* Dynamic Banner Text */}
+            <View className="flex-grow flex-wrap">
+              <Text className="font-jakarta text-[15px] font-bold text-on-surface leading-[22px]">
+                Notify me when a{"\n"}keke or bus is{" "}
+                <Text className="text-primary">
+                  {selectedBuilding
+                    ? `near ${selectedBuilding}`
+                    : "near [building]"}
+                </Text>
+              </Text>
+              <Text className="font-jakarta text-[12px] text-secondary/90 leading-4">
+                Get a Telegram alert when vehicles{"\n"}are near your selected
+                building.
+              </Text>
+            </View>
           </View>
+
+          {/* Select Building Dropdown Selector */}
+
+          <Pressable
+            onPress={() => setShowDropdown(true)}
+            className="bg-white border border-outline-variant/5 rounded-2xl p-4 flex-row items-center justify-between mt-5 active:bg-slate-50"
+          >
+            <View className="flex-row items-center gap-3">
+              <Building2 color="#5b5e66" size={20} />
+              <Text
+                className={`font-jakarta text-[14px] font-semibold ${
+                  selectedBuilding ? "text-on-surface" : "text-secondary"
+                }`}
+              >
+                {selectedBuilding || "Select building"}
+              </Text>
+            </View>
+            <ChevronDown color="#5b5e66" size={20} />
+          </Pressable>
+
+          {/* Connect Telegram Primary Button */}
+          <Pressable
+            onPress={handleConnectTelegram}
+            disabled={connecting}
+            className={`flex-row items-center justify-center gap-2 rounded-2xl h-14 mt-4 shadow-sm active:opacity-90 ${
+              connected ? "bg-green-600" : "bg-primary"
+            }`}
+          >
+            {connecting ? (
+              <ActivityIndicator color="white" />
+            ) : connected ? (
+              <>
+                <Check color="white" size={18} />
+                <Text className="text-white font-jakarta font-semibold text-[15px]">
+                  Connected to Telegram
+                </Text>
+              </>
+            ) : (
+              <>
+                <Send
+                  color="white"
+                  size={18}
+                  style={{ transform: [{ rotate: "250deg" }] }}
+                />
+                <Text className="text-white font-jakarta font-semibold text-[15px]">
+                  Connect Telegram
+                </Text>
+              </>
+            )}
+          </Pressable>
+
+          {/* Footer privacy text */}
+          <View className="flex-row items-center justify-center gap-1.5 mt-5">
+            <Lock color="#5b5e66" size={12} style={{ opacity: 0.6 }} />
+            <Text className="text-[11px] text-secondary font-medium font-jakarta opacity-80">
+              We respect your privacy. No spam, ever.
+            </Text>
+          </View>
+        </View>
+      </View>
 
       <ScrollView
         contentContainerStyle={{

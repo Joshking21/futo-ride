@@ -44,8 +44,11 @@ export default async function telegramRoutes(app: FastifyInstance) {
     const db = adminDb();
     const linkRef = db.collection("telegramLinks").doc(nonce);
     const linkSnap = await linkRef.get();
-    const link = linkSnap.data() as { uid?: string; expiresAt?: number } | undefined;
-    if (!link?.uid || (link.expiresAt ?? 0) < Date.now()) return ok({ ok: true });
+    const link = linkSnap.data() as
+      | { uid?: string; expiresAt?: number }
+      | undefined;
+    if (!link?.uid || (link.expiresAt ?? 0) < Date.now())
+      return ok({ ok: true });
 
     const uid = link.uid;
     await linkRef.delete(); // single-use
@@ -57,9 +60,10 @@ export default async function telegramRoutes(app: FastifyInstance) {
       await driverRef.set({ chatId }, { merge: true });
     }
 
-    await sendMessage(chatId, "✅ FUTO-Ride connected. You'll get ride and bus alerts here.").catch(
-      () => undefined,
-    );
+    await sendMessage(
+      chatId,
+      "✅ FUTO-Ride connected. You'll get ride and bus alerts here.",
+    ).catch(() => undefined);
     return ok({ ok: true });
   });
 }

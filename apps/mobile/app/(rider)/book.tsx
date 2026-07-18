@@ -134,10 +134,12 @@ export default function BookRide() {
   };
 
   const handleFindRide = async () => {
+    console.log("start")
     if (!pickup || !destination) return;
     setLoading(true);
      const pickupID = getStopId(pickup);
      const destinationID = getStopId(destination);
+     console.log("middle")
     try {
       const Booked = await apiRequest<BookedRideResponse>("/rides", "POST", {
         fromStop: pickupID,
@@ -153,6 +155,8 @@ export default function BookRide() {
       router.push("/(rider)/confirm");
     } catch (error: any) {
       Alert.alert("Booking failed", error.message);
+      console.log(error)
+      
     } finally {
       setLoading(false);
     }

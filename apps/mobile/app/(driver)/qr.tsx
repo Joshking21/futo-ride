@@ -1,12 +1,6 @@
 import { useRouter } from "expo-router";
-import {
-  ArrowLeft,
-  Compass,
-  MapPin,
-  Navigation,
-  Shield,
-} from "lucide-react-native";
-import React, { useState, useEffect } from "react";
+import { ArrowLeft, MapPin, Navigation, Shield } from "lucide-react-native";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -17,22 +11,26 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useApp } from "../../context/AppContext";
 import { apiRequest } from "../../config/apiHelper";
+import { useApp } from "../../context/AppContext";
 
 export default function DriverQR() {
   const router = useRouter();
   const { activeTrip, clearActiveTrip } = useApp();
   const [qrToken, setQrToken] = useState<string>("");
+  const [pin, setPin] = useState<string>("");
 
   useEffect(() => {
     const fetchQrToken = async () => {
       if (!activeTrip.rideId) return;
       try {
-        const res = await apiRequest<{ qrToken: string }>(`/rides/${activeTrip.rideId}/qr`);
+        const res = await apiRequest<{ qrToken: string; pin: string }>(
+          `/rides/${activeTrip.rideId}/qr`,
+        );
         setQrToken(res.qrToken);
+        setPin(res.pin);
       } catch (err) {
-        console.error("Failed to load QR token:", err);
+        console.error("Failed to load QR token & PIN:", err);
       }
     };
     fetchQrToken();
@@ -41,7 +39,10 @@ export default function DriverQR() {
   // Automatically redirect driver home when rider scans QR (which clears activeTrip on driver side)
   useEffect(() => {
     if (activeTrip.status === "idle") {
-      Alert.alert("Ride Complete", "The student has scanned the QR code and the fare has been verified.");
+      Alert.alert(
+        "Ride Complete",
+        "The student has scanned the QR code and the fare has been verified.",
+      );
       router.replace("/(driver)/home");
     }
   }, [activeTrip.status]);
@@ -72,7 +73,9 @@ export default function DriverQR() {
         </Pressable>
 
         <View className="items-center">
-          <Text className="text-lg font-bold text-on-surface font-jakarta">Completion QR</Text>
+          <Text className="text-lg font-bold text-on-surface font-jakarta">
+            Completion QR
+          </Text>
           <Text className="text-secondary text-[11px] font-medium font-jakarta mt-0.5">
             Show this to the rider
           </Text>
@@ -132,12 +135,16 @@ export default function DriverQR() {
 
           {/* Price breakdown and Status */}
           <View className="items-end mr-1">
-            <Text className="text-secondary text-[10px] font-medium font-jakarta">Trip Fare</Text>
+            <Text className="text-secondary text-[10px] font-medium font-jakarta">
+              Trip Fare
+            </Text>
             <Text className="text-on-surface font-extrabold text-[18px] font-jakarta mt-0.5">
               {formatCurrency(tripPrice)}
             </Text>
             <View className="bg-[#e6f9ed] px-2.5 py-0.5 rounded-full mt-1.5">
-              <Text className="text-success font-bold text-[10px] font-jakarta">Paid</Text>
+              <Text className="text-success font-bold text-[10px] font-jakarta">
+                Paid
+              </Text>
             </View>
           </View>
         </View>
@@ -177,9 +184,17 @@ export default function DriverQR() {
             </Text>
           </View>
           {qrToken ? (
-            <Text className="text-secondary text-sm font-jakarta mt-4 font-bold text-center">
-              Verification Code: {qrToken}
-            </Text>
+            <View className="mt-4 gap-1.5 items-center">
+              <Text className="text-secondary text-sm font-jakarta font-bold text-center">
+                Verification Code: {qrToken}
+              </Text>
+              {pin ? (
+                <Text className="text-primary text-lg font-jakarta font-bold text-center">
+                  Completion PIN:{" "}
+                  <Text className="text-3xl"> {pin} </Text>
+                </Text>
+              ) : null}
+            </View>
           ) : null}
         </View>
 
@@ -189,7 +204,9 @@ export default function DriverQR() {
             <Shield color="#001caa" size={18} />
           </View>
           <View className="flex-1">
-            <Text className="text-on-surface text-xs font-bold font-jakarta">Tip</Text>
+            <Text className="text-on-surface text-xs font-bold font-jakarta">
+              Tip
+            </Text>
             <Text className="text-secondary text-[11px] font-medium font-jakarta mt-0.5 leading-4">
               Make sure the screen is bright and the QR code is clearly visible.
             </Text>

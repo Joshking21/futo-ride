@@ -12,6 +12,7 @@ export default function ConfirmRide() {
   const {
     activeTrip,
     confirmBooking,
+    cancelBooking,
     getStopId,
     bookedRequest,
     setBookedRequest,
@@ -21,21 +22,16 @@ export default function ConfirmRide() {
   const [paymentMethod, setPaymentMethod] = useState<"naira" | "cngn">("naira");
   const [seats, setSeats] = useState(1);
   // const [isSurgeActive, setIsSurgeActive] = useState(false);
-
+ 
   const handleCancel = async () => {
-    if (bookedRequest?.rideId) {
-      try {
-        await apiRequest(`/rides/${bookedRequest.rideId}/cancel`, "POST");
-        setBookedRequest(null);
-        router.replace("/(rider)/book");
-      } catch (error: any) {
-        Alert.alert(
-          "Cancellation Failed",
-          error.message || "Failed to cancel ride.",
-        );
-      }
-    } else {
+    try {
+      await cancelBooking();
       router.replace("/(rider)/book");
+    } catch (error: any) {
+      Alert.alert(
+        "Cancellation Failed",
+        error.message || "Failed to cancel ride.",
+      );
     }
   };
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
@@ -107,7 +103,7 @@ export default function ConfirmRide() {
     basePrice + serviceFee + (isPriority && isSurgeActive ? priorityFee : 0);
 
   const handleConfirm = async () => {
-    await confirmBooking(isPriority && isSurgeActive, paymentMethod, seats);
+    // await confirmBooking(isPriority && isSurgeActive, paymentMethod, seats);
     router.replace("/(rider)/tracking");
   };
 
@@ -252,14 +248,7 @@ export default function ConfirmRide() {
                   fontFamily: "Plus Jakarta Sans",
                 }}
               >
-                {bookedRequest?.seats ??
-                  0 +
-                    "/4" +
-                    " " +
-                    "seat" +
-                    ((bookedRequest?.seats ?? 0 > 1) ? "s" : "") +
-                    " " +
-                    "booked"}
+              {`${bookedRequest?.seats || 0}/4 seat${(bookedRequest?.seats ?? 0) > 1 ? "s" : ""} booked`}
               </Text>
             </View>
           </View>
@@ -894,7 +883,7 @@ export default function ConfirmRide() {
             borderColor: "#ba1a1a",
             alignItems: "center",
             justifyContent: "center",
-            opacity: pressed ? 0.8 : 1,
+            opacity: pressed ? 0.5 : 1,
           })}
           className="bg-error flex-1 p-3 justify-center items-center rounded-3xl"
         >
@@ -924,9 +913,9 @@ export default function ConfirmRide() {
             shadowOpacity: 0.1,
             shadowRadius: 3,
             elevation: 2,
-            opacity: pressed ? 0.9 : 1,
+            opacity: pressed ? 0.5 : 1,
           })}
-          className=" bg-on-primary-container flex-1 p-3 justify-center items-center rounded-3xl"
+          className=" bg-primary flex-1 p-3 justify-center items-center rounded-3xl"
         >
           <Text
             style={{
@@ -935,7 +924,7 @@ export default function ConfirmRide() {
               fontWeight: "700",
               fontFamily: "Plus Jakarta Sans",
             }}
-            className=" bg-on-primary-container text-on-primary-fixed"
+            className="  text-white"
           >
             Confirm Ride
           </Text>

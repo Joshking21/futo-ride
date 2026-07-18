@@ -33,11 +33,14 @@ export default function DriverHome() {
   const router = useRouter();
   const {
     activeTrip,
+    setActiveTrip,
     triggerMockIncomingRequest,
     progressDriverTrip,
     clearActiveTrip,
     earnings,
+    fetchDriverEarnings,
     setLocationDriver,
+    getStopName,
   } = useApp();
 
   const [countdown, setCountdown] = useState(30);
@@ -45,13 +48,63 @@ export default function DriverHome() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isOnline, setOnline] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [activeRide, setActiveRide] = useState<any>(null);
 
-  const isRequestPending = activeTrip.status === "searching";
+  // Fetch earnings statistics on mount
+  useEffect(() => {
+    fetchDriverEarnings().catch(() => undefined);
+  }, [fetchDriverEarnings]);
+
+
+  // Poll for active rides assigned to this driver
+  // useEffect(() => {
+  //   if (!isOnline) {
+  //     setActiveRide(null);
+  //     return;
+  //   }
+
+  //   const fetchActiveRides = async () => {
+  //     try {
+  //       const res = await apiRequest<{ rides: any[] }>("/drivers/me/rides");
+  //       if (res.rides && res.rides.length > 0) {
+  //         const ride = res.rides[0];
+  //         setActiveRide(ride);
+  //         // Sync with the app context trip state so other screens (like active.tsx) are aware
+  //         setActiveTrip((prev) => ({
+  //           ...prev,
+  //           rideId: ride.rideId,
+  //           pickup: getStopName(ride.fromStop),
+  //           destination: getStopName(ride.toStop),
+  //           seats: ride.seats,
+  //           status: ride.status,
+  //         }));
+  //       } else {
+  //         setActiveRide(null);
+  //       }
+  //     } catch (err) {
+  //       console.warn("Failed to fetch active rides for driver:", err);
+  //     }
+  //   };
+
+  //   fetchActiveRides();
+  //   const interval = setInterval(fetchActiveRides, 5000);
+  //   return () => clearInterval(interval);
+  // }, [isOnline, getStopName, setActiveTrip]);
+
+  // Auto-redirect driver to the active trip screen if the trip is en route
+  useEffect(() => {
+    if (
+      activeRide &&
+      (activeRide.status === "arriving" || activeRide.status === "started")
+    ) {
+      router.replace("/(driver)/active");
+    }
+  }, [activeRide, router]);
 
   // Real-time countdown timer for pending requests
   useEffect(() => {
     let interval: any;
-    if (isOnline && isRequestPending) {
+    if (isOnline && activeRide && activeRide.status === "assigned") {
       setCountdown(30);
       interval = setInterval(() => {
         setCountdown((c) => {
@@ -59,6 +112,7 @@ export default function DriverHome() {
             clearInterval(interval);
             // Auto-decline request when countdown reaches 0
             clearActiveTrip();
+            setActiveRide(null);
             Alert.alert(
               "Request Expired",
               "The incoming ride request has expired.",
@@ -73,7 +127,7 @@ export default function DriverHome() {
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [isOnline, isRequestPending]);
+  }, [isOnline, activeRide, clearActiveTrip]);
   const MAX_CONSECUTIVE_FAILURES = 3;
 
   // ...inside your component
@@ -851,7 +905,7 @@ export default function DriverHome() {
                 the switch above to get started.
               </Text>
             </View>
-          ) : !isRequestPending ? (
+          ) : activeRide ? (
             /* Incoming Request Panel */
             <View style={{ gap: 12 }}>
               <Text
@@ -921,7 +975,7 @@ export default function DriverHome() {
                         color: "#0b1c30",
                       }}
                     >
-                      {activeTrip.pickup || "New Hall"}
+                      {getStopName(activeRide.fromStop)}
                     </Text>
                     <Text
                       style={{
@@ -933,7 +987,7 @@ export default function DriverHome() {
                     >
                       to{" "}
                       <Text style={{ color: "#001caa", fontWeight: "700" }}>
-                        {activeTrip.destination || "Main Gate"}
+                        {getStopName(activeRide.toStop)}
                       </Text>
                     </Text>
                     <Text
@@ -945,7 +999,7 @@ export default function DriverHome() {
                         marginTop: 4,
                       }}
                     >
-                      1.2 km away • Est. ₦{activeTrip.price || "150.00"}
+                      {`${activeRide.seats || 1} seat${(activeRide.seats || 1) > 1 ? "s" : ""} requested`}
                     </Text>
                   </View>
 

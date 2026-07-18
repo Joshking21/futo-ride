@@ -1,19 +1,9 @@
 import { auth } from "./firebaseConfig";
-import Constants from "expo-constants";
 
 // Resolve the LAN IP if running in development (so real devices can connect to Metro host),
 // otherwise use the EXPO_PUBLIC_API_URL or fallback to localhost
 const getBaseUrl = (): string => {
-  if (process.env.EXPO_PUBLIC_API_URL) {
-    return process.env.EXPO_PUBLIC_API_URL;
-  }
-  // Extract dynamic IP if running via Expo Go local bundler
-  const hostUri = Constants.expoConfig?.hostUri;
-  if (hostUri) {
-    const ip = hostUri.split(":")[0];
-    return `http://${ip}:3001`;
-  }
-  return "http://localhost:3001";
+  return "http://10.77.240.190:3001";
 };
 
 export const BASE_URL = getBaseUrl();
@@ -25,10 +15,19 @@ export const BASE_URL = getBaseUrl();
 export async function apiRequest<T>(
   path: string,
   method: "GET" | "POST" = "GET",
-  body?: any
+  body?: any,
 ): Promise<T> {
-  const token = await auth.currentUser?.getIdToken();
+  console.log(`[apiRequest] starting request for ${path}`);
+  let token: string | undefined;
+  try {
+    token = await auth.currentUser?.getIdToken();
+    // console.log(`[apiRequest] resolved token successfully: ${token ? "exists" : "none"}`);
+  } catch (tokenErr) {
+    // console.error(`[apiRequest] failed to get token:`, tokenErr);
+  }
+
   const url = `${BASE_URL}${path}`;
+  // console.log(`[apiRequest] fetching URL: ${url} (method: ${method})`);
 
   const headers: HeadersInit = {
     "Content-Type": "application/json",
@@ -38,11 +37,18 @@ export async function apiRequest<T>(
     headers["Authorization"] = `Bearer ${token}`;
   }
 
-  const response = await fetch(url, {
-    method,
-    headers,
-    body: body ? JSON.stringify(body) : undefined,
-  });
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method,
+      headers,
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    // console.log(`[apiRequest] fetch response status: ${response.status}`);
+  } catch (fetchErr) {
+    // console.error(`[apiRequest] fetch failed for ${url}:`, fetchErr);
+    throw fetchErr;
+  }
 
   const text = await response.text();
   let json: any;
@@ -54,11 +60,15 @@ export async function apiRequest<T>(
   }
 
   if (response.status === 401) {
-    throw new Error("Unauthorized. Please check your credentials or log in again.");
+    throw new Error(
+      "Unauthorized. Please check your credentials or log in again.",
+    );
   }
 
   if (!json.ok) {
-    throw new Error(json.error || `Request failed with status ${response.status}`);
+    throw new Error(
+      json.error || `Request failed with status ${response.status}`,
+    );
   }
 
   return json.data as T;

@@ -91,6 +91,7 @@ interface AppContextType {
   rideHistory: Ride[];
   notifications: AlertNotification[];
   activeTrip: TripState;
+  setActiveTrip: React.Dispatch<React.SetStateAction<TripState>>;
   bookedRequest: BookedRideResponse | null;
   setBookedRequest: (request: BookedRideResponse | null) => void;
   /** Campus stops fetched from the backend (GET /stops). */
@@ -112,7 +113,9 @@ interface AppContextType {
   ) => Promise<void>;
   cancelBooking: () => Promise<void>;
   progressDriverTrip: () => Promise<void>;
-  completeTrip: (scannedQrToken?: string) => Promise<void>;
+  completeTrip: (
+    arg?: string | { scannedQrToken?: string; pin?: string },
+  ) => Promise<void>;
   addNotification: (
     title: string,
     body: string,
@@ -121,6 +124,7 @@ interface AppContextType {
   ) => void;
   clearActiveTrip: () => void;
   earnings: { daily: number; tripsCount: number; onlineTime: string };
+  fetchDriverEarnings: () => Promise<void>;
   triggerMockIncomingRequest: () => void;
 }
 
@@ -180,7 +184,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
   const [locationDriver, setLocationDriver] = useState<[number, number] | null>(
     null,
   );
-  const [bookedRequest, setBookedRequest] = useState<BookedRideResponse | null>(null);
+  const [bookedRequest, setBookedRequest] = useState<BookedRideResponse | null>(
+    null,
+  );
 
   // ── Fetch campus stops from the backend on mount ──
   // useEffect(() => {
@@ -534,14 +540,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const cancelBooking = async () => {
-    if (activeTrip.rideId) {
+    const rideId = activeTrip.rideId || bookedRequest?.rideId;
+    if (rideId) {
       try {
-        await apiRequest(`/rides/${activeTrip.rideId}/cancel`, "POST");
+        await apiRequest(`/rides/${rideId}/cancel`, "POST");
       } catch (e) {
         console.error("Cancel API error:", e);
+        throw e;
       }
     }
     setActiveTrip(INITIAL_TRIP_STATE);
+    setBookedRequest(null);
   };
 
   // Driver moves trip: assigned -> arriving -> started
@@ -569,19 +578,43 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
-  // Rider confirms QR scan
-  const completeTrip = async (scannedQrToken?: string) => {
+  // Rider confirms QR scan or PIN
+  const completeTrip = async (
+    arg?: string | { scannedQrToken?: string; pin?: string },
+  ) => {
     if (!activeTrip.rideId) return;
 
     try {
-      const token = scannedQrToken || activeTrip.qrToken;
-      if (!token) {
-        throw new Error("Missing verification QR code token.");
+      let token: string | undefined;
+      let pin: string | undefined;
+
+      if (typeof arg === "string") {
+        token = arg;
+      } else if (arg && typeof arg === "object") {
+        token = arg.scannedQrToken;
+        pin = arg.pin;
       }
 
-      await apiRequest(`/rides/${activeTrip.rideId}/complete`, "POST", {
-        qrToken: token,
-      });
+      if (!token && !pin) {
+        token = activeTrip.qrToken;
+      }
+
+      const requestBody: any = {};
+      if (pin) {
+        requestBody.pin = pin;
+      } else if (token) {
+        requestBody.qrToken = token;
+      } else {
+        throw new Error("Missing verification QR code token or PIN.");
+      }
+
+      await apiRequest(
+        `/rides/${activeTrip.rideId}/complete`,
+        "POST",
+        requestBody,
+      );
+
+      fetchDriverEarnings().catch(() => undefined);
 
       // Verify payment (best effort)
       if (activeTrip.paymentReference) {
@@ -592,7 +625,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
 
       setActiveTrip((prev) => ({ ...prev, status: "idle", stepIndex: 0 }));
     } catch (e: any) {
-      Alert.alert("Verification Failed", e.message || "Invalid QR Code scan.");
+      Alert.alert(
+        "Verification Failed",
+        e.message || "Invalid QR Code scan or PIN.",
+      );
+      throw e;
     }
   };
 
@@ -618,6 +655,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
     setNotifications((prev) => [newNotif, ...prev]);
   };
 
+  const fetchDriverEarnings = useCallback(async () => {
+    try {
+      const res = await apiRequest<{ totalKobo: number; recent: any[] }>("/drivers/me/earnings");
+    
+      setEarnings({
+        daily: res.totalKobo / 100,
+        tripsCount: res.recent?.length ?? 0,
+        onlineTime: "0h 0m",
+      });
+    } catch (e) {
+      console.warn("Failed to fetch driver earnings:", e);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (userRole === "driver" && auth.currentUser) {
+      fetchDriverEarnings();
+    }
+  }, [userRole, fetchDriverEarnings]);
+
   const triggerMockIncomingRequest = () => {
     // Left for testing UI triggers locally
   };
@@ -636,6 +693,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
         rideHistory,
         notifications,
         activeTrip,
+        setActiveTrip,
         bookedRequest,
         setBookedRequest,
         campusStops,
@@ -651,6 +709,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
         addNotification,
         clearActiveTrip,
         earnings,
+        fetchDriverEarnings,
         triggerMockIncomingRequest,
       }}
     >
