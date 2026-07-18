@@ -1,4 +1,5 @@
 import { auth } from "./firebaseConfig";
+import { Alert } from "react-native";
 
 // Resolve the LAN IP if running in development (so real devices can connect to Metro host),
 // otherwise use the EXPO_PUBLIC_API_URL or fallback to localhost
@@ -46,7 +47,10 @@ export async function apiRequest<T>(
     });
     // console.log(`[apiRequest] fetch response status: ${response.status}`);
   } catch (fetchErr) {
-    // console.error(`[apiRequest] fetch failed for ${url}:`, fetchErr);
+    Alert.alert(
+      "Connection Failed",
+      "Unable to connect to the server. Please check your internet connection and try again."
+    );
     throw fetchErr;
   }
 

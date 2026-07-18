@@ -45,12 +45,43 @@ const CAMPUS_LOCATIONS = [
   { name: "Health Centre", desc: "Campus medical clinic and emergency" },
 ];
 
+const MOCK_NOTIFICATIONS = [
+  {
+    id: "mock-notif-1",
+    title: "Telegram Link Active",
+    body: "Proximity alert notification services have been enabled successfully.",
+    timestamp: "10m ago",
+    type: "proximity",
+    read: false,
+    category: "ride_arriving",
+  },
+  {
+    id: "mock-notif-2",
+    title: "Trip Completed",
+    body: "Your trip to Senate Building was completed successfully.",
+    timestamp: "1h ago",
+    type: "general",
+    read: true,
+    category: "trip_complete",
+  },
+  {
+    id: "mock-notif-3",
+    title: "Surge Alert Active",
+    body: "Surge is currently active at SEET Complex due to high demand.",
+    timestamp: "2h ago",
+    type: "general",
+    read: false,
+    category: "queue_update",
+  },
+];
+
 export default function AlertsScreen() {
   const router = useRouter();
   const { notifications: globalNotifications, addNotification } = useApp();
 
-  const [notificationsList, setNotificationsList] =
-    useState(globalNotifications);
+  const [notificationsList, setNotificationsList] = useState(
+    globalNotifications.length > 0 ? globalNotifications : MOCK_NOTIFICATIONS
+  );
   const [selectedBuilding, setSelectedBuilding] = useState<string | null>(null);
   const [showDropdown, setShowDropdown] = useState(false);
   const [connecting, setConnecting] = useState(false);
@@ -58,7 +89,9 @@ export default function AlertsScreen() {
 
   // Sync with global notifications when added
   useEffect(() => {
-    setNotificationsList(globalNotifications);
+    setNotificationsList(
+      globalNotifications.length > 0 ? globalNotifications : MOCK_NOTIFICATIONS
+    );
   }, [globalNotifications]);
 
   // Listen to the Firestore user profile for real-time Telegram link state
