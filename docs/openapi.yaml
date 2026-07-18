@@ -780,6 +780,50 @@ paths:
               schema: { $ref: "#/components/schemas/Error" }
               example: { ok: false, error: "Ride not found" }
 
+  /payments/bypass:
+    post:
+      tags: [Payments]
+      summary: Instantly mark a ride as PAID (Development only)
+      description: |
+        Completely bypasses Partna. Immediately marks the ride as `PAID`, resolves the payment document,
+        and fires the FCM push notification to the rider. Perfect for when Partna is acting up.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InitPayment"
+      responses:
+        "200":
+          description: Ride successfully bypassed and paid.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, enum: [true] }
+                  bypassed: { type: boolean, enum: [true] }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Not your ride
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+              example: { ok: false, error: "Not your ride" }
+        "404":
+          description: Ride not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+              example: { ok: false, error: "Ride not found" }
+        "409":
+          description: Ride is not payable
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+              example: { ok: false, error: "Ride is not payable" }
+
   /sos:
     post:
       tags: [Incidents]
