@@ -386,7 +386,7 @@ export default function DriverHome() {
               width: 8,
               height: 8,
               borderRadius: 4,
-              backgroundColor: "#001caa",
+              backgroundColor: "#059669",
               borderWidth: 1,
               borderColor: "#ffffff",
             }}
@@ -491,7 +491,7 @@ export default function DriverHome() {
             {isLoading && (
               <ActivityIndicator
                 size="small"
-                color="#001caa"
+                color="#059669"
                 style={{ marginTop: 6 }}
               />
             )}
@@ -540,7 +540,7 @@ export default function DriverHome() {
                 width: 80,
                 height: 80,
                 borderRadius: 40,
-                backgroundColor: "rgba(0, 28, 170, 0.1)",
+                backgroundColor: "rgba(5, 150, 105, 0.1)",
                 alignItems: "center",
                 justifyContent: "center",
                 position: "absolute",
@@ -551,7 +551,7 @@ export default function DriverHome() {
                 width: 48,
                 height: 48,
                 borderRadius: 24,
-                backgroundColor: "rgba(0, 28, 170, 0.2)",
+                backgroundColor: "rgba(5, 150, 105, 0.2)",
                 alignItems: "center",
                 justifyContent: "center",
                 position: "absolute",
@@ -563,7 +563,7 @@ export default function DriverHome() {
                 width: 24,
                 height: 24,
                 borderRadius: 12,
-                backgroundColor: "#001caa",
+                backgroundColor: "#059669",
                 borderWidth: 1,
                 borderColor: "#ffffff",
                 position: "absolute",
@@ -597,7 +597,7 @@ export default function DriverHome() {
               right: 16,
             }}
           >
-            <Compass color="#001caa" size={18} />
+            <Compass color="#059669" size={18} />
           </Pressable>
           <Pressable
             style={{
@@ -619,7 +619,7 @@ export default function DriverHome() {
               right: 16,
             }}
           >
-            <ShieldAlert color="#001caa" size={18} />
+            <ShieldAlert color="#059669" size={18} />
           </Pressable>
         </View>
 
@@ -692,7 +692,7 @@ export default function DriverHome() {
                 style={{
                   fontSize: 12,
                   fontWeight: "700",
-                  color: "#001caa",
+                  color: "#059669",
                   fontFamily: "Plus Jakarta Sans",
                 }}
               >
@@ -948,7 +948,7 @@ export default function DriverHome() {
                       width: 48,
                       height: 48,
                       borderRadius: 16,
-                      backgroundColor: "#eff4ff",
+                      backgroundColor: "#ecfdf5",
                       alignItems: "center",
                       justifyContent: "center",
                     }}
@@ -986,7 +986,7 @@ export default function DriverHome() {
                       }}
                     >
                       to{" "}
-                      <Text style={{ color: "#001caa", fontWeight: "700" }}>
+                      <Text style={{ color: "#059669", fontWeight: "700" }}>
                         {getStopName(activeRide.toStop)}
                       </Text>
                     </Text>
@@ -1010,7 +1010,7 @@ export default function DriverHome() {
                       height: 56,
                       borderRadius: 28,
                       borderWidth: 3,
-                      borderColor: "#001caa",
+                      borderColor: "#059669",
                       alignItems: "center",
                       justifyContent: "center",
                       position: "relative",
@@ -1056,7 +1056,7 @@ export default function DriverHome() {
                     onPress={handleDeclineRequest}
                     className="flex-1 bg-[#EFF2FF] h-12 rounded-2xl flex-row items-center justify-center gap-1.5 active:opacity-75"
                   >
-                    <X color="#001caa" size={16} />
+                    <X color="#059669" size={16} />
                     <Text className="font-jakarta font-semibold text-[14px] text-primary">
                       Decline
                     </Text>
@@ -1081,7 +1081,7 @@ export default function DriverHome() {
               >
                 <Text
                   style={{
-                    color: "#001caa",
+                    color: "#059669",
                     fontFamily: "Plus Jakarta Sans",
                     fontWeight: "700",
                     fontSize: 14,
@@ -1096,9 +1096,9 @@ export default function DriverHome() {
             /* Finding Rides Radar Panel */
             <View
               style={{
-                backgroundColor: "rgba(0, 28, 170, 0.05)",
+                backgroundColor: "rgba(5, 150, 105, 0.05)",
                 borderWidth: 1,
-                borderColor: "rgba(0, 28, 170, 0.1)",
+                borderColor: "rgba(5, 150, 105, 0.1)",
                 borderRadius: 24,
                 padding: 24,
                 alignItems: "center",
@@ -1112,12 +1112,12 @@ export default function DriverHome() {
                 marginTop: 2,
               }}
             >
-              <Radar color="#001caa" size={32} />
+              <Radar color="#059669" size={32} />
               <Text
                 style={{
                   fontSize: 16,
                   fontWeight: "700",
-                  color: "#001caa",
+                  color: "#059669",
                   fontFamily: "Plus Jakarta Sans",
                 }}
               >

@@ -117,7 +117,7 @@ export default function Sign() {
           {/* Logo Box */}
           <View className="items-center mb-2">
             <View className="w-20 h-20 rounded-2xl bg-white shadow-md shadow-black/5 flex items-center justify-center border border-outline-variant/10">
-              <KekeIcon size={54} color="#001caa" />
+              <KekeIcon size={54} color="#059669" />
             </View>
           </View>
 
@@ -149,7 +149,7 @@ export default function Sign() {
               }`}
             >
               <User
-                color={isNameFocused ? "#001caa" : "#757687"}
+                color={isNameFocused ? "#059669" : "#757687"}
                 size={20}
                 className="mr-3"
               />
@@ -174,7 +174,7 @@ export default function Sign() {
               }`}
             >
               <Mail
-                color={isEmailFocused ? "#001caa" : "#757687"}
+                color={isEmailFocused ? "#059669" : "#757687"}
                 size={20}
                 className="mr-3"
               />
@@ -203,7 +203,7 @@ export default function Sign() {
               }`}
             >
               <Lock
-                color={isPasswordFocused ? "#001caa" : "#757687"}
+                color={isPasswordFocused ? "#059669" : "#757687"}
                 size={20}
                 className="mr-3"
               />
@@ -228,12 +228,12 @@ export default function Sign() {
               >
                 {showPassword ? (
                   <EyeOff
-                    color={isPasswordFocused ? "#001caa" : "#757687"}
+                    color={isPasswordFocused ? "#059669" : "#757687"}
                     size={20}
                   />
                 ) : (
                   <Eye
-                    color={isPasswordFocused ? "#001caa" : "#757687"}
+                    color={isPasswordFocused ? "#059669" : "#757687"}
                     size={20}
                   />
                 )}
@@ -248,7 +248,7 @@ export default function Sign() {
               }`}
             >
               <Key
-                color={isConfirmFocused ? "#001caa" : "#757687"}
+                color={isConfirmFocused ? "#059669" : "#757687"}
                 size={20}
                 className="mr-3"
               />
@@ -273,12 +273,12 @@ export default function Sign() {
               >
                 {showConfirmPassword ? (
                   <EyeOff
-                    color={isConfirmFocused ? "#001caa" : "#757687"}
+                    color={isConfirmFocused ? "#059669" : "#757687"}
                     size={20}
                   />
                 ) : (
                   <Eye
-                    color={isConfirmFocused ? "#001caa" : "#757687"}
+                    color={isConfirmFocused ? "#059669" : "#757687"}
                     size={20}
                   />
                 )}

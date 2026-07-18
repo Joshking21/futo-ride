@@ -125,7 +125,7 @@ export default function ConfirmRide() {
           padding: 2,
           justifyContent: "center",
           alignItems: value ? "flex-end" : "flex-start",
-          backgroundColor: value ? "#001caa" : "#cbd5e1",
+          backgroundColor: value ? "#059669" : "#cbd5e1",
         }}
       >
         <View
@@ -227,7 +227,7 @@ export default function ConfirmRide() {
                 borderColor: "#e5eeff",
               }}
             >
-              <KekeIcon size={38} color="#001caa" />
+              <KekeIcon size={38} color="#059669" />
             </View>
             <View style={{ flex: 1 }} className="">
               <Text
@@ -319,7 +319,7 @@ export default function ConfirmRide() {
                 borderColor: "#e5eeff",
               }}
             >
-              <Clock size={24} color="#001caa" />
+              <Clock size={24} color="#059669" />
             </View>
             <View style={{ flex: 1 }}>
               <Text
@@ -455,7 +455,7 @@ export default function ConfirmRide() {
                   elevation: 1,
                 }}
               >
-                <Zap color="#001caa" size={18} fill="#001caa" />
+                <Zap color="#059669" size={18} fill="#059669" />
               </View>
               <View style={{ flex: 1 }}>
                 <Text
@@ -510,7 +510,7 @@ export default function ConfirmRide() {
               borderWidth: 1,
               borderRadius: 16,
               backgroundColor: "#ffffff",
-              borderColor: paymentMethod === "naira" ? "#001caa" : "#e5eeff",
+              borderColor: paymentMethod === "naira" ? "#059669" : "#e5eeff",
             }}
           >
             <View
@@ -526,7 +526,7 @@ export default function ConfirmRide() {
                   justifyContent: "center",
                   backgroundColor: "#ffffff",
                   borderColor:
-                    paymentMethod === "naira" ? "#001caa" : "#cbd5e1",
+                    paymentMethod === "naira" ? "#059669" : "#cbd5e1",
                 }}
               >
                 {paymentMethod === "naira" && (
@@ -534,7 +534,7 @@ export default function ConfirmRide() {
                     style={{
                       width: 12,
                       height: 12,
-                      backgroundColor: "#001caa",
+                      backgroundColor: "#059669",
                       borderRadius: 6,
                     }}
                   />
@@ -546,7 +546,7 @@ export default function ConfirmRide() {
                   width: 32,
                   height: 32,
                   borderRadius: 16,
-                  backgroundColor: "#001caa",
+                  backgroundColor: "#059669",
                   alignItems: "center",
                   justifyContent: "center",
                 }}
@@ -613,7 +613,7 @@ export default function ConfirmRide() {
               borderWidth: 1,
               borderRadius: 16,
               backgroundColor: "#ffffff",
-              borderColor: paymentMethod === "cngn" ? "#001caa" : "#e5eeff",
+              borderColor: paymentMethod === "cngn" ? "#059669" : "#e5eeff",
             }}
           >
             <View
@@ -628,7 +628,7 @@ export default function ConfirmRide() {
                   alignItems: "center",
                   justifyContent: "center",
                   backgroundColor: "#ffffff",
-                  borderColor: paymentMethod === "cngn" ? "#001caa" : "#cbd5e1",
+                  borderColor: paymentMethod === "cngn" ? "#059669" : "#cbd5e1",
                 }}
               >
                 {paymentMethod === "cngn" && (
@@ -636,7 +636,7 @@ export default function ConfirmRide() {
                     style={{
                       width: 12,
                       height: 12,
-                      backgroundColor: "#001caa",
+                      backgroundColor: "#059669",
                       borderRadius: 6,
                     }}
                   />
@@ -904,7 +904,7 @@ export default function ConfirmRide() {
           style={({ pressed }) => ({
             flex: 1.2,
             height: 56,
-            // backgroundColor: "#001caa",
+            // backgroundColor: "#059669",
             borderRadius: 28,
             alignItems: "center",
             justifyContent: "center",

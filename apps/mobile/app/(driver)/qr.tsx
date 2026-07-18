@@ -158,10 +158,10 @@ export default function DriverQR() {
         <View className="bg-white p-6 rounded-[32px] border border-[#e5eeff] shadow-xs items-center justify-center mt-5">
           <View className="relative w-56 h-56 items-center justify-center p-4 border border-outline-variant/5 rounded-3xl bg-slate-50">
             {/* Corner anchor guides */}
-            <View className="absolute top-2 left-2 w-6 h-6 border-t-2 border-l-2 border-[#001caa] rounded-tl-lg" />
-            <View className="absolute top-2 right-2 w-6 h-6 border-t-2 border-r-2 border-[#001caa] rounded-tr-lg" />
-            <View className="absolute bottom-2 left-2 w-6 h-6 border-b-2 border-l-2 border-[#001caa] rounded-bl-lg" />
-            <View className="absolute bottom-2 right-2 w-6 h-6 border-b-2 border-r-2 border-[#001caa] rounded-br-lg" />
+            <View className="absolute top-2 left-2 w-6 h-6 border-t-2 border-l-2 border-[#059669] rounded-tl-lg" />
+            <View className="absolute top-2 right-2 w-6 h-6 border-t-2 border-r-2 border-[#059669] rounded-tr-lg" />
+            <View className="absolute bottom-2 left-2 w-6 h-6 border-b-2 border-l-2 border-[#059669] rounded-bl-lg" />
+            <View className="absolute bottom-2 right-2 w-6 h-6 border-b-2 border-r-2 border-[#059669] rounded-br-lg" />
 
             <Pressable
               // onPress={handleScanDone}
@@ -178,8 +178,8 @@ export default function DriverQR() {
 
           {/* Waiting Status Bar */}
           <View className="bg-[#eff3ff] p-4 rounded-2xl mt-5 w-full flex-row items-center justify-center gap-2.5">
-            <ActivityIndicator color="#001caa" size="small" />
-            <Text className="text-[#001caa] font-bold text-xs font-jakarta">
+            <ActivityIndicator color="#059669" size="small" />
+            <Text className="text-[#059669] font-bold text-xs font-jakarta">
               Waiting for rider to scan...
             </Text>
           </View>
@@ -201,7 +201,7 @@ export default function DriverQR() {
         {/* Tip Instruction Card */}
         <View className="bg-white border border-[#e5eeff] p-4 rounded-3xl flex-row items-center gap-3.5 mt-5 shadow-xs">
           <View className="w-10 h-10 rounded-2xl bg-[#eff3ff] items-center justify-center">
-            <Shield color="#001caa" size={18} />
+            <Shield color="#059669" size={18} />
           </View>
           <View className="flex-1">
             <Text className="text-on-surface text-xs font-bold font-jakarta">
@@ -216,7 +216,7 @@ export default function DriverQR() {
         {/* Action Button fallback */}
         <Pressable
           onPress={handleScanDone}
-          className="w-full h-14 bg-[#001caa] rounded-full items-center justify-center shadow-md active:scale-[0.98] mt-6"
+          className="w-full h-14 bg-[#059669] rounded-full items-center justify-center shadow-md active:scale-[0.98] mt-6"
         >
           <Text className="text-white font-bold text-[16px] font-jakarta">
             Complete & Return

@@ -186,8 +186,8 @@ export default function AlertsScreen() {
     switch (category) {
       case "ride_arriving":
         return (
-          <View className="w-12 h-12 rounded-2xl bg-[#eff4ff] items-center justify-center shrink-0">
-            <KekeIcon size={24} color="#001caa" />
+          <View className="w-12 h-12 rounded-2xl bg-[#ecfdf5] items-center justify-center shrink-0">
+            <KekeIcon size={24} color="#059669" />
           </View>
         );
       case "trip_complete":
@@ -258,7 +258,7 @@ export default function AlertsScreen() {
                   width: 56,
                   height: 56,
                   borderRadius: 28,
-                  backgroundColor: "rgba(0, 28, 170, 0.1)",
+                  backgroundColor: "rgba(5, 150, 105, 0.1)",
                   position: "absolute",
                   transform: [{ scale: pulseValue1 }],
                   opacity: pulseValue1.interpolate({
@@ -273,7 +273,7 @@ export default function AlertsScreen() {
                   width: 44,
                   height: 44,
                   borderRadius: 22,
-                  backgroundColor: "rgba(0, 28, 170, 0.1)",
+                  backgroundColor: "rgba(5, 150, 105, 0.1)",
                   position: "absolute",
                   transform: [{ scale: pulseValue2 }],
                   opacity: pulseValue2.interpolate({
@@ -284,7 +284,7 @@ export default function AlertsScreen() {
               />
               {/* Static White Center */}
               <View className="w-10 h-10 rounded-full bg-white items-center justify-center shadow-sm z-10">
-                <Bell color="#001caa" size={20} />
+                <Bell color="#059669" size={20} />
               </View>
             </View>
 
@@ -462,7 +462,7 @@ export default function AlertsScreen() {
                     </Text>
                   </View>
                   {selectedBuilding === loc.name && (
-                    <CheckCircle2 color="#001caa" size={20} />
+                    <CheckCircle2 color="#059669" size={20} />
                   )}
                 </Pressable>
               ))}

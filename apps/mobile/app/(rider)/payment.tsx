@@ -39,7 +39,7 @@ export default function Payment() {
               }`}
             >
               <View className="flex-row items-center gap-2.5">
-                <Wallet color={preferredMethod === "cngn" ? "#001caa" : "#5b5e66"} size={20} />
+                <Wallet color={preferredMethod === "cngn" ? "#059669" : "#5b5e66"} size={20} />
                 <Text className="text-body-sm font-bold text-on-surface font-jakarta">cNGN (Crypto)</Text>
               </View>
               <View className={`w-5 h-5 rounded-full border flex items-center justify-center ${
@@ -76,7 +76,7 @@ export default function Payment() {
             <View className="flex-row items-start justify-between">
               <View className="flex-row items-center gap-3">
                 <View className="w-12 h-12 bg-primary/10 rounded-2xl items-center justify-center">
-                  <Wallet color="#001caa" size={24} />
+                  <Wallet color="#059669" size={24} />
                 </View>
                 <View>
                   <Text className="text-body-md font-bold text-on-surface font-jakarta">cNGN Wallet</Text>
@@ -135,7 +135,7 @@ export default function Payment() {
             <Pressable className="flex-row items-center justify-between p-4 border-b border-outline-variant/5 active:bg-surface">
               <View className="flex-row items-center gap-3">
                 <View className="w-10 h-10 bg-surface rounded-xl items-center justify-center border border-outline-variant/5">
-                  <CreditCard color="#001caa" size={20} />
+                  <CreditCard color="#059669" size={20} />
                 </View>
                 <View>
                   <Text className="text-body-md font-bold text-on-surface font-jakarta">Cards</Text>
@@ -148,7 +148,7 @@ export default function Payment() {
             <Pressable className="flex-row items-center justify-between p-4 active:bg-surface">
               <View className="flex-row items-center gap-3">
                 <View className="w-10 h-10 bg-surface rounded-xl items-center justify-center border border-outline-variant/5">
-                  <Landmark color="#001caa" size={20} />
+                  <Landmark color="#059669" size={20} />
                 </View>
                 <View>
                   <Text className="text-body-md font-bold text-on-surface font-jakarta">Bank Transfer</Text>
@@ -178,7 +178,7 @@ export default function Payment() {
         {/* Security Box */}
         <View className="bg-primary/5 rounded-3xl p-5 border border-primary/10 flex-row items-start gap-4 mt-2">
           <View className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
-            <ShieldCheck color="#001caa" size={22} />
+            <ShieldCheck color="#059669" size={22} />
           </View>
           <View className="flex-1">
             <Text className="text-body-md font-bold text-on-surface font-jakarta">Secure & Private</Text>

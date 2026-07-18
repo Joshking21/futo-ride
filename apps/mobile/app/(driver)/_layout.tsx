@@ -9,7 +9,7 @@ export default function DriverLayout() {
       screenOptions={{
         headerShown: false,
         // tabBarShowLabel: false,
-        tabBarActiveTintColor: "#001caa",
+        tabBarActiveTintColor: "#059669",
         tabBarInactiveTintColor: "#8e9199",
         tabBarStyle: {
           backgroundColor: "#f8f9ff",

@@ -7,7 +7,8 @@ import { useApp } from "../context/AppContext";
 import KekeIcon from "../components/KekeIcon";
 import "../global.css";
 import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "@/config/firebaseConfig";
+import { auth, db } from "@/config/firebaseConfig";
+import { doc, getDoc } from "firebase/firestore";
 
 export default function Splash() {
   const router = useRouter();
@@ -19,6 +20,7 @@ export default function Splash() {
   // Keep standard refs/states to hold the auth instance response safely
   const authChecked = useRef(false);
   const foundUser = useRef<any>(null);
+  const userRole = useRef<"rider" | "driver">("rider");
 
   const selectRole = (role: "rider" | "driver") => {
     setRole(role);
@@ -39,9 +41,25 @@ export default function Splash() {
     }, 2000);
 
     // 2. Listen to the background AsyncStorage token check
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       foundUser.current = firebaseUser;
-      console.log('Firebase storage check complete. User present:', !!firebaseUser);
+      
+      if (firebaseUser) {
+        try {
+          const userSnap = await getDoc(doc(db, "users", firebaseUser.uid));
+          if (userSnap.exists()) {
+            const data = userSnap.data();
+            const roleVal = data?.userType === "driver" ? "driver" : "rider";
+            userRole.current = roleVal;
+            // Also sync the context role state
+            setRole(roleVal);
+          }
+        } catch (e) {
+          console.error("Failed to query userType on launch:", e);
+        }
+      }
+
+      console.log('Firebase storage check complete. User present:', !!firebaseUser, 'Role:', userRole.current);
 
       if (authChecked.current) {
         // If the 2-second screen timer already finished, route immediately
@@ -55,8 +73,12 @@ export default function Splash() {
     // Unified routing decision pipeline
     const handleNavigationDecision = () => {
       if (foundUser.current) {
-        // Token found! Route smoothly straight into the authenticated Home dashboard
-        router.replace('/(rider)/home');
+        // Token found! Route smoothly straight into the authenticated Home dashboard based on role
+        if (userRole.current === "driver") {
+          router.replace('/(driver)/home');
+        } else {
+          router.replace('/(rider)/home');
+        }
       } else {
         // No token found! Drop the loading spinner so the selection buttons appear
         setShowLoader(false);
@@ -85,7 +107,7 @@ export default function Splash() {
         <View className="flex flex-col items-center justify-center">
           {/* Logo Container */}
           <View className="w-28 h-28 rounded-3xl bg-white shadow-xl shadow-black/5 flex items-center justify-center border border-outline-variant/20 mb-6">
-            <KekeIcon size={76} color="#001caa" />
+            <KekeIcon size={76} color="#059669" />
           </View>
 
           {/* Typography */}
@@ -103,7 +125,7 @@ export default function Splash() {
       {/* Bottom Group: Swaps smoothly between the Spinner or the Role Buttons */}
       {showLoader ? (
         <View className="w-full justify-center items-center py-12">
-          <ActivityIndicator size="large" color="#001caa" className="scale-110" />
+          <ActivityIndicator size="large" color="#059669" className="scale-110" />
         </View>
       ) : (
         <View className="w-full gap-4 pb-6 px-2">
@@ -131,7 +153,7 @@ export default function Splash() {
             }
             className="w-full bg-surface-container border border-outline-variant h-14 rounded-full flex-row items-center justify-center gap-2 active:opacity-85 active:scale-[0.98]"
           >
-            <CarFront color="#001caa" size={20} />
+            <CarFront color="#059669" size={20} />
             <Text className="text-primary text-action-lg font-bold">
               Drive Transit (Driver)
             </Text>

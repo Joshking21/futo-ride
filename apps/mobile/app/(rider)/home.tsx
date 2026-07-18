@@ -38,6 +38,7 @@ export default function RiderHome() {
 
   // Use a mutable ref to track the number of back button taps
   const backPressCount = useRef(0);
+  const mapRef = useRef<any>(null);
 
   // useEffect(() => {
   //   // 1. Configure iOS Navigation Layout Safety
@@ -82,15 +83,18 @@ export default function RiderHome() {
   return (
     <SafeAreaView className="flex-1 bg-surface-bright relative" edges={[]}>
       {/* Top Overlay Menu */}
-      <View className="absolute top-4 left-margin-mobile z-50">
+      {/* <View className="absolute top-10 left-margin-mobile z-50">
         <Pressable className="bg-white p-3.5 rounded-full shadow-md border border-outline-variant/10 active:bg-surface-container flex items-center justify-center">
           <Menu color="#0B1C30" size={22} />
         </Pressable>
-      </View>
+      </View> */}
 
       {/* Top Locator Button */}
-      <View className="absolute top-4 right-margin-mobile z-50">
-        <Pressable className="bg-white p-3.5 rounded-full shadow-md border border-outline-variant/10 active:bg-surface-container flex items-center justify-center">
+      <View className="absolute top-10 right-margin-mobile z-50">
+        <Pressable
+          onPress={() => mapRef.current?.centerOnUser()}
+          className="bg-white p-3.5 rounded-full shadow-md border border-outline-variant/10 active:bg-surface-container flex items-center justify-center"
+        >
           <LocateFixed color="#0B1C30" size={22} className="rotate-45" />
         </Pressable>
       </View>
@@ -99,7 +103,7 @@ export default function RiderHome() {
       <View className="flex-1 relative z-10 bg-surface-container-low">
         {/* Map Background */}
        
-        <LiveMapScreen />
+        <LiveMapScreen ref={mapRef} />
         
 
         <LinearGradient
@@ -110,27 +114,27 @@ export default function RiderHome() {
         />
 
         {/* User Location pulsing dot */}
-        <View className="absolute top-[48%] left-[50%] -ml-6 -mt-6 w-12 h-12 items-center justify-center" pointerEvents="none">
+        {/* <View className="absolute top-[48%] left-[50%] -ml-6 -mt-6 w-12 h-12 items-center justify-center" pointerEvents="none">
           <View className="absolute w-10 h-10 rounded-full bg-primary/10 " />
           <View className="absolute w-8 h-8 rounded-full bg-primary/20" />
           <View className="w-4.5 h-4.5 rounded-full bg-primary border-2 border-white shadow-md shadow-primary/20" />
-        </View>
+        </View> */}
 
         {/* Nearby vehicles drawn on map */}
         {/* <View className="absolute top-[35%] left-[25%] p-1 bg-white rounded-xl shadow-md border border-outline-variant/10">
-          <KekeIcon size={32} color="#001caa" />
+          <KekeIcon size={32} color="#059669" />
         </View>
 
         <View className="absolute top-[28%] left-[60%] p-1 bg-white rounded-xl shadow-md border border-outline-variant/10">
-          <KekeIcon size={32} color="#001caa" />
+          <KekeIcon size={32} color="#059669" />
         </View>
 
         <View className="absolute top-[60%] left-[30%] p-1 bg-white rounded-xl shadow-md border border-outline-variant/10">
-          <KekeIcon size={32} color="#001caa" />
+          <KekeIcon size={32} color="#059669" />
         </View>
 
         <View className="absolute top-[52%] left-[75%] p-1 bg-white rounded-xl shadow-md border border-outline-variant/10">
-          <KekeIcon size={32} color="#001caa" />
+          <KekeIcon size={32} color="#059669" />
         </View> */}
 
         {/* Floating Actions Panel (Right Side above panel) */}
@@ -158,7 +162,7 @@ export default function RiderHome() {
           {/* Search bar input container */}
           <View className="flex flex-row  gap-4 align-bottom items-end justify-end">
             <Pressable
-              onPress={() => router.push("/(rider)/confirm")}
+              onPress={() => router.push("/(rider)/book")}
               style={{
                 // width: "100%",
                 flexDirection: "row",
@@ -240,8 +244,8 @@ export default function RiderHome() {
                 justifyContent: "center",
                 gap: 8,
                 backgroundColor:
-                  vehicleType === "keke" ? "#001caa" : "transparent",
-                shadowColor: vehicleType === "keke" ? "#001caa" : undefined,
+                  vehicleType === "keke" ? "#059669" : "transparent",
+                shadowColor: vehicleType === "keke" ? "#059669" : undefined,
                 shadowOffset:
                   vehicleType === "keke" ? { width: 0, height: 2 } : undefined,
                 shadowOpacity: vehicleType === "keke" ? 0.2 : undefined,
@@ -277,8 +281,8 @@ export default function RiderHome() {
                 justifyContent: "center",
                 gap: 8,
                 backgroundColor:
-                  vehicleType === "bus" ? "#001caa" : "transparent",
-                shadowColor: vehicleType === "bus" ? "#001caa" : undefined,
+                  vehicleType === "bus" ? "#059669" : "transparent",
+                shadowColor: vehicleType === "bus" ? "#059669" : undefined,
                 shadowOffset:
                   vehicleType === "bus" ? { width: 0, height: 2 } : undefined,
                 shadowOpacity: vehicleType === "bus" ? 0.2 : undefined,

@@ -192,11 +192,11 @@ export default function DriverActiveTrip() {
     return (
       <View className="items-center z-10">
         {state === "active" ? (
-          <View className="w-6 h-6 rounded-full border-2 border-[#001caa] items-center justify-center bg-white">
-            <View className="w-2.5 h-2.5 rounded-full bg-[#001caa]" />
+          <View className="w-6 h-6 rounded-full border-2 border-[#059669] items-center justify-center bg-white">
+            <View className="w-2.5 h-2.5 rounded-full bg-[#059669]" />
           </View>
         ) : state === "completed" ? (
-          <View className="w-6 h-6 rounded-full bg-[#001caa] items-center justify-center">
+          <View className="w-6 h-6 rounded-full bg-[#059669] items-center justify-center">
             <Check color="#ffffff" size={12} strokeWidth={3} />
           </View>
         ) : (
@@ -204,7 +204,7 @@ export default function DriverActiveTrip() {
         )}
         <Text
           className={`text-[10px] font-jakarta mt-1.5 font-bold ${
-            state === "active" ? "text-[#001caa]" : "text-[#5b5e66]"
+            state === "active" ? "text-[#059669]" : "text-[#5b5e66]"
           }`}
         >
           {label}
@@ -235,7 +235,7 @@ export default function DriverActiveTrip() {
           onPress={() => Alert.alert("Call Passenger", "Calling passenger...")}
           className="w-12 h-12 rounded-2xl bg-white items-center justify-center border border-outline-variant/10 shadow-xs active:bg-slate-100"
         >
-          <Phone color="#001caa" size={18} />
+          <Phone color="#059669" size={18} />
         </Pressable>
       </View>
 
@@ -261,7 +261,7 @@ export default function DriverActiveTrip() {
               }
               className="w-10 h-10 rounded-xl bg-white items-center justify-center border border-outline-variant/10 shadow-sm active:bg-slate-100"
             >
-              <Compass color="#001caa" size={18} />
+              <Compass color="#059669" size={18} />
             </Pressable>
             <Pressable
               onPress={() => router.push("/sos")}
@@ -278,7 +278,7 @@ export default function DriverActiveTrip() {
           <View className="bg-white p-4 rounded-lg  shadow-xs flex-row items-center justify-between">
             <View className="flex-row items-center flex-1 mr-2">
               <View className="w-12 h-12 rounded-2xl bg-[#eff3ff] items-center justify-center border border-[#e5eeff]">
-                <KekeIcon size={22} color="#001caa" />
+                <KekeIcon size={22} color="#059669" />
               </View>
               <View className="ml-3.5 flex-1">
                 <Text className="text-[14px] font-bold text-on-surface font-jakarta">
@@ -297,7 +297,7 @@ export default function DriverActiveTrip() {
               onPress={() => Alert.alert("Chat", "Opening passenger chat...")}
               className="w-11 h-11 rounded-2xl bg-white items-center justify-center border border-outline-variant/15 shadow-sm active:bg-slate-50"
             >
-              <MessageSquare color="#001caa" size={18} />
+              <MessageSquare color="#059669" size={18} />
             </Pressable>
           </View>
 
@@ -349,7 +349,7 @@ export default function DriverActiveTrip() {
               </View>
 
               <View className="w-10 h-10 rounded-2xl bg-[#f0f4ff] border border-[#dce9ff] items-center justify-center">
-                <Landmark color="#001caa" size={18} />
+                <Landmark color="#059669" size={18} />
               </View>
             </View>
           </View>
@@ -362,7 +362,7 @@ export default function DriverActiveTrip() {
               activeTrip.status !== "searching" &&
               activeTrip.status !== "idle" && (
                 <View
-                  className="absolute left-[54px] top-[20px] h-[1.5px] bg-[#001caa]"
+                  className="absolute left-[54px] top-[20px] h-[1.5px] bg-[#059669]"
                   style={{
                     width: activeTrip.status === "tracking" ? "42%" : "84%",
                   }}
@@ -384,7 +384,7 @@ export default function DriverActiveTrip() {
               className={`w-full h-14 rounded-full flex-row items-center justify-center gap-2 shadow-md active:scale-[0.98] ${
                 !rideData || rideData.status === "requested" || submitting
                   ? "bg-slate-300"
-                  : "bg-[#001caa]"
+                  : "bg-[#059669]"
               }`}
             >
               {submitting ? (
@@ -403,7 +403,7 @@ export default function DriverActiveTrip() {
               onPress={handleCancelTrip}
               className="w-full h-14 bg-[#f1f3f7] rounded-full items-center justify-center active:scale-[0.98]"
             >
-              <Text className="text-[#001caa] font-bold text-[16px] font-jakarta">
+              <Text className="text-[#059669] font-bold text-[16px] font-jakarta">
                 Cancel Trip
               </Text>
             </Pressable>

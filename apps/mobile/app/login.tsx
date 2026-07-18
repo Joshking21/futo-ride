@@ -172,9 +172,9 @@ export default function Login() {
           <View className="items-center mb-6">
             <View className="w-20 h-20 rounded-2xl bg-white shadow-md shadow-black/5 flex items-center justify-center border border-outline-variant/10">
               {userRole === "rider" ? (
-                <CircleUserRound size={54} color="#001caa" />
+                <CircleUserRound size={54} color="#059669" />
               ) : (
-                <KekeIcon size={54} color="#001caa" />
+                <KekeIcon size={54} color="#059669" />
               )}
             </View>
           </View>
@@ -210,7 +210,7 @@ export default function Login() {
               }`}
             >
               <Mail
-                color={isEmailFocused ? "#001caa" : "#757687"}
+                color={isEmailFocused ? "#059669" : "#757687"}
                 size={20}
                 className="mr-3"
               />
@@ -240,7 +240,7 @@ export default function Login() {
               }`}
             >
               <Lock
-                color={isPasswordFocused ? "#001caa" : "#757687"}
+                color={isPasswordFocused ? "#059669" : "#757687"}
                 size={20}
                 className="mr-3"
               />
@@ -265,12 +265,12 @@ export default function Login() {
               >
                 {showPassword ? (
                   <EyeOff
-                    color={isPasswordFocused ? "#001caa" : "#757687"}
+                    color={isPasswordFocused ? "#059669" : "#757687"}
                     size={20}
                   />
                 ) : (
                   <Eye
-                    color={isPasswordFocused ? "#001caa" : "#757687"}
+                    color={isPasswordFocused ? "#059669" : "#757687"}
                     size={20}
                   />
                 )}
@@ -338,14 +338,14 @@ export default function Login() {
             >
               {userRole === "rider" ? (
                 <>
-                  <CarFront color="#001caa" size={14} />
+                  <CarFront color="#059669" size={14} />
                   <Text className="text-[11px] text-primary font-bold uppercase tracking-wider font-jakarta">
                     Switch to Driver login
                   </Text>
                 </>
               ) : (
                 <>
-                  <User color="#001caa" size={14} />
+                  <User color="#059669" size={14} />
                   <Text className="text-[11px] text-primary font-bold uppercase tracking-wider font-jakarta">
                     Switch to Rider login
                   </Text>
