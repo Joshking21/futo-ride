@@ -1,4 +1,5 @@
 import { useRouter } from "expo-router";
+import { doc, onSnapshot } from "firebase/firestore";
 import {
   ArrowLeft,
   Check,
@@ -9,29 +10,110 @@ import {
   Phone,
   Shield,
 } from "lucide-react-native";
-import React, { useState } from "react";
-import { Alert, Image, Pressable, ScrollView, Text, View } from "react-native";
+import React, { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  Image,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import KekeIcon from "../../components/KekeIcon";
+import { apiRequest } from "../../config/apiHelper";
+import { db } from "../../config/firebaseConfig";
 import { useApp } from "../../context/AppContext";
 
 export default function DriverActiveTrip() {
   const router = useRouter();
-  const { activeTrip, progressDriverTrip, clearActiveTrip } = useApp();
-  const [tripState, setTripState] = useState<
-    "arrived" | "start" | "dropoff" | "complete"
-  >("arrived");
+  const { activeTrip, setActiveTrip, cancelBooking } = useApp();
+  const [rideData, setRideData] = useState<any>(null);
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleTripAction = () => {
-    progressDriverTrip();
-    if (tripState === "arrived") {
-      setTripState("start");
-    } else if (tripState === "start") {
-      setTripState("dropoff");
-    } else if (tripState === "dropoff") {
-      setTripState("complete");
-    } else {
-      router.push("/(driver)/qr");
+  // Subscribe to ride details in real-time from Firestore
+  useEffect(() => {
+    if (!activeTrip.rideId) return;
+
+    const rideRef = doc(db, "rides", activeTrip.rideId);
+    const unsub = onSnapshot(
+      rideRef,
+      (snap) => {
+        if (snap.exists()) {
+          const data = snap.data();
+          setRideData(data);
+
+          // Map backend statuses to matching context activeTrip statuses
+          let mappedStatus: typeof activeTrip.status = activeTrip.status;
+          if (data.status === "requested") {
+            mappedStatus = "searching";
+          } else if (data.status === "assigned") {
+            mappedStatus = "confirmed";
+          } else if (data.status === "arriving") {
+            mappedStatus = "tracking";
+          } else if (data.status === "started") {
+            mappedStatus = "arrived";
+          } else if (
+            data.status === "cancelled" ||
+            data.status === "completed"
+          ) {
+            mappedStatus = "idle";
+          }
+
+          if (mappedStatus !== activeTrip.status) {
+            setActiveTrip((prev) => ({
+              ...prev,
+              status: mappedStatus,
+            }));
+          }
+        }
+      },
+      (err) => console.error("Error listening to ride status:", err),
+    );
+
+    return () => unsub();
+  }, [activeTrip.rideId, setActiveTrip, activeTrip.status]);
+
+  // Handle auto-routing when trip is cancelled on the database
+  useEffect(() => {
+    if (rideData) {
+      if (rideData.status === "cancelled") {
+        Alert.alert(
+          "Trip Cancelled",
+          "This ride was cancelled by the passenger.",
+        );
+        router.replace("/(driver)/home");
+      }
+    }
+  }, [rideData, router]);
+
+  const handleTripAction = async () => {
+    if (!activeTrip.rideId || !rideData) return;
+
+    setSubmitting(true);
+    try {
+      if (rideData.status === "assigned") {
+        // Move to arriving
+        await apiRequest(`/rides/${activeTrip.rideId}/status`, "POST", {
+          status: "arriving",
+        });
+      } else if (rideData.status === "arriving") {
+        // Move to started
+        await apiRequest(`/rides/${activeTrip.rideId}/status`, "POST", {
+          status: "started",
+        });
+      } else if (rideData.status === "started") {
+        // Route to the QR page
+        router.push("/(driver)/qr");
+      }
+    } catch (err: any) {
+      Alert.alert(
+        "Operation Failed",
+        err.message || "Could not update trip status.",
+      );
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -41,26 +123,38 @@ export default function DriverActiveTrip() {
       {
         text: "Yes, Cancel",
         style: "destructive",
-        onPress: () => {
-          clearActiveTrip();
-          router.replace("/(driver)/home");
+        onPress: async () => {
+          setSubmitting(true);
+          try {
+            await cancelBooking();
+            router.replace("/(driver)/home");
+          } catch (err: any) {
+            Alert.alert(
+              "Cancellation Failed",
+              err.message || "Failed to cancel trip.",
+            );
+          } finally {
+            setSubmitting(false);
+          }
         },
       },
     ]);
   };
 
   const getButtonText = () => {
-    if (tripState === "arrived") return "I've Arrived at Pickup";
-    if (tripState === "start") return "Start Trip";
-    if (tripState === "dropoff") return "At Dropoff Location";
+    if (!rideData) return "Loading...";
+    if (rideData.status === "requested") return "Waiting for Payment...";
+    if (rideData.status === "assigned") return "Start Heading to Pickup";
+    if (rideData.status === "arriving") return "I've Arrived at Pickup";
     return "Complete Trip (Show QR)";
   };
 
   const getStatusTitle = () => {
-    if (tripState === "arrived") return "Arrived at Pickup";
-    if (tripState === "start") return "Passenger Boarding";
-    if (tripState === "dropoff") return "Heading to Dropoff";
-    return "Arrived at Dropoff";
+    if (!rideData) return "Loading...";
+    if (rideData.status === "requested") return "Requested";
+    if (rideData.status === "assigned") return "Assigned";
+    if (rideData.status === "arriving") return "Heading to Pickup";
+    return "Heading to Dropoff";
   };
 
   const getStatusBadge = () => {
@@ -78,16 +172,21 @@ export default function DriverActiveTrip() {
   const renderStepNode = (step: number, label: string) => {
     let state: "active" | "completed" | "inactive" = "inactive";
 
-    if (step === 1) {
-      state = tripState === "arrived" ? "active" : "completed";
-    } else if (step === 2) {
-      if (tripState === "arrived") state = "inactive";
-      else if (tripState === "start") state = "active";
-      else state = "completed";
-    } else if (step === 3) {
-      if (tripState === "arrived" || tripState === "start") state = "inactive";
-      else if (tripState === "dropoff") state = "active";
-      else state = "completed";
+    const currentStep =
+      activeTrip.status === "searching" || activeTrip.status === "confirmed"
+        ? 1
+        : activeTrip.status === "tracking"
+          ? 2
+          : activeTrip.status === "arrived"
+            ? 3
+            : 1;
+
+    if (step === currentStep) {
+      state = "active";
+    } else if (step < currentStep) {
+      state = "completed";
+    } else {
+      state = "inactive";
     }
 
     return (
@@ -259,12 +358,16 @@ export default function DriverActiveTrip() {
           <View className="flex-row items-center justify-between px-6 py-2 relative">
             <View className="absolute left-[54px] right-[54px] top-[20px] h-[1.5px] border-t border-dashed border-slate-300" />
             {/* Dynamic solid blue line overlays */}
-            {tripState !== "arrived" && (
-              <View
-                className="absolute left-[54px] top-[20px] h-[1.5px] bg-[#001caa]"
-                style={{ width: tripState === "start" ? "42%" : "84%" }}
-              />
-            )}
+            {activeTrip.status !== "confirmed" &&
+              activeTrip.status !== "searching" &&
+              activeTrip.status !== "idle" && (
+                <View
+                  className="absolute left-[54px] top-[20px] h-[1.5px] bg-[#001caa]"
+                  style={{
+                    width: activeTrip.status === "tracking" ? "42%" : "84%",
+                  }}
+                />
+              )}
 
             {renderStepNode(1, "Arrived")}
             {renderStepNode(2, "Start Trip")}
@@ -275,12 +378,25 @@ export default function DriverActiveTrip() {
           <View className="gap-3.5 mt-2">
             <Pressable
               onPress={handleTripAction}
-              className="w-full h-14 bg-[#001caa] rounded-full flex-row items-center justify-center gap-2 shadow-md active:scale-[0.98]"
+              disabled={
+                submitting || !rideData || rideData.status === "requested"
+              }
+              className={`w-full h-14 rounded-full flex-row items-center justify-center gap-2 shadow-md active:scale-[0.98] ${
+                !rideData || rideData.status === "requested" || submitting
+                  ? "bg-slate-300"
+                  : "bg-[#001caa]"
+              }`}
             >
-              <Check color="#ffffff" size={18} strokeWidth={3} />
-              <Text className="text-white font-bold text-[16px] font-jakarta">
-                {getButtonText()}
-              </Text>
+              {submitting ? (
+                <ActivityIndicator color="white" />
+              ) : (
+                <>
+                  <Check color="#ffffff" size={18} strokeWidth={3} />
+                  <Text className="text-white font-bold text-[16px] font-jakarta">
+                    {getButtonText()}
+                  </Text>
+                </>
+              )}
             </Pressable>
 
             <Pressable

@@ -12,6 +12,7 @@ import {
 } from "lucide-react-native";
 import React, { useEffect, useRef, useState } from "react";
 import {
+  Alert,
   BackHandler,
   Platform,
   Pressable,
@@ -25,11 +26,12 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import KekeIcon from "../../components/KekeIcon";
 import { useApp } from "../../context/AppContext";
 import LiveMapScreen from "@/components/liveMap";
+import * as Location from "expo-location";
 // import { LinearGradient } from "react-native-svg";
 
 export default function RiderHome() {
   const router = useRouter();
-  const { activeTrip } = useApp();
+  const { activeTrip} = useApp();
   const [vehicleType, setVehicleType] = useState<"keke" | "bus">("keke");
 
   const navigation = useNavigation();
@@ -37,45 +39,45 @@ export default function RiderHome() {
   // Use a mutable ref to track the number of back button taps
   const backPressCount = useRef(0);
 
-  useEffect(() => {
-    // 1. Configure iOS Navigation Layout Safety
-    if (Platform.OS === "ios") {
-      navigation.setOptions({
-        gestureEnabled: false, // Prevents swipe-to-go-back to login screen
-        headerLeft: () => null, // Removes back arrows from top layouts
-      });
-      return; // Android-specific hardware back button logic skips iOS entirely
-    }
+  // useEffect(() => {
+  //   // 1. Configure iOS Navigation Layout Safety
+  //   if (Platform.OS === "ios") {
+  //     navigation.setOptions({
+  //       gestureEnabled: false, // Prevents swipe-to-go-back to login screen
+  //       headerLeft: () => null, // Removes back arrows from top layouts
+  //     });
+  //     return; // Android-specific hardware back button logic skips iOS entirely
+  //   }
 
-    // 2. Android Double-Tap Exit Logic
-    const onBackPress = () => {
-      if (backPressCount.current === 1) {
-        // Second tap within 2 seconds -> Completely shut down the app process
-        BackHandler.exitApp();
-        return true;
-      }
+  //   // 2. Android Double-Tap Exit Logic
+  //   const onBackPress = () => {
+  //     if (backPressCount.current === 1) {
+  //       // Second tap within 2 seconds -> Completely shut down the app process
+  //       BackHandler.exitApp();
+  //       return true;
+  //     }
 
-      // First tap -> Trigger a Toast reminder and bump count
-      backPressCount.current = 1;
-      ToastAndroid.show("Press back again to exit", ToastAndroid.SHORT);
+  //     // First tap -> Trigger a Toast reminder and bump count
+  //     backPressCount.current = 1;
+  //     ToastAndroid.show("Press back again to exit", ToastAndroid.SHORT);
 
-      // Reset the tap counter back to 0 if they don't tap again within 2 seconds
-      const timeout = setTimeout(() => {
-        backPressCount.current = 0;
-      }, 2000);
+  //     // Reset the tap counter back to 0 if they don't tap again within 2 seconds
+  //     const timeout = setTimeout(() => {
+  //       backPressCount.current = 0;
+  //     }, 2000);
 
-      return true; // Stop native navigation from pushing them back to login screen
-    };
+  //     return true; // Stop native navigation from pushing them back to login screen
+  //   };
 
-    const subscription = BackHandler.addEventListener(
-      "hardwareBackPress",
-      onBackPress,
-    );
+  //   const subscription = BackHandler.addEventListener(
+  //     "hardwareBackPress",
+  //     onBackPress,
+  //   );
 
-    return () => {
-      subscription.remove();
-    };
-  }, [navigation]);
+  //   return () => {
+  //     subscription.remove();
+  //   };
+  // }, [navigation]);
 
   return (
     <SafeAreaView className="flex-1 bg-surface-bright relative" edges={[]}>
@@ -96,29 +98,20 @@ export default function RiderHome() {
       {/* Map Area */}
       <View className="flex-1 relative z-10 bg-surface-container-low">
         {/* Map Background */}
-        {/* <Image
-          source={{
-            uri: "https://lh3.googleusercontent.com/aida-public/AB6AXuBhChECydpDyPgt27hlQrat9Rk2U89C00BRo9HxQfDmpSr4MRrxjAG1pGL6iwr1A__rTa5hkvxx5VNhyBHIwUrgEL1XAzRh3vdUsCbmpnjEWdd5tXIJyvuoNbsf17_pEryhtId0Y6snYs2mm-iQfYuoPK3Zrsg2EAG-XD5-Bq8QCQpcEyE5GcSDWhm7yhm20vy7oBcRqJFt0hbOoiU-LdxjqFg6qiW_P7A1aJmd6buI9IlGZRklUN8jk7Fl9tud8gafRai7G4XXH9hL",
-          }}
-          className="w-full h-full object-cover"
-        /> */}
+       
         <LiveMapScreen />
-        {/* <MapView style={{ flex: 1 }}>
-          <UrlTile
-            urlTemplate="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-            maximumZ={19}
-          />
-        </MapView> */}
+        
 
         <LinearGradient
           colors={["transparent", "rgba(255, 255, 255, 0.6)", "#ffffff"]}
           locations={[0, 0.7, 1]}
           className="absolute top-0 left-0 w-full h-full"
+          pointerEvents="none"
         />
 
         {/* User Location pulsing dot */}
-        <View className="absolute top-[48%] left-[50%] -ml-6 -mt-6 w-12 h-12 items-center justify-center">
-          <View className="absolute w-10 h-10 rounded-full bg-primary/10 scale-125" />
+        <View className="absolute top-[48%] left-[50%] -ml-6 -mt-6 w-12 h-12 items-center justify-center" pointerEvents="none">
+          <View className="absolute w-10 h-10 rounded-full bg-primary/10 " />
           <View className="absolute w-8 h-8 rounded-full bg-primary/20" />
           <View className="w-4.5 h-4.5 rounded-full bg-primary border-2 border-white shadow-md shadow-primary/20" />
         </View>
@@ -165,7 +158,7 @@ export default function RiderHome() {
           {/* Search bar input container */}
           <View className="flex flex-row  gap-4 align-bottom items-end justify-end">
             <Pressable
-              onPress={() => router.push("/(rider)/book")}
+              onPress={() => router.push("/(rider)/confirm")}
               style={{
                 // width: "100%",
                 flexDirection: "row",

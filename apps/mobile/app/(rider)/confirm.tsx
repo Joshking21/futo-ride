@@ -1,30 +1,109 @@
 import { useRouter } from "expo-router";
-import {
-  ArrowLeft,
-  ChevronRight,
-  Info,
-  User,
-  Zap,
-} from "lucide-react-native";
-import React, { useState } from "react";
-import { Image, Pressable, ScrollView, Text, View } from "react-native";
+import { ArrowLeft, Clock, Info } from "lucide-react-native";
+import React, { useEffect, useState } from "react";
+import { Alert, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import KekeIcon from "../../components/KekeIcon";
+import { apiRequest } from "../../config/apiHelper";
 import { useApp } from "../../context/AppContext";
 
 export default function ConfirmRide() {
   const router = useRouter();
-  const { activeTrip, confirmBooking } = useApp();
+  const {
+    activeTrip,
+    confirmBooking,
+    cancelBooking,
+    getStopId,
+    bookedRequest,
+    setBookedRequest,
+    isSurgeActive,
+  } = useApp();
   const [isPriority, setIsPriority] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<"naira" | "cngn">("naira");
+  const [seats, setSeats] = useState(1);
+  // const [isSurgeActive, setIsSurgeActive] = useState(false);
+ 
+  const handleCancel = async () => {
+    try {
+      await cancelBooking();
+      router.replace("/(rider)/book");
+    } catch (error: any) {
+      Alert.alert(
+        "Cancellation Failed",
+        error.message || "Failed to cancel ride.",
+      );
+    }
+  };
+  const [timeLeft, setTimeLeft] = useState<number | null>(null);
+  const [paymentTimeLeft, setPaymentTimeLeft] = useState<number | null>(null);
 
-  const basePrice = 850;
-  const serviceFee = 100;
+  useEffect(() => {
+    const etaVal = bookedRequest?.etaMin ?? (bookedRequest as any)?.eta;
+    const etaMinutes = etaVal ? parseInt(String(etaVal), 10) : 5;
+    if (!isNaN(etaMinutes)) {
+      setTimeLeft(etaMinutes * 60);
+    } else {
+      setTimeLeft(5 * 60);
+    }
+  }, [bookedRequest]);
+
+  useEffect(() => {
+    if (timeLeft === null || timeLeft <= 0) return;
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => (prev !== null && prev > 0 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [timeLeft]);
+
+  useEffect(() => {
+    const expiresAt = bookedRequest?.expiresAt;
+    if (expiresAt) {
+      const calculateTimeLeft = () => {
+        const diff = Math.max(0, Math.floor((expiresAt - Date.now()) / 1000));
+        setPaymentTimeLeft(diff);
+      };
+
+      calculateTimeLeft();
+      const timer = setInterval(() => {
+        const diff = Math.max(0, Math.floor((expiresAt - Date.now()) / 1000));
+        setPaymentTimeLeft(diff);
+        if (diff <= 0) {
+          clearInterval(timer);
+        }
+      }, 1000);
+
+      return () => clearInterval(timer);
+    }
+  }, [bookedRequest]);
+
+  const formatCountdown = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
+  };
+
+  // useEffect(() => {
+  //   const checkSurge = async () => {
+  //     const zone = getStopId(activeTrip.pickup);
+  //     try {
+  //       const res = await apiRequest<{ zone: string; surge: "on" | "off" }>(`/surge/${zone}`);
+  //       setIsSurgeActive(res.surge === "on");
+  //     } catch (e) {
+  //       console.error("Surge query failed:", e);
+  //     }
+  //   };
+  //   checkSurge();
+  // }, [activeTrip.pickup]);
+
+  const basePrice =
+    activeTrip.rideType === "keke" ? seats * (bookedRequest?.fare ?? 0) : 150;
+  const serviceFee = activeTrip.rideType === "keke" ? 50 : 20;
   const priorityFee = 100;
-  const totalPrice = basePrice + serviceFee + (isPriority ? priorityFee : 0);
+  const totalPrice =
+    basePrice + serviceFee + (isPriority && isSurgeActive ? priorityFee : 0);
 
-  const handleConfirm = () => {
-    confirmBooking();
+  const handleConfirm = async () => {
+    // await confirmBooking(isPriority && isSurgeActive, paymentMethod, seats);
     router.replace("/(rider)/tracking");
   };
 
@@ -67,7 +146,10 @@ export default function ConfirmRide() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#f8f9ff" }} edges={["top", "bottom"]}>
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: "#f8f9ff" }}
+      edges={["top", "bottom"]}
+    >
       {/* Top Header */}
       <View
         style={{
@@ -80,25 +162,11 @@ export default function ConfirmRide() {
         }}
       >
         <Pressable
-          onPress={() => router.back()}
-          style={({ pressed }) => ({
-            width: 48,
-            height: 48,
-            borderRadius: 16,
-            backgroundColor: "#ffffff",
-            alignItems: "center",
-            justifyContent: "center",
-            borderWidth: 1,
-            borderColor: "rgba(197, 197, 216, 0.15)",
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 1 },
-            shadowOpacity: 0.05,
-            shadowRadius: 2,
-            elevation: 1,
-            opacity: pressed ? 0.9 : 1,
-          })}
+          onPress={() => router.replace("/(rider)/book")}
+          style={{ elevation: 1 }}
+          className="w-12 h-12 rounded-2xl bg-white items-center justify-center  active:bg-surface-container"
         >
-          <ArrowLeft color="#0B1C30" size={20} />
+          <ArrowLeft color="#0B1C30" size={24} />
         </Pressable>
 
         <Text
@@ -120,103 +188,6 @@ export default function ConfirmRide() {
         style={{ flex: 1 }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Map Preview */}
-        <View
-          style={{
-            width: "100%",
-            height: 192,
-            backgroundColor: "#ffffff",
-            borderRadius: 28,
-            overflow: "hidden",
-            borderWidth: 1,
-            borderColor: "rgba(197, 197, 216, 0.15)",
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 1 },
-            shadowOpacity: 0.05,
-            shadowRadius: 2,
-            elevation: 1,
-            position: "relative",
-          }}
-        >
-          <Image
-            source={{
-              uri: "https://lh3.googleusercontent.com/aida-public/AB6AXuBhChECydpDyPgt27hlQrat9Rk2U89C00BRo9HxQfDmpSr4MRrxjAG1pGL6iwr1A__rTa5hkvxx5VNhyBHIwUrgEL1XAzRh3vdUsCbmpnjEWdd5tXIJyvuoNbsf17_pEryhtId0Y6snYs2mm-iQfYuoPK3Zrsg2EAG-XD5-Bq8QCQpcEyE5GcSDWhm7yhm20vy7oBcRqJFt0hbOoiU-LdxjqFg6qiW_P7A1aJmd6buI9IlGZRklUN8jk7Fl9tud8gafRai7G4XXH9hL",
-            }}
-            style={{ width: "100%", height: "100%" }}
-            resizeMode="cover"
-          />
-          {/* Simulated route overlay icons */}
-          <View
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-            pointerEvents="none"
-          >
-            <View
-              style={{
-                position: "absolute",
-                top: "40%",
-                left: "30%",
-                width: 12,
-                height: 12,
-                borderRadius: 6,
-                backgroundColor: "#001caa",
-                borderWidth: 2,
-                borderColor: "#ffffff",
-              }}
-            />
-            <View
-              style={{
-                position: "absolute",
-                top: "50%",
-                left: "60%",
-                width: 14,
-                height: 14,
-                borderRadius: 7,
-                backgroundColor: "#001caa",
-                borderWidth: 2,
-                borderColor: "#ffffff",
-              }}
-            />
-            <View
-              style={{
-                position: "absolute",
-                top: "45%",
-                left: "35%",
-                width: "45%",
-                height: 4,
-                backgroundColor: "rgba(0, 28, 170, 0.8)",
-                transform: [{ rotate: "18deg" }],
-              }}
-            />
-            <View
-              style={{
-                position: "absolute",
-                top: "38%",
-                left: "48%",
-                backgroundColor: "#ffffff",
-                padding: 4,
-                borderRadius: 8,
-                borderWidth: 1,
-                borderColor: "rgba(197, 197, 216, 0.15)",
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 1 },
-                shadowOpacity: 0.05,
-                shadowRadius: 2,
-                elevation: 1,
-              }}
-            >
-              <KekeIcon size={20} color="#001caa" />
-            </View>
-          </View>
-        </View>
-
         {/* Ride Option details Card */}
         <View
           style={{
@@ -236,7 +207,14 @@ export default function ConfirmRide() {
             marginTop: 16,
           }}
         >
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 16, flex: 1 }}>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 4,
+              flex: 1,
+            }}
+          >
             <View
               style={{
                 width: 56,
@@ -251,7 +229,7 @@ export default function ConfirmRide() {
             >
               <KekeIcon size={38} color="#001caa" />
             </View>
-            <View style={{ flex: 1 }}>
+            <View style={{ flex: 1 }} className="">
               <Text
                 style={{
                   fontSize: 15,
@@ -264,41 +242,14 @@ export default function ConfirmRide() {
               </Text>
               <Text
                 style={{
-                  color: "#5b5e66",
-                  fontSize: 12,
+                  fontSize: 15,
+                  fontWeight: "700",
+                  color: "#0b1c30",
                   fontFamily: "Plus Jakarta Sans",
-                  marginTop: 4,
                 }}
               >
-                5 min away • 1.6 km
+              {`${bookedRequest?.seats || 0}/4 seat${(bookedRequest?.seats ?? 0) > 1 ? "s" : ""} booked`}
               </Text>
-              {/* Seats badge */}
-              <View
-                style={{
-                  backgroundColor: "#eff3ff",
-                  paddingHorizontal: 10,
-                  paddingVertical: 4,
-                  borderRadius: 12,
-                  marginTop: 8,
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 6,
-                  alignSelf: "flex-start",
-                }}
-              >
-                <User color="#001caa" size={11} />
-                <Text
-                  style={{
-                    color: "#001caa",
-                    fontSize: 10,
-                    fontWeight: "700",
-                    fontFamily: "Plus Jakarta Sans",
-                    lineHeight: 12,
-                  }}
-                >
-                  4 seats available
-                </Text>
-              </View>
             </View>
           </View>
 
@@ -311,9 +262,16 @@ export default function ConfirmRide() {
                 fontFamily: "Plus Jakarta Sans",
               }}
             >
-              ₦{basePrice}
+              ₦{bookedRequest?.fare ?? 0}
             </Text>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 4 }}>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 4,
+                marginTop: 4,
+              }}
+            >
               <Text
                 style={{
                   color: "#5b5e66",
@@ -329,70 +287,202 @@ export default function ConfirmRide() {
           </View>
         </View>
 
-        {/* Priority Banner Card */}
-        <View
-          style={{
-            backgroundColor: "#eff3ff",
-            padding: 18,
-            borderRadius: 24,
-            borderWidth: 1,
-            borderColor: "#dce9ff",
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 1 },
-            shadowOpacity: 0.05,
-            shadowRadius: 2,
-            elevation: 1,
-            marginTop: 16,
-          }}
-        >
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 14, flex: 1, paddingRight: 16 }}>
+        {/* Countdown Card */}
+        {timeLeft !== null && (
+          <View
+            style={{
+              backgroundColor: "#f4f7ff",
+              borderWidth: 1,
+              borderColor: "#dbe5ff",
+              borderRadius: 24,
+              padding: 20,
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 16,
+              marginTop: 16,
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 1 },
+              shadowOpacity: 0.05,
+              shadowRadius: 2,
+              elevation: 1,
+            }}
+          >
             <View
               style={{
-                width: 44,
-                height: 44,
-                backgroundColor: "#ffffff",
+                width: 48,
+                height: 48,
+                backgroundColor: "#eff3ff",
                 borderRadius: 16,
                 alignItems: "center",
                 justifyContent: "center",
                 borderWidth: 1,
                 borderColor: "#e5eeff",
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 1 },
-                shadowOpacity: 0.05,
-                shadowRadius: 1,
-                elevation: 1,
               }}
             >
-              <Zap color="#001caa" size={18} fill="#001caa" />
+              <Clock size={24} color="#001caa" />
             </View>
             <View style={{ flex: 1 }}>
               <Text
                 style={{
-                  color: "#0b1c30",
-                  fontSize: 14,
-                  fontWeight: "700",
+                  fontSize: 13,
+                  fontWeight: "500",
+                  color: "#5b5e66",
                   fontFamily: "Plus Jakarta Sans",
                 }}
               >
-                Priority — skip the queue
+                Estimated Driver Arrival
               </Text>
               <Text
                 style={{
-                  color: "#5b5e66",
-                  fontSize: 12,
+                  fontSize: 16,
+                  fontWeight: "800",
+                  color: "#0b1c30",
                   fontFamily: "Plus Jakarta Sans",
                   marginTop: 2,
                 }}
               >
-                Get matched faster
+                {timeLeft > 0
+                  ? `Arriving in ${formatCountdown(timeLeft)}`
+                  : "Driver is here!"}
               </Text>
             </View>
           </View>
-          <CustomSwitch value={isPriority} onValueChange={setIsPriority} />
-        </View>
+        )}
+
+        {/* Payment Expiry Card */}
+        {paymentTimeLeft !== null && paymentTimeLeft > 0 && (
+          <View
+            style={{
+              backgroundColor: "#fff5f5",
+              borderWidth: 1,
+              borderColor: "#ffe0e0",
+              borderRadius: 24,
+              padding: 20,
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 16,
+              marginTop: 12,
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 1 },
+              shadowOpacity: 0.05,
+              shadowRadius: 2,
+              elevation: 1,
+            }}
+          >
+            <View
+              style={{
+                width: 48,
+                height: 48,
+                backgroundColor: "#ffebeb",
+                borderRadius: 16,
+                alignItems: "center",
+                justifyContent: "center",
+                borderWidth: 1,
+                borderColor: "#ffe0e0",
+              }}
+            >
+              <Clock size={24} color="#ba1a1a" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text
+                style={{
+                  fontSize: 13,
+                  fontWeight: "500",
+                  color: "#7a5c5c",
+                  fontFamily: "Plus Jakarta Sans",
+                }}
+              >
+                Payment Window Expiry
+              </Text>
+              <Text
+                style={{
+                  fontSize: 16,
+                  fontWeight: "800",
+                  color: "#ba1a1a",
+                  fontFamily: "Plus Jakarta Sans",
+                  marginTop: 2,
+                }}
+              >
+                Ride gets cancelled in {formatCountdown(paymentTimeLeft ?? 0)}
+              </Text>
+            </View>
+          </View>
+        )}
+
+        {/* Priority Banner Card — only shown during active surge on keke rides */}
+        {/* {activeTrip.rideType === "keke" && isSurgeActive && (
+          <View
+            style={{
+              backgroundColor: "#eff3ff",
+              padding: 18,
+              borderRadius: 24,
+              borderWidth: 1,
+              borderColor: "#dce9ff",
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 1 },
+              shadowOpacity: 0.05,
+              shadowRadius: 2,
+              elevation: 1,
+              marginTop: 16,
+            }}
+          >
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 14,
+                flex: 1,
+                paddingRight: 16,
+              }}
+            >
+              <View
+                style={{
+                  width: 44,
+                  height: 44,
+                  backgroundColor: "#ffffff",
+                  borderRadius: 16,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderWidth: 1,
+                  borderColor: "#e5eeff",
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: 1 },
+                  shadowOpacity: 0.05,
+                  shadowRadius: 1,
+                  elevation: 1,
+                }}
+              >
+                <Zap color="#001caa" size={18} fill="#001caa" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text
+                  style={{
+                    color: "#0b1c30",
+                    fontSize: 14,
+                    fontWeight: "700",
+                    fontFamily: "Plus Jakarta Sans",
+                  }}
+                >
+                  Priority — skip the queue
+                </Text>
+                <Text
+                  style={{
+                    color: "#5b5e66",
+                    fontSize: 12,
+                    fontFamily: "Plus Jakarta Sans",
+                    marginTop: 2,
+                  }}
+                >
+                  Get matched faster
+                </Text>
+              </View>
+            </View>
+            <CustomSwitch value={isPriority} onValueChange={setIsPriority} />
+          </View>
+        )} */}
 
         {/* Payment selector label */}
         <Text
@@ -409,8 +499,7 @@ export default function ConfirmRide() {
         </Text>
 
         {/* Payment Selector Cards */}
-        <View style={{ gap: 14 }}>
-          {/* Option 1: Naira */}
+        {/* <View style={{ gap: 14 }}>
           <Pressable
             onPress={() => setPaymentMethod("naira")}
             style={{
@@ -424,8 +513,9 @@ export default function ConfirmRide() {
               borderColor: paymentMethod === "naira" ? "#001caa" : "#e5eeff",
             }}
           >
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
-              {/* Radio Indicator */}
+            <View
+              style={{ flexDirection: "row", alignItems: "center", gap: 14 }}
+            >
               <View
                 style={{
                   width: 22,
@@ -435,7 +525,8 @@ export default function ConfirmRide() {
                   alignItems: "center",
                   justifyContent: "center",
                   backgroundColor: "#ffffff",
-                  borderColor: paymentMethod === "naira" ? "#001caa" : "#cbd5e1",
+                  borderColor:
+                    paymentMethod === "naira" ? "#001caa" : "#cbd5e1",
                 }}
               >
                 {paymentMethod === "naira" && (
@@ -450,7 +541,6 @@ export default function ConfirmRide() {
                 )}
               </View>
 
-              {/* Currency Logo */}
               <View
                 style={{
                   width: 32,
@@ -485,7 +575,9 @@ export default function ConfirmRide() {
               </Text>
             </View>
 
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            <View
+              style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
+            >
               <View
                 style={{
                   backgroundColor: "#f8fafc",
@@ -511,7 +603,6 @@ export default function ConfirmRide() {
             </View>
           </Pressable>
 
-          {/* Option 2: cNGN */}
           <Pressable
             onPress={() => setPaymentMethod("cngn")}
             style={{
@@ -525,8 +616,9 @@ export default function ConfirmRide() {
               borderColor: paymentMethod === "cngn" ? "#001caa" : "#e5eeff",
             }}
           >
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
-              {/* Radio Indicator */}
+            <View
+              style={{ flexDirection: "row", alignItems: "center", gap: 14 }}
+            >
               <View
                 style={{
                   width: 22,
@@ -551,7 +643,6 @@ export default function ConfirmRide() {
                 )}
               </View>
 
-              {/* Currency Logo */}
               <View
                 style={{
                   width: 32,
@@ -585,7 +676,9 @@ export default function ConfirmRide() {
               </Text>
             </View>
 
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            <View
+              style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
+            >
               <View
                 style={{
                   backgroundColor: "#f8fafc",
@@ -610,7 +703,7 @@ export default function ConfirmRide() {
               <ChevronRight color="#c5c5d8" size={16} />
             </View>
           </Pressable>
-        </View>
+        </View> */}
 
         {/* Fare Breakdown Details Card */}
         <View
@@ -629,7 +722,13 @@ export default function ConfirmRide() {
             marginTop: 24,
           }}
         >
-          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
             <Text
               style={{
                 color: "#5b5e66",
@@ -652,8 +751,16 @@ export default function ConfirmRide() {
             </Text>
           </View>
 
-          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+          {/* <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <View
+              style={{ flexDirection: "row", alignItems: "center", gap: 4 }}
+            >
               <Text
                 style={{
                   color: "#5b5e66",
@@ -662,7 +769,7 @@ export default function ConfirmRide() {
                   fontFamily: "Plus Jakarta Sans",
                 }}
               >
-                Service fee
+                Priority fee
               </Text>
               <Info color="#5b5e66" size={11} />
             </View>
@@ -674,12 +781,22 @@ export default function ConfirmRide() {
                 fontFamily: "Plus Jakarta Sans",
               }}
             >
-              ₦{serviceFee}
+              ₦{"50"}
             </Text>
-          </View>
+          </View> */}
 
-          {isPriority && (
-            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+              opacity: isSurgeActive ? 1 : 0.5,
+            }}
+            className="w-full "
+          >
+            <View
+              style={{ flexDirection: "row", alignItems: "center", gap: 4 }}
+            >
               <Text
                 style={{
                   color: "#5b5e66",
@@ -690,22 +807,31 @@ export default function ConfirmRide() {
               >
                 Priority (skip the queue)
               </Text>
-              <Text
-                style={{
-                  color: "#0b1c30",
-                  fontSize: 13,
-                  fontWeight: "700",
-                  fontFamily: "Plus Jakarta Sans",
-                }}
-              >
-                ₦{priorityFee}
-            </Text>
+              <Info color="#5b5e66" size={11} />
             </View>
-          )}
+            <Text
+              style={{
+                color: "#0b1c30",
+                fontSize: 13,
+                fontWeight: "700",
+                fontFamily: "Plus Jakarta Sans",
+              }}
+            >
+              ₦{isSurgeActive ? priorityFee : 0}
+            </Text>
+          </View>
 
-          <View style={{ height: 1, backgroundColor: "#f1f5f9", marginVertical: 4 }} />
+          <View
+            style={{ height: 1, backgroundColor: "#f1f5f9", marginVertical: 4 }}
+          />
 
-          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
             <Text
               style={{
                 color: "#0b1c30",
@@ -730,50 +856,80 @@ export default function ConfirmRide() {
         </View>
       </ScrollView>
 
-      {/* Fixed bottom action button */}
+      {/* Fixed bottom action buttons */}
       <View
         style={{
           position: "absolute",
           bottom: 0,
           left: 0,
           right: 0,
-          backgroundColor: "#ffffff",
-          borderTopWidth: 1,
-          borderTopColor: "rgba(197, 197, 216, 0.2)",
           padding: 20,
           zIndex: 40,
+          // backgroundColor: "#ffffff",
+          // borderTopWidth: 1,
+          // borderTopColor: "rgba(197, 197, 216, 0.2)",
         }}
+        
+        // className="bg-red-400 "
       >
-        <View style={{ maxWidth: 600, alignSelf: "center", width: "100%" }}>
-          <Pressable
-            onPress={handleConfirm}
-            style={({ pressed }) => ({
-              width: "100%",
-              height: 56,
-              backgroundColor: "#000000",
-              borderRadius: 28,
-              alignItems: "center",
-              justifyContent: "center",
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.1,
-              shadowRadius: 3,
-              elevation: 2,
-              opacity: pressed ? 0.9 : 1,
-            })}
+        <View style={{ flexDirection: "row", gap: 12, maxWidth: 600, alignSelf: "center", width: "100%" }}>
+        <Pressable
+          onPress={handleCancel}
+          style={({ pressed }) => ({
+            flex: 1,
+            height: 56,
+            borderRadius: 28,
+            borderWidth: 1.5,
+            borderColor: "#ba1a1a",
+            alignItems: "center",
+            justifyContent: "center",
+            opacity: pressed ? 0.5 : 1,
+          })}
+          className="bg-error flex-1 p-3 justify-center items-center rounded-3xl"
+        >
+          <Text
+            style={{
+              fontSize: 16,
+              fontWeight: "700",
+              fontFamily: "Plus Jakarta Sans",
+            }}
+            className="text-on-error"
           >
-            <Text
-              style={{
-                color: "#ffffff",
-                fontSize: 16,
-                fontWeight: "700",
-                fontFamily: "Plus Jakarta Sans",
-              }}
-            >
-              Confirm Ride
-            </Text>
-          </Pressable>
-        </View>
+            Cancel Ride
+          </Text>
+        </Pressable>
+
+        <Pressable
+          onPress={handleConfirm}
+          style={({ pressed }) => ({
+            flex: 1.2,
+            height: 56,
+            // backgroundColor: "#001caa",
+            borderRadius: 28,
+            alignItems: "center",
+            justifyContent: "center",
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 3,
+            elevation: 2,
+            opacity: pressed ? 0.5 : 1,
+          })}
+          className=" bg-primary flex-1 p-3 justify-center items-center rounded-3xl"
+        >
+          <Text
+            style={{
+              // color: "#ffffff",
+              fontSize: 16,
+              fontWeight: "700",
+              fontFamily: "Plus Jakarta Sans",
+            }}
+            className="  text-white"
+          >
+            Confirm Ride
+          </Text>
+        </Pressable>
+      </View>
       </View>
     </SafeAreaView>
   );

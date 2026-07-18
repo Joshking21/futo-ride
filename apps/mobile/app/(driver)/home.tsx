@@ -1,3 +1,6 @@
+import { apiRequest } from "@/config/apiHelper";
+import { auth } from "@/config/firebaseConfig";
+import * as Location from "expo-location";
 import { useRouter } from "expo-router";
 import {
   Bell,
@@ -11,8 +14,17 @@ import {
   WifiOff,
   X,
 } from "lucide-react-native";
-import React, { useEffect, useState } from "react";
-import { Alert, Image, Pressable, ScrollView, Text, View } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  Image,
+  Linking,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import KekeIcon from "../../components/KekeIcon";
 import { useApp } from "../../context/AppContext";
@@ -20,23 +32,79 @@ import { useApp } from "../../context/AppContext";
 export default function DriverHome() {
   const router = useRouter();
   const {
-    isOnline,
-    setOnline,
     activeTrip,
+    setActiveTrip,
     triggerMockIncomingRequest,
-    confirmBooking,
+    progressDriverTrip,
     clearActiveTrip,
     earnings,
+    fetchDriverEarnings,
+    setLocationDriver,
+    getStopName,
   } = useApp();
 
   const [countdown, setCountdown] = useState(30);
 
-  const isRequestPending = activeTrip.status === "searching";
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [isOnline, setOnline] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [activeRide, setActiveRide] = useState<any>(null);
+
+  // Fetch earnings statistics on mount
+  useEffect(() => {
+    fetchDriverEarnings().catch(() => undefined);
+  }, [fetchDriverEarnings]);
+
+
+  // Poll for active rides assigned to this driver
+  // useEffect(() => {
+  //   if (!isOnline) {
+  //     setActiveRide(null);
+  //     return;
+  //   }
+
+  //   const fetchActiveRides = async () => {
+  //     try {
+  //       const res = await apiRequest<{ rides: any[] }>("/drivers/me/rides");
+  //       if (res.rides && res.rides.length > 0) {
+  //         const ride = res.rides[0];
+  //         setActiveRide(ride);
+  //         // Sync with the app context trip state so other screens (like active.tsx) are aware
+  //         setActiveTrip((prev) => ({
+  //           ...prev,
+  //           rideId: ride.rideId,
+  //           pickup: getStopName(ride.fromStop),
+  //           destination: getStopName(ride.toStop),
+  //           seats: ride.seats,
+  //           status: ride.status,
+  //         }));
+  //       } else {
+  //         setActiveRide(null);
+  //       }
+  //     } catch (err) {
+  //       console.warn("Failed to fetch active rides for driver:", err);
+  //     }
+  //   };
+
+  //   fetchActiveRides();
+  //   const interval = setInterval(fetchActiveRides, 5000);
+  //   return () => clearInterval(interval);
+  // }, [isOnline, getStopName, setActiveTrip]);
+
+  // Auto-redirect driver to the active trip screen if the trip is en route
+  useEffect(() => {
+    if (
+      activeRide &&
+      (activeRide.status === "arriving" || activeRide.status === "started")
+    ) {
+      router.replace("/(driver)/active");
+    }
+  }, [activeRide, router]);
 
   // Real-time countdown timer for pending requests
   useEffect(() => {
     let interval: any;
-    if (isOnline && isRequestPending) {
+    if (isOnline && activeRide && activeRide.status === "assigned") {
       setCountdown(30);
       interval = setInterval(() => {
         setCountdown((c) => {
@@ -44,6 +112,7 @@ export default function DriverHome() {
             clearInterval(interval);
             // Auto-decline request when countdown reaches 0
             clearActiveTrip();
+            setActiveRide(null);
             Alert.alert(
               "Request Expired",
               "The incoming ride request has expired.",
@@ -58,20 +127,175 @@ export default function DriverHome() {
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [isOnline, isRequestPending]);
+  }, [isOnline, activeRide, clearActiveTrip]);
+  const MAX_CONSECUTIVE_FAILURES = 3;
 
-  const handleToggleOnline = () => {
-    setOnline(!isOnline);
+  // ...inside your component
+  const consecutiveFailuresRef = useRef(0);
+
+  useEffect(() => {
+    if (isOnline) {
+      consecutiveFailuresRef.current = 0; // reset each time driver goes online
+
+      const interval = setInterval(async () => {
+        try {
+          const loc = await Location.getCurrentPositionAsync({
+            accuracy: Location.Accuracy.Balanced,
+          });
+
+          const loca = await apiRequest("/drivers/location", "POST", {
+            lat: loc.coords.latitude,
+            lng: loc.coords.longitude,
+          });
+          console.log("location:", loca);
+
+          // Success — reset the streak
+          consecutiveFailuresRef.current = 0;
+        } catch (error: any) {
+          consecutiveFailuresRef.current += 1;
+          console.warn(
+            `Location update failed (${consecutiveFailuresRef.current}/${MAX_CONSECUTIVE_FAILURES}):`,
+            error.message,
+          );
+
+          // if (consecutiveFailuresRef.current >= MAX_CONSECUTIVE_FAILURES) {
+          //   Alert.alert(
+          //     "Location updates paused",
+          //     "We're having trouble sending your location. Check your GPS and internet connection.",
+          //   );
+          //   consecutiveFailuresRef.current = 0; // avoid re-alerting every tick after threshold
+          // }
+          if (consecutiveFailuresRef.current >= MAX_CONSECUTIVE_FAILURES) {
+            // 1. Alert the driver
+            Alert.alert(
+              "You are now Offline",
+              "We lost connection to the server. Please check your network and toggle back online.",
+            );
+
+            // 2. Clear the background timer loop immediately to save battery
+            clearInterval(interval);
+
+            // 3. Force the parent component state back to false
+            // This automatically updates your UI and turns off the custom switch component!
+            setOnline(false);
+          }
+        }
+      }, 5000);
+
+      return () => clearInterval(interval);
+    }
+  }, [isOnline]);
+
+  const handleToggleOnline = async () => {
+    if (isLoading) return;
+    setIsLoading(true);
+    const nextOnline = !isOnline;
+    try {
+      let lat: number | undefined = undefined;
+      let lng: number | undefined = undefined;
+
+      if (nextOnline) {
+        let { status, canAskAgain } =
+          await Location.getForegroundPermissionsAsync();
+        if (status !== "granted" && canAskAgain) {
+          const response = await Location.requestForegroundPermissionsAsync();
+          status = response.status;
+        }
+        if (status !== "granted") {
+          Alert.alert(
+            "Location Permission Required",
+            "Futo-Ride needs location access to track your Keke while you're online. Please enable it in Settings.",
+            [
+              { text: "Cancel", style: "cancel" },
+              { text: "Open Settings", onPress: () => Linking.openSettings() },
+            ],
+          );
+          setIsLoading(false);
+          return;
+        }
+        const loc = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
+        setLocationDriver([loc.coords.latitude, loc.coords.longitude]);
+        lat = loc.coords.latitude;
+        lng = loc.coords.longitude;
+      }
+
+      // Try setting online status
+      try {
+        const result = await apiRequest("/drivers/online", "POST", {
+          online: nextOnline,
+          lat,
+          lng,
+        });
+        console.log("Driver online status updated:", result);
+        setOnline(nextOnline);
+      } catch (error: any) {
+        setOnline(false);
+        // If driver is not registered, register automatically (if whitelisted) and retry once
+        if (
+          error.message?.includes("Register as a keke driver first") ||
+          error.status === 403
+        ) {
+          const name = auth.currentUser?.displayName || "Test Driver";
+          const plate = "KEKE-" + Math.floor(1000 + Math.random() * 9000);
+          console.log(`Auto-registering driver: ${name} with plate: ${plate}`);
+
+          try {
+            const update = await apiRequest("/drivers/register", "POST", {
+              name,
+              plate,
+            });
+
+            console.log(update);
+          } catch (err) {
+            console.log("errer :", err);
+          }
+
+          // Retry going online
+          try {
+            const retryResult = await apiRequest("/drivers/online", "POST", {
+              online: nextOnline,
+              lat,
+              lng,
+            });
+            console.log(
+              "Driver online status updated after auto-register:",
+              retryResult,
+            );
+            setOnline(nextOnline);
+          } catch (error: any) {
+            setOnline(false);
+            console.log("errorretry:", error);
+          }
+        } else {
+          throw error;
+        }
+      }
+    } catch (error: any) {
+      Alert.alert(
+        "Failed to change status",
+        error.message || "Failed to update availability",
+      );
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleAcceptRequest = () => {
-    confirmBooking();
+    progressDriverTrip();
     router.push("/(driver)/active");
   };
 
   const handleDeclineRequest = () => {
     clearActiveTrip();
   };
+
+  // console.log(location);
+  // console.log(location?.coords.latitude);
+  // console.log(location?.coords.longitude);
+  // console.log(location?.coords.accuracy);
+  // console.log(location?.coords);
 
   const formattedDate = new Date().toLocaleDateString("en-US", {
     weekday: "long",
@@ -235,32 +459,43 @@ export default function DriverHome() {
           </View>
 
           {/* Toggle Switch */}
-          <Pressable
-            onPress={handleToggleOnline}
-            style={{
-              width: 54,
-              height: 30,
-              borderRadius: 15,
-              padding: 4,
-              justifyContent: "center",
-              backgroundColor: isOnline ? "#22c55e" : "#cbd5e1",
-              alignItems: isOnline ? "flex-end" : "flex-start",
-            }}
-          >
-            <View
+          <View style={{ alignItems: "center", minWidth: 54 }}>
+            <Pressable
+              onPress={handleToggleOnline}
+              disabled={isLoading}
               style={{
-                width: 22,
-                height: 22,
-                borderRadius: 11,
-                backgroundColor: "#ffffff",
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 1 },
-                shadowOpacity: 0.1,
-                shadowRadius: 1.5,
-                elevation: 1,
+                width: 54,
+                height: 30,
+                borderRadius: 15,
+                padding: 4,
+                justifyContent: "center",
+                backgroundColor: isOnline ? "#22c55e" : "#cbd5e1",
+                alignItems: isOnline ? "flex-end" : "flex-start",
+                opacity: isLoading ? 0.6 : 1,
               }}
-            />
-          </Pressable>
+            >
+              <View
+                style={{
+                  width: 22,
+                  height: 22,
+                  borderRadius: 11,
+                  backgroundColor: "#ffffff",
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: 1 },
+                  shadowOpacity: 0.1,
+                  shadowRadius: 1.5,
+                  elevation: 1,
+                }}
+              />
+            </Pressable>
+            {isLoading && (
+              <ActivityIndicator
+                size="small"
+                color="#001caa"
+                style={{ marginTop: 6 }}
+              />
+            )}
+          </View>
         </View>
 
         {/* Inline Map Card */}
@@ -670,189 +905,193 @@ export default function DriverHome() {
                 the switch above to get started.
               </Text>
             </View>
-          ) : isRequestPending ? (
+          ) : activeRide ? (
             /* Incoming Request Panel */
             <View style={{ gap: 12 }}>
-            <Text
-              style={{
-                color: "#5b5e66",
-                fontFamily: "Plus Jakarta Sans",
-                fontSize: 14,
-                fontWeight: "800",
-                letterSpacing: 0.3,
-                paddingHorizontal: 4,
-              }}
-            >
-              Incoming Request
-            </Text>
-
-            <View
-              style={{
-                backgroundColor: "#ffffff",
-                borderWidth: 1,
-                borderColor: "rgba(197, 197, 216, 0.05)",
-                borderRadius: 24,
-                padding: 20,
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.05,
-                shadowRadius: 3,
-                elevation: 1,
-              }}
-            >
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "flex-start",
-                  gap: 16,
-                }}
-              >
-                {/* Left Passenger Avatar Placeholder */}
-                <View
-                  style={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: 16,
-                    backgroundColor: "#eff4ff",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <Image
-                    source={{
-                      uri: "https://lh3.googleusercontent.com/aida-public/AB6AXuCKv18St18L7X2vZAAMPrAWpe_RTK8EptXVp0FFMqsUDuP_GgeffQiG2BXUbeBK5fAppU3V1r1xiIbGeVUoaoTLduIBmWdC2WEHiVaf2hilbRU54kKuZ7O6ukr9iC-soO0wPXucYYRHL1OQTZr0q7bDRr1TZqfKpkpL290p2tVDrufDqbY7kxXIdHRNxOex755J1_4AtLe8z7qbpg1umUVPxW4tt5r_i6df9PbNJdOf5PFxcsnG6bDlUgGoGZnLt0vZSzW4H3KHhOMD",
-                    }}
-                    style={{ width: "100%", height: "100%", borderRadius: 16 }}
-                  />
-                </View>
-
-                {/* Trip Info */}
-                <View style={{ flexGrow: 1, flex: 1 }}>
-                  <Text
-                    style={{
-                      fontFamily: "Plus Jakarta Sans",
-                      fontSize: 15,
-                      fontWeight: "700",
-                      color: "#0b1c30",
-                    }}
-                  >
-                    {activeTrip.pickup || "New Hall"}
-                  </Text>
-                  <Text
-                    style={{
-                      fontFamily: "Plus Jakarta Sans",
-                      fontSize: 13,
-                      color: "#5b5e66",
-                      marginTop: 2,
-                    }}
-                  >
-                    to{" "}
-                    <Text style={{ color: "#001caa", fontWeight: "700" }}>
-                      {activeTrip.destination || "Main Gate"}
-                    </Text>
-                  </Text>
-                  <Text
-                    style={{
-                      fontFamily: "Plus Jakarta Sans",
-                      fontSize: 10,
-                      fontWeight: 600,
-                      color: "rgba(91, 94, 102, 0.7)",
-                      marginTop: 4,
-                    }}
-                  >
-                    1.2 km away • Est. ₦{activeTrip.price || "150.00"}
-                  </Text>
-                </View>
-
-                {/* Countdown Progress Ring */}
-                <View
-                  style={{
-                    width: 56,
-                    height: 56,
-                    borderRadius: 28,
-                    borderWidth: 3,
-                    borderColor: "#001caa",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    position: "relative",
-                    display: "flex",
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontSize: 11,
-                      fontWeight: "700",
-                      color: "#0b1c30",
-                      fontFamily: "Plus Jakarta Sans",
-                      textAlign: "center",
-                      lineHeight: 12,
-                    }}
-                  >
-                    {countdown}
-                    {"\n"}
-                    <Text
-                      style={{
-                        fontSize: 8,
-                        color: "#5b5e66",
-                        fontWeight: "500",
-                        fontFamily: "Plus Jakarta Sans",
-                      }}
-                    >
-                      sec
-                    </Text>
-                  </Text>
-                </View>
-              </View>
-
-              {/* Decline / Accept Buttons */}
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 12,
-                  marginTop: 20,
-                }}
-              >
-                <Pressable
-                  onPress={handleDeclineRequest}
-                  className="flex-1 bg-[#EFF2FF] h-12 rounded-2xl flex-row items-center justify-center gap-1.5 active:opacity-75"
-                >
-                  <X color="#001caa" size={16} />
-                  <Text className="font-jakarta font-semibold text-[14px] text-primary">
-                    Decline
-                  </Text>
-                </Pressable>
-
-                <Pressable
-                  onPress={handleAcceptRequest}
-                  className="flex-1 bg-primary h-12 rounded-2xl flex-row items-center justify-center gap-1.5 active:opacity-90 shadow-sm"
-                >
-                  <Check color="white" size={16} />
-                  <Text className="font-jakarta font-semibold text-[14px] text-white">
-                    Accept
-                  </Text>
-                </Pressable>
-              </View>
-            </View>
-
-            {/* Go Offline Link Button */}
-            <Pressable
-              onPress={handleToggleOnline}
-              style={{ paddingVertical: 8 }}
-            >
               <Text
                 style={{
-                  color: "#001caa",
+                  color: "#5b5e66",
                   fontFamily: "Plus Jakarta Sans",
-                  fontWeight: "700",
                   fontSize: 14,
-                  textAlign: "center",
+                  fontWeight: "800",
+                  letterSpacing: 0.3,
+                  paddingHorizontal: 4,
                 }}
               >
-                Go offline
+                Incoming Request
               </Text>
-            </Pressable>
-          </View>
+
+              <View
+                style={{
+                  backgroundColor: "#ffffff",
+                  borderWidth: 1,
+                  borderColor: "rgba(197, 197, 216, 0.05)",
+                  borderRadius: 24,
+                  padding: 20,
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.05,
+                  shadowRadius: 3,
+                  elevation: 1,
+                }}
+              >
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "flex-start",
+                    gap: 16,
+                  }}
+                >
+                  {/* Left Passenger Avatar Placeholder */}
+                  <View
+                    style={{
+                      width: 48,
+                      height: 48,
+                      borderRadius: 16,
+                      backgroundColor: "#eff4ff",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Image
+                      source={{
+                        uri: "https://lh3.googleusercontent.com/aida-public/AB6AXuCKv18St18L7X2vZAAMPrAWpe_RTK8EptXVp0FFMqsUDuP_GgeffQiG2BXUbeBK5fAppU3V1r1xiIbGeVUoaoTLduIBmWdC2WEHiVaf2hilbRU54kKuZ7O6ukr9iC-soO0wPXucYYRHL1OQTZr0q7bDRr1TZqfKpkpL290p2tVDrufDqbY7kxXIdHRNxOex755J1_4AtLe8z7qbpg1umUVPxW4tt5r_i6df9PbNJdOf5PFxcsnG6bDlUgGoGZnLt0vZSzW4H3KHhOMD",
+                      }}
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        borderRadius: 16,
+                      }}
+                    />
+                  </View>
+
+                  {/* Trip Info */}
+                  <View style={{ flexGrow: 1, flex: 1 }}>
+                    <Text
+                      style={{
+                        fontFamily: "Plus Jakarta Sans",
+                        fontSize: 15,
+                        fontWeight: "700",
+                        color: "#0b1c30",
+                      }}
+                    >
+                      {getStopName(activeRide.fromStop)}
+                    </Text>
+                    <Text
+                      style={{
+                        fontFamily: "Plus Jakarta Sans",
+                        fontSize: 13,
+                        color: "#5b5e66",
+                        marginTop: 2,
+                      }}
+                    >
+                      to{" "}
+                      <Text style={{ color: "#001caa", fontWeight: "700" }}>
+                        {getStopName(activeRide.toStop)}
+                      </Text>
+                    </Text>
+                    <Text
+                      style={{
+                        fontFamily: "Plus Jakarta Sans",
+                        fontSize: 10,
+                        fontWeight: 600,
+                        color: "rgba(91, 94, 102, 0.7)",
+                        marginTop: 4,
+                      }}
+                    >
+                      {`${activeRide.seats || 1} seat${(activeRide.seats || 1) > 1 ? "s" : ""} requested`}
+                    </Text>
+                  </View>
+
+                  {/* Countdown Progress Ring */}
+                  <View
+                    style={{
+                      width: 56,
+                      height: 56,
+                      borderRadius: 28,
+                      borderWidth: 3,
+                      borderColor: "#001caa",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      position: "relative",
+                      display: "flex",
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 11,
+                        fontWeight: "700",
+                        color: "#0b1c30",
+                        fontFamily: "Plus Jakarta Sans",
+                        textAlign: "center",
+                        lineHeight: 12,
+                      }}
+                    >
+                      {countdown}
+                      {"\n"}
+                      <Text
+                        style={{
+                          fontSize: 8,
+                          color: "#5b5e66",
+                          fontWeight: "500",
+                          fontFamily: "Plus Jakarta Sans",
+                        }}
+                      >
+                        sec
+                      </Text>
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Decline / Accept Buttons */}
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 12,
+                    marginTop: 20,
+                  }}
+                >
+                  <Pressable
+                    onPress={handleDeclineRequest}
+                    className="flex-1 bg-[#EFF2FF] h-12 rounded-2xl flex-row items-center justify-center gap-1.5 active:opacity-75"
+                  >
+                    <X color="#001caa" size={16} />
+                    <Text className="font-jakarta font-semibold text-[14px] text-primary">
+                      Decline
+                    </Text>
+                  </Pressable>
+
+                  <Pressable
+                    onPress={handleAcceptRequest}
+                    className="flex-1 bg-primary h-12 rounded-2xl flex-row items-center justify-center gap-1.5 active:opacity-90 shadow-sm"
+                  >
+                    <Check color="white" size={16} />
+                    <Text className="font-jakarta font-semibold text-[14px] text-white">
+                      Accept
+                    </Text>
+                  </Pressable>
+                </View>
+              </View>
+
+              {/* Go Offline Link Button */}
+              <Pressable
+                onPress={handleToggleOnline}
+                style={{ paddingVertical: 8 }}
+              >
+                <Text
+                  style={{
+                    color: "#001caa",
+                    fontFamily: "Plus Jakarta Sans",
+                    fontWeight: "700",
+                    fontSize: 14,
+                    textAlign: "center",
+                  }}
+                >
+                  Go offline
+                </Text>
+              </Pressable>
+            </View>
           ) : (
             /* Finding Rides Radar Panel */
             <View
@@ -932,10 +1171,6 @@ export default function DriverHome() {
               </Pressable>
             </View>
           )}
-
-    
-
-          
         </View>
       </ScrollView>
     </SafeAreaView>

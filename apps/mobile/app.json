@@ -14,12 +14,13 @@
       "backgroundColor": "#fff445"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "icon": "./assets/icon.png"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#0F172A"
       },
       "edgeToEdgeEnabled": true,
       "permissions": [
@@ -66,6 +67,11 @@
           "isAndroidLocationServicesEnabled": true
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "7c9a0fc6-b122-4abf-8bfc-7749fc50a805"
+      }
+    }
   }
 }

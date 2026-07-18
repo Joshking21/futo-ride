@@ -1,3 +1,4 @@
+import { apiRequest } from "@/config/apiHelper";
 import { useRouter } from "expo-router";
 import {
   ChevronRight,
@@ -7,7 +8,7 @@ import {
   Shield,
   Wallet,
 } from "lucide-react-native";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -30,6 +31,19 @@ interface Trip {
   price: number;
   status: string;
 }
+ type innerExpensive =  {
+        rideId?: string,
+        amount?: number,
+        createdAt?: number
+      }
+
+  
+
+  type expensive = {
+totalkobo?:number,
+recent?: innerExpensive[],
+
+  }
 
 const COMPLETED_TRIPS_MOCK: Trip[] = [
   {
@@ -95,7 +109,8 @@ export default function DriverEarnings() {
   const [payoutMethod, setPayoutMethod] = useState<"bank" | "wallet">("bank");
   const [withdrawAmount, setWithdrawAmount] = useState("12750.00");
   const [isWithdrawing, setIsWithdrawing] = useState(false);
-
+  const [earnings, setEarnings] = useState<expensive>()
+const [error,setError] = useState<boolean>(false);
   // Format helper for currency display
   const formatCurrency = (amount: number) => {
     return `₦${amount.toLocaleString(undefined, {
@@ -104,6 +119,27 @@ export default function DriverEarnings() {
     })}`;
   };
 
+ 
+
+  // useEffect(() => {
+  //     const getEarnings = async () => {
+  //       try {
+  //       if(error){setError(false)}
+  //         const res = await apiRequest<expensive>(
+  //           `/drivers/me/earnings`,
+  //         );
+  //         console.log("earnings", res)
+  //         setEarnings(res)
+
+  //       } catch (e: any) {
+  //         console.error("earnings query failed:", e.message);
+  //         setError(true)
+        
+
+  //       }
+  //     };
+  //     getEarnings();
+  //   }, []);
   const parsedWithdrawAmount =
     parseFloat(withdrawAmount.replace(/,/g, "")) || 0;
 
@@ -113,7 +149,7 @@ export default function DriverEarnings() {
 
   const handleWithdraw = () => {
     if (parsedWithdrawAmount <= 0) {
-      Alert.alert("Invalid Amount", "Please enter a valid amount to withdraw.");
+      Alert.alert("Invalid Amount", "Please enter  a valid amount to withdraw.");
       return;
     }
     if (parsedWithdrawAmount > balance) {
@@ -172,7 +208,7 @@ export default function DriverEarnings() {
               <Info color="#5b5e66" size={13} />
             </View>
             <Text className="text-[#001caa] text-[34px] font-extrabold font-jakarta mt-1 tracking-tight">
-              {formatCurrency(balance)}
+              {formatCurrency((earnings?.totalkobo ?? 0)/100)}
             </Text>
           </View>
 

@@ -1,10 +1,10 @@
 
 
 import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, getDocs, Firestore } from 'firebase/firestore';
+import { getFirestore } from 'firebase/firestore';
+import { getDatabase } from 'firebase/database';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getAuth, initializeAuth , createUserWithEmailAndPassword} from 'firebase/auth';
-// import { getAuth } from "firebase/auth";
+import { initializeAuth } from 'firebase/auth';
 // @ts-ignore: getReactNativePersistence is missing from web typings but exists in the RN bundle
 import { getReactNativePersistence } from 'firebase/auth';
 
@@ -13,6 +13,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyDhOXj7gP12rKfpnjHnHXAwfknvpKeFNJ4",
   authDomain: "futo-ride.firebaseapp.com",
   projectId: "futo-ride",
+  databaseURL: "https://futo-ride-default-rtdb.firebaseio.com",
   storageBucket: "futo-ride.firebasestorage.app",
   messagingSenderId: "762997027843",
   appId: "1:762997027843:web:eb02e45c410b88a9a64a36",
@@ -20,11 +21,12 @@ const firebaseConfig = {
 };
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const rtdb = getDatabase(app);
 const auth = initializeAuth(app, {
   persistence: getReactNativePersistence(AsyncStorage)
 });
 
-export { auth, db };
+export { auth, db, rtdb };
 
 // async function getCities(db: Firestore) {
 //   const citiesCol = collection(db, 'cities');
