@@ -25,6 +25,7 @@ import {
 } from "../lib/matching.js";
 import { dispatchToDriver, pingDriver } from "../lib/dispatch.js";
 import { raiseIncident } from "../lib/incidents.js";
+import { isVaultConfigured, contributeUsdc, koboToUsdcBaseUnits } from "../lib/vault.js";
 import { sendPush } from "../lib/fcm.js";
 import { BookRide, CompleteRide, RateRide, RideId, RideHistoryQuery, UpdateRideStatus } from "../schemas/rides.js";
 import type { Ride, RideStatus } from "../types/index.js";
@@ -480,11 +481,32 @@ export default async function rideRoutes(app: FastifyInstance) {
         driverPriorityBonusKobo(ride.priorityFee);
       await creditDriver(ride.driverId, ride.id, driverAmount, "fare");
       const platformCut = platformCutKobo(seatFareKobo(ride.seats), PLATFORM_FEE_BPS);
+
+      // Best-effort: mirror the 5% welfare cut into the on-chain vault (todo.md S2). The
+      // Firestore `treasuryContributions` doc is the source of truth; a Solana hiccup must
+      // never fail a completed ride — so we catch and just record the sig when it lands.
+      let vaultSig: string | undefined;
+      if (isVaultConfigured()) {
+        const baseUnits = koboToUsdcBaseUnits(platformCut);
+        if (baseUnits > 0) {
+          vaultSig = await contributeUsdc(baseUnits).catch((err) => {
+            req.log.error({ err, rideId: ride.id }, "vault contribute failed (recorded off-chain only)");
+            return undefined;
+          });
+        }
+      }
+
       await db
         .collection("treasuryContributions")
         .doc(ride.id)
         .set(
-          { rideId: ride.id, driverId: ride.driverId, amount: platformCut, createdAt: Date.now() },
+          {
+            rideId: ride.id,
+            driverId: ride.driverId,
+            amount: platformCut,
+            createdAt: Date.now(),
+            ...(vaultSig ? { vaultSig, vaultBaseUnits: koboToUsdcBaseUnits(platformCut) } : {}),
+          },
           { merge: true },
         );
     }

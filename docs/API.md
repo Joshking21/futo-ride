@@ -277,3 +277,11 @@ Notes: opt-in to "notify me when the [route] bus nears [stop]" (Telegram). Idemp
 Auth:  none
 200:   { ok: true, data: { zone: string, surge: "on" | "off" } }
 Notes: (§20 / §8) RE-EVALUATES surge live for a pickup stop (no longer just reads the last stored state — so it can't get stuck "on" all morning after a busy night). The rider app shows the priority-fee button only when "on". A fee opted into here is still honored by POST /rides for ~60s even if surge flips off in between (grace window).
+
+---
+
+### GET /treasury/balance
+Auth:  none
+200 (vault set):   { ok: true, data: { configured: true, balanceBaseUnits, totalIn, totalOut, maxPayout, usdcMint, authority, programId, vaultTokenAccount } }
+200 (vault unset): { ok: true, data: { configured: false } }
+Notes: (todo.md S2) live, on-chain read of the welfare-treasury **PDA vault** (Solana Anchor program in `apps/vault`, deployed to devnet). USDC amounts are **base units (6 dp)** — the only place the API speaks USDC instead of kobo. `balanceBaseUnits` = the vault's current USDC; `totalIn`/`totalOut` = lifetime contributed/paid-out. Public by design (transparency of the fund). When the backend has no vault env, returns `configured:false` and the naira/ledger flow runs unchanged. On ride completion the platform's 5% welfare cut is mirrored on-chain via the vault's `contribute` instruction (best-effort; `treasuryContributions` in Firestore stays the source of truth, and stores the on-chain `vaultSig` when it lands).
