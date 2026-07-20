@@ -1,6 +1,10 @@
 import Fastify from "fastify";
 import cors from "@fastify/cors";
 import rateLimit from "@fastify/rate-limit";
+import fastifyStatic from "@fastify/static";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
+import { existsSync } from "node:fs";
 import { mapError } from "./lib/http.js";
 import driverRoutes from "./routes/drivers.js";
 import rideRoutes from "./routes/rides.js";
@@ -11,6 +15,7 @@ import surgeRoutes from "./routes/surge.js";
 import stopRoutes from "./routes/stops.js";
 import telegramRoutes from "./routes/telegram.js";
 import meRoutes from "./routes/me.js";
+import treasuryRoutes from "./routes/treasury.js";
 
 const app = Fastify({ logger: true });
 
@@ -61,6 +66,22 @@ await app.register(surgeRoutes);
 await app.register(stopRoutes);
 await app.register(telegramRoutes);
 await app.register(meRoutes);
+await app.register(treasuryRoutes);
+
+// Serve the interactive Swagger UI + OpenAPI spec FROM the API (same domain), so the
+// docs are reachable in prod at `/docs/swagger.html` (open `/docs` to be redirected).
+// The docs/ folder lives at the repo root — resolve it relative to this module (works
+// for both src via tsx and dist via node) and skip gracefully if it's absent so a
+// missing folder can never crash the API. NOTE: this is a deliberate deviation from
+// AGENTS.md §7 ("no Swagger tooling in the backend"), added by product request.
+const docsDir = join(dirname(fileURLToPath(import.meta.url)), "../../../docs");
+if (existsSync(join(docsDir, "swagger.html"))) {
+  await app.register(fastifyStatic, { root: docsDir, prefix: "/docs/" });
+  app.get("/docs", (_req, reply) => reply.redirect("/docs/swagger.html"));
+  console.log("API docs at /docs/swagger.html");
+} else {
+  app.log.warn({ docsDir }, "docs/ folder not found — /docs disabled");
+}
 
 const port = Number(process.env.PORT) || 3001;
 

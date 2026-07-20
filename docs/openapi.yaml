@@ -33,8 +33,10 @@ info:
     - **Coordinates.** `lat` ∈ [-90, 90], `lng` ∈ [-180, 180].
 
 servers:
+  - url: /
+    description: Same origin — use when the docs are served BY the API itself (e.g. /docs/swagger.html)
   - url: http://localhost:3001
-    description: Local dev (default PORT=3001)
+    description: Local dev (default PORT=3001) — use when viewing the docs from a separate static server
   - url: "{baseUrl}"
     description: Deployed API — set your host
     variables:
@@ -56,6 +58,8 @@ tags:
     description: SOS and incident reporting
   - name: Surge
     description: Live surge state per pickup zone
+  - name: Treasury
+    description: On-chain welfare-vault (Solana PDA) transparency
   - name: Me
     description: Per-user actions (Telegram linking)
   - name: Webhooks
@@ -1076,6 +1080,45 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SurgeResponse"
+
+  /treasury/balance:
+    get:
+      tags: [Treasury]
+      summary: Live on-chain welfare-vault balance
+      description: |
+        Live read of the welfare-treasury **PDA vault** — a Solana Anchor program (`apps/vault`)
+        deployed to devnet (todo.md S2). Public by design: anyone can verify the fund on-chain.
+        USDC amounts are **base units (6 dp)** — the only endpoint that speaks USDC, not kobo.
+        On ride completion the platform's 5% welfare cut is mirrored on-chain via the vault's
+        `contribute` instruction (best-effort; `treasuryContributions` in Firestore stays the
+        source of truth). When the backend has no vault env configured, returns `configured:false`
+        and the naira/ledger flow runs unchanged.
+      security: []
+      responses:
+        "200":
+          description: Vault snapshot (or `configured:false`)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, example: true }
+                  data:
+                    oneOf:
+                      - type: object
+                        properties:
+                          configured: { type: boolean, example: false }
+                      - type: object
+                        properties:
+                          configured: { type: boolean, example: true }
+                          balanceBaseUnits: { type: string, description: Current vault USDC (base units, 6 dp), example: "37500" }
+                          totalIn: { type: string, description: Lifetime USDC contributed in (base units), example: "37500" }
+                          totalOut: { type: string, description: Lifetime USDC paid out (base units), example: "0" }
+                          maxPayout: { type: string, description: Per-payout cap (base units), example: "1000000000" }
+                          usdcMint: { type: string, example: "4Rm4pifLt751fQvwvAxymLLdD7yNgNa3114JYybzwmFR" }
+                          authority: { type: string, example: "6Qeu23WMWWgrjJ4R4cTr6HAJjQPMaejXwnuMaTLqyZMt" }
+                          programId: { type: string, example: "G7nJBuH6R7TkeKHKxEKMoL384kJ6rJGioLADw2yBaQpZ" }
+                          vaultTokenAccount: { type: string, example: "44Gm4CDM93sJZLbHov9LLdjvXcmMwyw6BkLcmS7NvLjs" }
 
   /me/telegram-link:
     post:
