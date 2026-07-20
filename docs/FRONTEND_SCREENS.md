@@ -71,14 +71,14 @@ DRIVER MODE
 
 ### 6. Ride Options / Confirm — *MVP (core)*
 - **Purpose:** confirm the matched ride and how to pay.
-- **Elements:** nearest available keke(s) with **ETA + distance**; **fare** (₦, flat per seat); seat count (1–4); **IF surge is active:** optional **priority-fee** toggle/stepper (with a plain note like "skip the queue"); **Confirm** button. *(Payment is naira via Partna — no method selector; cNGN removed, §21.)*
+- **Elements:** nearest available keke(s) with **ETA + distance**; **fare** (₦, flat per seat); seat count (1–4); **IF surge is active:** optional **priority-fee** toggle/stepper (with a plain note like "skip the queue"); **Confirm** button. *(Payment is naira via the active onramp provider — no method selector; cNGN removed, §21.)*
 - **Data shown:** matched driver/vehicle, ETA, fare, surge state.
 - **Actions:** set priority (if shown), choose pay method, confirm → Payment.
 - **States:** no kekes available, surge banner on/off, recalculating fare.
 
-### 7. Payment — *MVP (Naira via Partna)*
+### 7. Payment — *MVP (Naira onramp; provider-toggled: PAJ | Partna)*
 - **Purpose:** pay so the fare is collected.
-- **Elements:** amount summary (fare + priority fee); **Partna hosted onramp** opened from `checkoutUrl` (rider pays NGN by bank transfer) in a WebView/browser; a countdown to `expiresAt` (~10 min); pay action → then verify.
+- **Elements:** amount summary (fare + priority fee); a countdown to `expiresAt` (~10 min). **Branch on `/payments/init` response:** if `bankDetails` (PAJ, default) → show the **virtual account** (`accountNumber`/`accountName`/`bank`) with copy-to-clipboard and "transfer the fare here"; if `checkoutUrl` (Partna) → open the **hosted onramp** in a WebView/browser. Then poll `/payments/verify` (also confirmed via FCM `payment_confirmed`).
 - **Actions:** pay → on success, fare locked → Live Tracking.
 - **States:** processing, success, failure + retry.
 

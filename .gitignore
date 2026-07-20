@@ -4,5 +4,6 @@ dist
 out
 .env
 .env*.local
+.paj-*.json
 *.log
 .DS_Store

@@ -4,18 +4,32 @@ info:
   title: FUTO-Ride API
   version: 1.0.0
   description: |
-    Backend for FUTO-Ride — campus keke pooling, bus tracking, payments (Partna
-    NGN onramp → USDC treasury), safety incidents and Telegram alerts.
+    Backend for FUTO-Ride — campus keke pooling, bus tracking, payments (NGN onramp →
+    USDC treasury), safety incidents and Telegram alerts.
 
     Generated from `apps/api/src/routes` + `apps/api/src/schemas`. Zod schemas are the
     source of truth; this document mirrors them for the frontend.
+
+    ## Payments — provider toggle (READ THIS FIRST)
+    `POST /payments/*` runs on **one of two interchangeable providers**, selected server-side by
+    the `PAYMENT_PROVIDER` env var (`paj` — default — or `partna`). Both take **naira** from the
+    rider and settle **USDC on Solana** to the platform treasury; both confirm via a signed
+    webhook re-checked server-to-server. **The rider UX differs and the frontend MUST branch on it:**
+    - **`paj`** — `/payments/init` returns **`bankDetails`** (`accountNumber` / `accountName` /
+      `bank`). Show them; the rider makes a bank transfer to that virtual account.
+    - **`partna`** — `/payments/init` returns a **`checkoutUrl`** (hosted widget). Redirect the
+      rider to it.
+
+    A client should treat both fields as optional and render whichever is present. `reference`
+    (our `futoride-<rideId>`) is returned in both modes and is what `/payments/verify` polls with.
+    Which provider is active is echoed back as `data.provider`.
 
     ## Conventions
     - **Envelope.** Every response is `{ ok: true, data: <T> }` on success or
       `{ ok: false, error: string }` on failure. `data` shapes are the `*Data` schemas below.
     - **Money.** Every amount is **integer kobo** (1 naira = 100 kobo). The frontend renders
       kobo→naira for display and sends kobo back. The backend converts to naira only internally
-      at the Partna payment edge.
+      at the payment-provider edge.
     - **Auth.** Most endpoints require a Firebase ID token: `Authorization: Bearer <idToken>`.
       Webhooks use their own header/signature auth (not a Firebase token). A few read-only
       endpoints are public.
@@ -23,13 +37,13 @@ info:
       `"<field>: <message>"` (first Zod issue), e.g. `"toStop: from and to must differ"`.
     - **Auth failures** return **401** with the exact string `"Missing authentication token"`
       (no bearer token) or `"Invalid or expired token"` (token present but rejected). The
-      Partna and Telegram webhooks instead return the literal `"Unauthorized"` on a bad
+      payment and Telegram webhooks instead return the literal `"Unauthorized"` on a bad
       signature/secret.
     - **Rate limits.** `POST /rides`, `POST /rides/{id}/complete`, `POST /sos`, and
       `POST /incidents/report` are rate-limited **per user** (keyed by the bearer token).
       On breach they return **429** with the exact string `"Too many requests, slow down"`.
     - **Unhandled errors** (anything that isn't an `HttpError`/`ZodError`, e.g. a missing
-      Partna/treasury env var) return **500** with the generic string `"Something went wrong"`.
+      provider/treasury env var) return **500** with the generic string `"Something went wrong"`.
     - **Coordinates.** `lat` ∈ [-90, 90], `lng` ∈ [-180, 180].
 
 servers:
@@ -51,7 +65,7 @@ tags:
   - name: Rides
     description: Booking, lifecycle, completion, QR/PIN, rating
   - name: Payments
-    description: Partna onramp init/verify, webhook, staging mock
+    description: NGN onramp init/verify, webhook — provider-toggled (paj | partna)
   - name: Buses
     description: Bus routes, live ETA, driver onboarding, proximity alerts
   - name: Incidents
@@ -63,7 +77,7 @@ tags:
   - name: Me
     description: Per-user actions (Telegram linking)
   - name: Webhooks
-    description: Server-to-server callbacks (Partna, Telegram)
+    description: Server-to-server callbacks (payment provider, Telegram)
 
 security:
   - firebaseAuth: []
@@ -627,11 +641,13 @@ paths:
   /payments/init:
     post:
       tags: [Payments]
-      summary: Initialize payment (Partna onramp)
+      summary: Initialize payment (NGN onramp — provider-toggled)
       description: |
-        Creates (idempotently, one payment doc per ride) a Partna hosted-onramp checkout for
-        the ride fare and returns the `checkoutUrl` and `reference`. The rider pays NGN;
-        Partna settles USDC to the platform treasury (§21).
+        Creates (idempotently, one payment doc per ride) an onramp order for the ride fare via
+        the active provider (`PAYMENT_PROVIDER` = `paj` default | `partna`) and returns
+        `reference` plus **either** `bankDetails` (paj — display a virtual account) **or**
+        `checkoutUrl` (partna — redirect to the hosted widget). `data.provider` says which. The
+        rider pays NGN; the provider settles USDC to the platform treasury (§21).
       requestBody:
         required: true
         content:
@@ -667,8 +683,9 @@ paths:
               example: { ok: false, error: "Ride is not payable" }
         "500":
           description: |
-            Payment not configured (missing `TREASURY_SOLANA_ADDRESS` / Partna keys). These
-            surface as a plain `Error`, so the global handler returns the generic 500 string.
+            Payment not configured for the active provider (e.g. missing `TREASURY_SOLANA_ADDRESS`,
+            or `PAYMENTS_WEBHOOK_URL`/`PAJ_SESSION_TOKEN` for paj, or Partna keys). These surface
+            as a plain `Error`, so the global handler returns the generic 500 string.
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
@@ -679,10 +696,11 @@ paths:
       tags: [Payments]
       summary: Verify payment status
       description: |
-        Reconciles a Partna onramp against the stored payment by reading the authoritative
-        ramp status server-to-server. Marks the ride PAID as soon as the rider's naira is
-        received (before USDC settlement completes) and covers the fare, so completion isn't
-        blocked on the on-chain conversion. The `reference` must belong to the caller's ride.
+        Reconciles the onramp against the stored payment by reading the authoritative status
+        from the active provider server-to-server (never trusting webhook amounts). Marks the
+        ride PAID as soon as the rider's naira is received (before USDC settlement completes)
+        and covers the fare, so completion isn't blocked on the on-chain conversion. Poll with
+        the `reference` from `/payments/init`; it must belong to the caller's ride.
       requestBody:
         required: true
         content:
@@ -714,20 +732,25 @@ paths:
   /payments/webhook:
     post:
       tags: [Payments, Webhooks]
-      summary: Partna onramp webhook (server-to-server)
+      summary: Onramp webhook (server-to-server, provider-toggled)
       description: |
-        Called by Partna on onramp status changes. The request **body** carries a `signature`
-        field — an RSA-PSS/SHA-256 signature over `JSON.stringify(data)`, verified with Partna's
-        public key (`PARTNA_WEBHOOK_PUBLIC_KEY`). **Not** a Firebase token and **not** a header.
-        Reconciles from the authoritative ramp status; idempotent by reference. Always returns 200
-        once handled (401 on bad/missing signature) so Partna doesn't retry a settled event.
+        Called by the active provider on onramp status changes. Auth depends on `PAYMENT_PROVIDER`:
+        - **partna** — the request **body** carries a `signature` (RSA-PSS/SHA-256 over
+          `JSON.stringify(data)`), verified with `PARTNA_WEBHOOK_PUBLIC_KEY`. Correlated by
+          `data.rampReference`.
+        - **paj** — an `Authorization: Bearer <PAJ_WEBHOOK_SECRET>` **header** is verified.
+          Correlated by the order `id` in the body. Real statuses are `PROCESSING` → `COMPLETED`/`ERROR`.
+
+        Either way the handler re-reads the authoritative status server-to-server; idempotent by
+        the provider's correlation key. Always returns 200 once handled (401 on bad/missing auth)
+        so the provider doesn't retry a settled event.
       security: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/PartnaWebhook"
+              $ref: "#/components/schemas/PaymentWebhook"
       responses:
         "200":
           description: Handled (idempotent)
@@ -745,11 +768,12 @@ paths:
   /payments/mock-deposit:
     post:
       tags: [Payments]
-      summary: Simulate a fiat deposit (staging only)
+      summary: Simulate a fiat deposit (Partna, staging only)
       description: |
-        Staging-only demo helper (§21): simulates the rider's NGN bank transfer so Partna fires
-        the real onramp webhook, without a human completing the hosted checkout. Returns **403**
-        unless `PARTNA_BASE_URL` points at a staging host.
+        **Partna-only** demo helper (§21): simulates the rider's NGN bank transfer so Partna fires
+        the real onramp webhook, without a human completing the hosted checkout. Returns **400** if
+        the active provider is not `partna` (paj has no mock deposit), and **403** unless
+        `PARTNA_BASE_URL` points at a staging host.
       requestBody:
         required: true
         content:
@@ -763,6 +787,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/OkResponse"
+        "400":
+          description: Active provider is not Partna (paj has no mock deposit)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+              example: { ok: false, error: "Mock deposit is only supported for Partna" }
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -789,8 +819,9 @@ paths:
       tags: [Payments]
       summary: Instantly mark a ride as PAID (Development only)
       description: |
-        Completely bypasses Partna. Immediately marks the ride as `PAID`, resolves the payment document,
-        and fires the FCM push notification to the rider. Perfect for when Partna is acting up.
+        Completely bypasses the payment provider. Immediately marks the ride as `PAID`, resolves the
+        payment document, and fires the FCM push notification to the rider. Gated by
+        `ENABLE_PAYMENT_BYPASS=true`. Perfect for local dev or when the provider is acting up.
       requestBody:
         required: true
         content:
@@ -1697,9 +1728,23 @@ components:
         ok: { type: boolean, enum: [true] }
         data:
           type: object
+          description: |
+            `reference` is always present. Exactly one of `bankDetails` (paj) or `checkoutUrl`
+            (partna) is present — render whichever you get. `provider` tells you which is active.
           properties:
-            checkoutUrl: { type: string, format: uri, description: Partna hosted onramp link }
+            provider: { type: string, enum: [paj, partna], description: The active provider }
             reference: { type: string, example: "futoride-<rideId>" }
+            checkoutUrl:
+              type: string
+              format: uri
+              description: partna only — hosted onramp widget to redirect the rider to
+            bankDetails:
+              type: object
+              description: paj only — virtual account for the rider to transfer NGN to
+              properties:
+                accountNumber: { type: string, example: "8761098864" }
+                accountName: { type: string, example: "Paj Inc.(Pay NGN 100.00)" }
+                bank: { type: string, example: "PalmPay" }
 
     VerifyPayment:
       type: object
@@ -1715,9 +1760,21 @@ components:
         data:
           type: object
           properties:
-            status: { type: string, description: Partna ramp status (or "PAID") }
+            status: { type: string, description: Provider ramp/onramp status (or "PAID"/"SETTLED") }
             amount: { type: integer, description: Onramp amount in kobo }
-            paid: { type: boolean }
+            paid: { type: boolean, description: True once the rider's naira is confirmed received }
+
+    PaymentWebhook:
+      type: object
+      description: |
+        Provider onramp event — shape depends on `PAYMENT_PROVIDER`.
+        - **partna**: `{ event, data:{ rampReference, ... }, signature }` — `signature` is an
+          RSA-PSS/SHA-256 signature over `JSON.stringify(data)` (auth is in the body).
+        - **paj**: `{ id, status, usdcAmount, fiatAmount, rate, ... }` — auth is the
+          `Authorization: Bearer <secret>` **header**, and `id` is the correlation key.
+      oneOf:
+        - $ref: "#/components/schemas/PartnaWebhook"
+        - $ref: "#/components/schemas/PajWebhook"
 
     PartnaWebhook:
       type: object
@@ -1731,6 +1788,23 @@ components:
           additionalProperties: true
         signature: { type: string, description: "RSA-PSS/SHA-256 signature over JSON.stringify(data), base64" }
       required: [data, signature]
+      additionalProperties: true
+
+    PajWebhook:
+      type: object
+      description: |
+        PAJ server-to-server event. Authenticated by the `Authorization: Bearer <PAJ_WEBHOOK_SECRET>`
+        header (not the body). Re-posted every ~10s while unsettled — handler is idempotent by `id`.
+      properties:
+        id: { type: string, description: PAJ order id — the correlation key, example: "6a5e9691c359fc41dac83912" }
+        status: { type: string, description: "Uppercase: PROCESSING → COMPLETED | ERROR", example: PROCESSING }
+        transactionType: { type: string, example: ON_RAMP }
+        fiatAmount: { type: number, description: NGN paid, example: 100 }
+        usdcAmount: { type: number, description: Net USDC delivered, example: 0.07 }
+        rate: { type: number, description: NGN per USD locked, example: 1417.03 }
+        recipient: { type: string, description: Treasury Solana address }
+        signature: { type: string, description: On-chain tx signature (populated once settled) }
+      required: [id, status]
       additionalProperties: true
 
     # ---- Incidents ----

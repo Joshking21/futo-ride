@@ -89,18 +89,18 @@ async function main() {
 
   console.log("\n── RIDER POV: booking ──");
   const stops = await call("GET", "/stops");
-  check("GET /stops has seet+town", Array.isArray(stops.data?.stops) && stops.data.stops.some((s: Any) => s.id === "seet"), stops.status);
+  check("GET /stops has seet-complex+futo-bus-park", Array.isArray(stops.data?.stops) && stops.data.stops.some((s: Any) => s.id === "seet-complex") && stops.data.stops.some((s: Any) => s.id === "futo-bus-park"), stops.status);
 
-  const surge = await call("GET", "/surge/seet");
-  check("GET /surge/seet → off", surge.status === 200 && surge.data?.surge === "off", surge);
+  const surge = await call("GET", "/surge/seet-complex");
+  check("GET /surge/seet-complex → off", surge.status === 200 && surge.data?.surge === "off", surge);
 
-  const book1 = await call("POST", "/rides", rider.token, { fromStop: "seet", toStop: "town", seats: 1, payMethod: "naira" });
+  const book1 = await call("POST", "/rides", rider.token, { fromStop: "seet-complex", toStop: "futo-bus-park", seats: 1, payMethod: "naira" });
   const ride1 = book1.data?.rideId;
   if (ride1) created.rideIds.add(ride1);
-  check("book seet→town → matched, not stranded, has expiresAt", book1.status === 200 && book1.data?.stranded === false && book1.data?.driverId === driver.uid && typeof book1.data?.expiresAt === "number", book1);
+  check("book seet-complex→bus-park → matched, not stranded, has expiresAt", book1.status === 200 && book1.data?.stranded === false && book1.data?.driverId === driver.uid && typeof book1.data?.expiresAt === "number", book1);
   check("fare = 15000 kobo (1 seat)", book1.data?.fare === 15000, book1.data?.fare);
 
-  const book1b = await call("POST", "/rides", rider.token, { fromStop: "seet", toStop: "town", seats: 1, payMethod: "naira" });
+  const book1b = await call("POST", "/rides", rider.token, { fromStop: "seet-complex", toStop: "futo-bus-park", seats: 1, payMethod: "naira" });
   check("second booking blocked → 409 one-active-ride", book1b.status === 409, book1b);
 
   console.log("\n── Fix #2: driver can't advance unpaid; completion gates ──");
@@ -140,20 +140,20 @@ async function main() {
   check("driver earnings totalKobo = 14250 (95% of 15000)", earn.status === 200 && earn.data?.totalKobo === 14250, earn);
 
   console.log("\n── Lane pooling (from+to) ──");
-  const p1 = await call("POST", "/rides", rider.token, { fromStop: "seet", toStop: "town", seats: 1, payMethod: "naira" });
+  const p1 = await call("POST", "/rides", rider.token, { fromStop: "seet-complex", toStop: "futo-bus-park", seats: 1, payMethod: "naira" });
   if (p1.data?.rideId) created.rideIds.add(p1.data.rideId);
-  check("rider books seet→town → new pool (pooled=false)", p1.status === 200 && p1.data?.pooled === false && p1.data?.seatsTaken === 1, p1);
+  check("rider books seet-complex→bus-park → new pool (pooled=false)", p1.status === 200 && p1.data?.pooled === false && p1.data?.seatsTaken === 1, p1);
 
-  const p2 = await call("POST", "/rides", rider2.token, { fromStop: "seet", toStop: "gate", seats: 1, payMethod: "naira" });
+  const p2 = await call("POST", "/rides", rider2.token, { fromStop: "seet-complex", toStop: "hostel-c", seats: 1, payMethod: "naira" });
   if (p2.data?.rideId) created.rideIds.add(p2.data.rideId);
-  check("rider2 seet→GATE (diff lane) → stranded (keke busy on other lane)", p2.status === 200 && p2.data?.stranded === true, p2);
+  check("rider2 seet-complex→hostel-c (diff lane) → stranded (keke busy on other lane)", p2.status === 200 && p2.data?.stranded === true, p2);
 
   const cancelP2 = await call("POST", `/rides/${p2.data?.rideId}/cancel`, rider2.token);
   check("cancel stranded ride → 200", cancelP2.status === 200, cancelP2);
 
-  const p3 = await call("POST", "/rides", rider2.token, { fromStop: "seet", toStop: "town", seats: 1, payMethod: "naira" });
+  const p3 = await call("POST", "/rides", rider2.token, { fromStop: "seet-complex", toStop: "futo-bus-park", seats: 1, payMethod: "naira" });
   if (p3.data?.rideId) created.rideIds.add(p3.data.rideId);
-  check("rider2 seet→town (same lane) → JOINS (pooled=true, seatsTaken 2)", p3.status === 200 && p3.data?.pooled === true && p3.data?.driverId === driver.uid && p3.data?.seatsTaken === 2, p3);
+  check("rider2 seet-complex→bus-park (same lane) → JOINS (pooled=true, seatsTaken 2)", p3.status === 200 && p3.data?.pooled === true && p3.data?.driverId === driver.uid && p3.data?.seatsTaken === 2, p3);
 
   console.log("\n── Cleanup ──");
   for (const id of created.rideIds) {
