@@ -17,6 +17,7 @@ import React, {
 import { Alert, Linking, View, Text } from "react-native";
 import { apiRequest, BASE_URL } from "../config/apiHelper";
 import { auth, db } from "../config/firebaseConfig";
+import { registerDevicePushToken } from "../services/notificationService";
 
 /** A campus stop as returned by GET /stops. */
 export interface CampusStop {
@@ -264,6 +265,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     const unsubAuth = onAuthStateChanged(auth, (user) => {
       if (user) {
+        registerDevicePushToken();
         const userRef = doc(db, "users", user.uid);
         const unsubProfile = onSnapshot(
           userRef,

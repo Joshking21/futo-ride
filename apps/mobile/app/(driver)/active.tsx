@@ -44,7 +44,7 @@ export default function DriverActiveTrip() {
           fromStop: activeTrip.pickup,
           toStop: activeTrip.destination,
           seats: activeTrip.seats || 1,
-          fare: activeTrip.fare || 300,
+          fare: activeTrip.price || 300,
           status: "assigned",
           rideId: activeTrip.rideId,
         });

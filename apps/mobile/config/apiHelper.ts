@@ -15,7 +15,7 @@ export const BASE_URL = getBaseUrl();
  */
 export async function apiRequest<T>(
   path: string,
-  method: "GET" | "POST" = "GET",
+  method: "GET" | "POST" | "DELETE" = "GET",
   body?: any,
 ): Promise<T> {
   console.log(`[apiRequest] starting request for ${path}`);

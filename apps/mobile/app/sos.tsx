@@ -38,7 +38,7 @@ export default function SOSScreen() {
       setLocationRider([loc.coords.latitude, loc.coords.longitude]);
       lat = loc.coords.latitude;
       lng = loc.coords.longitude;
-      const response = await apiRequest("/drivers/sos", "POST", {
+      const response = await apiRequest("/sos", "POST", {
         rideId: bookedRequest?.rideId ?? "22222",
         message: "",
         lat: locationRider?.[0],
