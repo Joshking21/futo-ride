@@ -17,7 +17,7 @@ Notes: validation rules, side effects, gotchas.
 
 > **💰 Money:** every amount in this API is **integer kobo** (1 naira = 100 kobo).
 > The frontend renders kobo→naira for display and sends kobo back. The backend
-> converts to naira only internally at the Partna payment edge.
+> converts to naira only internally at the payment-provider edge.
 
 > **🛡️ Rate limits:** `POST /rides`, `POST /rides/:id/complete`, `POST /sos`, and
 > `POST /incidents/report` are rate-limited (per-user). On breach they return
@@ -27,13 +27,17 @@ Notes: validation rules, side effects, gotchas.
 > **(1)** `POST /rides` with no available keke now returns **200 `{ stranded:true, rideId, driverId:null }`** (was `409`) so the rider can track/cancel the request.
 > **(2)** `POST /rides/:id/complete` now requires the ride to be **`PAID` and `started`** — `402` if unpaid.
 
-> **🔁 v7 payment migration (PROJECT_PLAN §21).** Payments moved from **Monnify + cNGN** to
-> **Partna** (rider pays NGN → Partna settles USDC to the platform treasury). Frontend deltas:
-> **(a)** `payMethod` is now **`"naira"` only** (cNGN removed); **(b)** `POST /payments/init`
-> still returns `{ checkoutUrl, reference }` — `checkoutUrl` is a Partna hosted-onramp link;
-> **(c)** new `POST /drivers/me/withdraw`, `POST /buses/register`, and staging-only
-> `POST /payments/mock-deposit`; **(d)** `POST /rides/:id/rate` now needs a **completed** ride (409);
-> **(e)** the pay-or-lose hold is now **10 min** (bank transfers are slower than cards).
+> **🔁 v7 payment migration (PROJECT_PLAN §21).** Payments moved from **Monnify + cNGN** to a
+> USDC-on-Solana onramp (rider pays NGN → provider settles USDC to the platform treasury).
+> Frontend deltas: **(a)** `payMethod` is now **`"naira"` only** (cNGN removed);
+> **(b)** `POST /rides/:id/rate` now needs a **completed** ride (409); **(c)** the pay-or-lose
+> hold is now **10 min** (bank transfers are slower than cards).
+>
+> **🔀 v8 provider toggle.** `/payments/*` now runs on **either PAJ (default) or Partna**, chosen
+> server-side by `PAYMENT_PROVIDER`. **Frontend must branch:** `POST /payments/init` returns
+> `{ provider, reference }` plus **either** `bankDetails{accountNumber,accountName,bank}` (paj —
+> display the virtual account) **or** `checkoutUrl` (partna — redirect to the widget). Treat both
+> as optional; render whichever is present. `mock-deposit` is Partna-only now (400 otherwise).
 
 ---
 
@@ -158,33 +162,37 @@ Body:  { stars: 1..5, comment?: string }
 
 ---
 
+> **🔀 Provider toggle:** `/payments/*` is served by the provider named in `PAYMENT_PROVIDER`
+> (`paj` default | `partna`). The two-tier reconcile (fiat-received → ride PAID early; settled →
+> treasury leg) is identical; only order creation, the confirm channel, and the rider UX differ.
+
 ### POST /payments/init
 Auth:  required (rider on the ride)
 Body:  { rideId: string }
-200:   { ok: true, data: { checkoutUrl: string, reference: string } }
-4xx:   403 not your ride · 404 ride not found · 409 ride not payable (expired/cancelled/completed) · 500 payment not configured (missing treasury/keys)
-Notes: (§21) builds a **Partna hosted onramp** checkout for the ride fare — the rider pays NGN by bank transfer and Partna settles USDC into the platform treasury. `checkoutUrl` is the Partna pay link; open it in a WebView/browser. `reference` = `futoride-<rideId>`. (M10/§21) IDEMPOTENT: the payment doc is keyed by ride, so a retry returns the existing checkoutUrl/reference — no duplicate ramp.
+200:   { ok: true, data: { provider: "paj"|"partna", reference: string, bankDetails?: { accountNumber, accountName, bank }, checkoutUrl?: string } }
+4xx:   403 not your ride · 404 ride not found · 409 ride not payable (expired/cancelled/completed) · 500 payment not configured (missing treasury / provider keys / PAYMENTS_WEBHOOK_URL)
+Notes: (§21) builds an onramp order for the ride fare via the active provider. **paj** → returns `bankDetails` (a virtual account; the rider bank-transfers NGN to it). **partna** → returns `checkoutUrl` (a hosted widget; open in a WebView/browser). `reference` = `futoride-<rideId>`. Either way the provider settles USDC into the platform treasury. (M10/§21) IDEMPOTENT: the payment doc is keyed by ride, so a retry returns the existing details — no duplicate order.
 
 ### POST /payments/verify
 Auth:  required (rider on the ride — ownership checked, §21/N3)
-Body:  { reference: string }
+Body:  { reference: string }   ← always OUR `futoride-<rideId>`, both providers
 200:   { ok: true, data: { status: string, amount /*kobo*/, paid: boolean } }
-4xx:   403 not your payment · 404 payment not found
-Notes: (§21) reads the authoritative Partna ramp status and reconciles the stored Payment. Marks it PAID + stamps the ride `paymentStatus:"PAID"` (clearing its TTL) as soon as the rider's naira is RECEIVED (the `Deposit`/`confirmed` fiat leg, amount ≥ fare) — so completion isn't blocked on the USDC conversion. Full USDC settlement (`completed`) is tracked separately for the treasury. (C3) if the money lands after the ride already expired/cancelled and was never paid, it flags the ride `refundPending` instead of reviving it.
+4xx:   403 not your payment · 404 payment not found · 409 payment not initialized
+Notes: (§21) reads the authoritative status from the active provider (Partna ramp / PAJ `getTransaction`) and reconciles the stored Payment by its `providerRef`. Marks it PAID + stamps the ride `paymentStatus:"PAID"` (clearing its TTL) as soon as the rider's naira is RECEIVED (Partna `Deposit`/`confirmed`; PAJ `PROCESSING`) and amount ≥ fare — so completion isn't blocked on the USDC conversion. Full settlement (`completed`/`COMPLETED`) is tracked separately for the treasury. (C3) money that lands after the ride already expired/cancelled flags `refundPending` instead of reviving it.
 
 ### POST /payments/webhook
-Auth:  Partna webhook signature (NOT a Firebase token) — Partna is the caller
-Body:  a Partna webhook `{ event, data, signature }` (event e.g. "Onramp")
-200:   { ok: true, data: { ok: true } }   (always 200 so Partna doesn't retry a handled event)
-401:   { ok: false, error: "Unauthorized" }   (bad/missing signature)
-Notes: (§21) server-to-server reconciliation so a rider who closes the app mid-checkout is still marked paid. Verifies Partna's **RSA-PSS/SHA-256 signature over the `data` field** (public key, `PARTNA_WEBHOOK_PUBLIC_KEY`) — confirm the exact signature byte-encoding against Partna's Node sample before trusting — then reconciles like /verify. The mobile app never calls this.
+Auth:  provider-specific (NOT a Firebase token) — the provider is the caller
+Body:  partna → `{ event, data, signature }` (RSA over `data`); paj → `{ id, status, ... }` (+ `Authorization: Bearer <secret>` header)
+200:   { ok: true, data: { ok: true } }   (always 200 so the provider doesn't retry a handled event)
+401:   { ok: false, error: "Unauthorized" }   (bad/missing signature or bearer secret)
+Notes: (§21) server-to-server reconciliation so a rider who closes the app mid-checkout is still marked paid. **partna** verifies an RSA-PSS/SHA-256 signature over `data` (`PARTNA_WEBHOOK_PUBLIC_KEY`), correlates by `data.rampReference`. **paj** verifies the `Authorization: Bearer <PAJ_WEBHOOK_SECRET>` header, correlates by the order `id`, and is re-posted every ~10s while unsettled (idempotent by `id`). The mobile app never calls this.
 
-### POST /payments/mock-deposit   (staging/demo only)
+### POST /payments/mock-deposit   (Partna only, staging/demo)
 Auth:  required (rider on the ride)
 Body:  { rideId: string }
 200:   { ok: true, data: { ok: true } }
-4xx:   403 not your ride OR not a staging base URL · 404 ride not found
-Notes: (§21) demo helper — calls Partna's staging `POST /mock/fiat-deposit` to simulate the rider's NGN bank transfer so the real onramp webhook fires without a human completing the hosted checkout. Refuses to run unless `PARTNA_BASE_URL` is a staging URL.
+4xx:   400 active provider is not partna (paj has no mock) · 403 not your ride OR not a staging base URL · 404 ride not found
+Notes: (§21) demo helper — calls Partna's staging `POST /mock/fiat-deposit` to fire the real onramp webhook without a human completing checkout. **PAJ has no mock-deposit** (returns 400); to demo PAJ you make a real small NGN transfer. Refuses to run unless `PARTNA_BASE_URL` is a staging URL.
 
 ---
 

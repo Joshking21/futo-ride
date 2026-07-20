@@ -31,6 +31,26 @@
 
 ---
 
+## 🖥️ FRONTEND TODO — payment provider toggle (PAJ | Partna) [backend done]
+
+> Backend now serves `/payments/*` on **either PAJ (default) or Partna**, chosen by
+> `PAYMENT_PROVIDER`. The backend + docs (openapi.yaml, API.md) are done. **The frontend must
+> branch on the `/payments/init` response** — this is the only client-visible change:
+>
+> - `POST /payments/init` → `{ provider, reference, bankDetails?, checkoutUrl? }`.
+>   - **paj** (default): render **`bankDetails` = { accountNumber, accountName, bank }`** — show
+>     the virtual account and tell the rider to bank-transfer the fare to it (no redirect). Then
+>     poll `POST /payments/verify { reference }` until `paid:true` (also arrives via FCM
+>     `payment_confirmed`).
+>   - **partna**: open **`checkoutUrl`** in a WebView/browser (existing behavior).
+> - Treat both `bankDetails` and `checkoutUrl` as optional; render whichever is present. Don't
+>   hardcode either — `provider` can flip via env without a frontend redeploy.
+> - Copy-to-clipboard on `accountNumber` is the key UX for the paj path.
+> - Note: PAJ has **no** `mock-deposit` (that button/flow is Partna-only) — for a PAJ demo the
+>   rider makes a real small NGN transfer.
+
+---
+
 ## ⚠️ VERIFY ON STAGING — two-tier payment unlock (added: reduce rider wait)
 
 > **What changed:** `reconcile()` now unlocks the ride on **fiat received** (naira in), not on
@@ -187,6 +207,14 @@ full user story on-chain.
 - [ ] **Wallet custody:** rider/driver via Privy (non-custodial) — confirm the mobile
       integration path with the frontend dev; capture `privyWallet` on connect (S1 remaining).
 - [ ] **Payout controls:** per-claim cap, per-driver rate limit, fraud rules.
+- [x] **Live FX rate for vault contributions (`TODO(vault-fx)`) — RESOLVED.** The static
+      `VAULT_NGN_PER_USDC` constant is **removed entirely**. `koboToUsdcBaseUnits(kobo, rate)`
+      now *requires* the live NGN→USDC rate the rider settled at (PAJ returns it per order as
+      `rate`, stored as `payment.paidRate` in `reconcile()`); ride completion sizes the on-chain
+      welfare cut at that rate. No static fallback exists — if `paidRate` is absent the on-chain
+      leg is skipped (never invents a rate); the kobo `treasuryContributions` ledger is untouched.
+      Partna's rate (`GET /v4/rate`) isn't captured yet, so the Partna path skips the on-chain
+      leg — wire it if Partna becomes the active provider.
 - [ ] **Treasury source of the 5%:** S1 already lands 100% of the fare as USDC + records the
       5% cut in `treasuryContributions`. S2 is just the on-chain *sweep* into a separate
       welfare wallet (or leave it logical and pay claims from the main treasury).

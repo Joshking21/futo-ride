@@ -104,9 +104,15 @@ export type Payment = {
   rideId: string;
   method: PayMethod;
   amount: number; // kobo (integer) — the fare this payment must cover
-  status: string; // "pending" | "PAID" | Partna ramp status
-  ref: string; // Partna rampReference (futoride-<rideId>) — used by /verify + /webhook
-  checkoutUrl?: string; // stored so /init is idempotent (§20.2)
+  status: string; // "pending" | "PAID" | "SETTLED" | provider ramp status
+  ref: string; // OUR reference (futoride-<rideId>) — the /verify + /init idempotency key
+  provider?: "partna" | "paj"; // which provider created this order (PAYMENT_PROVIDER at /init time)
+  providerRef?: string; // the provider's correlation key (Partna: == ref; PAJ: order id) — used by /webhook
+  checkoutUrl?: string; // Partna hosted widget URL (stored so /init is idempotent)
+  bankAccountNumber?: string; // PAJ: virtual account to display to the rider
+  bankAccountName?: string; // PAJ
+  bankName?: string; // PAJ
+  paidRate?: number; // live NGN→USD(C) rate the rider settled at (PAJ `rate`) — feeds the vault FX
 };
 
 export type Rating = {

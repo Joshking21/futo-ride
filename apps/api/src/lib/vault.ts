@@ -22,8 +22,13 @@ import { VAULT_IDL } from "./vault-idl.js";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const idl = VAULT_IDL as any;
 
+// @coral-xyz/anchor's CJS build doesn't surface BN as a top-level ESM export, so reach it
+// through the interop default (works under both ESM/tsx and the tsc→CJS prod build).
+// reason: runtime interop for a value the ESM namespace doesn't expose.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const BN: any = (anchor as any).BN ?? (anchor as any).default?.BN;
+
 const DEFAULT_RPC = "https://api.devnet.solana.com";
-const DEFAULT_NGN_PER_USDC = 1600;
 const VAULT_SEED = Buffer.from("vault");
 const VAULT_TOKEN_SEED = Buffer.from("vault-token");
 
@@ -108,7 +113,7 @@ export async function contributeUsdc(baseUnits: number): Promise<string> {
   const c = client();
   const contributorToken = await getAssociatedTokenAddress(c.usdcMint, c.authority.publicKey);
   return c.program.methods
-    .contribute(new anchor.BN(baseUnits))
+    .contribute(new BN(baseUnits))
     .accountsPartial({
       contributor: c.authority.publicKey,
       contributorToken,
@@ -126,7 +131,7 @@ export async function contributeUsdc(baseUnits: number): Promise<string> {
 export async function payoutUsdc(recipientToken: PublicKey, baseUnits: number): Promise<string> {
   const c = client();
   return c.program.methods
-    .payout(new anchor.BN(baseUnits))
+    .payout(new BN(baseUnits))
     .accountsPartial({
       authority: c.authority.publicKey,
       vault: c.vaultPda,
@@ -138,12 +143,14 @@ export async function payoutUsdc(recipientToken: PublicKey, baseUnits: number): 
 }
 
 /**
- * Converts internal kobo to USDC base units (6 dp) at a demo FX rate (`VAULT_NGN_PER_USDC`,
- * default 1600). This is the platform's NGN↔USDC exposure made explicit (AUDIT_REPORT §2);
- * a real deployment would price this off a live rate, not a constant.
+ * Converts internal kobo to USDC base units (6 dp) at the **live NGN→USDC rate the rider
+ * actually settled at** (PAJ returns it per order/webhook as `rate`, in NGN per USD ≈ NGN per
+ * USDC). The rate is REQUIRED — there is deliberately no static/default fallback: a hardcoded FX
+ * guess silently mis-sizes on-chain contributions, so any caller that doesn't know the real rate
+ * must skip the on-chain leg rather than invent one.
  */
-export function koboToUsdcBaseUnits(kobo: number): number {
-  const ngnPerUsdc = Number(process.env.VAULT_NGN_PER_USDC) || DEFAULT_NGN_PER_USDC;
+export function koboToUsdcBaseUnits(kobo: number, ngnPerUsdc: number): number {
+  if (!(ngnPerUsdc > 0)) throw new Error("koboToUsdcBaseUnits: a positive live NGN→USDC rate is required");
   // kobo → naira (÷100) → USDC (÷rate) → base units (×1e6)  ==  kobo × 1e4 ÷ rate
   return Math.round((kobo * 10_000) / ngnPerUsdc);
 }

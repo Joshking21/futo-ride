@@ -79,7 +79,7 @@ Every money value the backend sends or accepts is an **integer in kobo** (1 nair
 
 - **Display:** divide by 100 to show naira → `₦${(fare / 100).toLocaleString()}`. e.g. `fare: 25000` → **₦250.00**.
 - **Sending:** send kobo back (e.g. a `priorityFee` of ₦50 → `5000`).
-- You never deal with naira on the wire — the backend converts to naira internally only at the Partna payment edge. Treat kobo as the single unit across the whole API.
+- You never deal with naira on the wire — the backend converts to naira internally only at the payment-provider edge. Treat kobo as the single unit across the whole API.
 
 > **🔁 v7: payments are now Partna (was Monnify + cNGN).** You still call `POST /payments/init` and get `{ checkoutUrl, reference }` — `checkoutUrl` is now a **Partna hosted onramp** link (rider pays NGN by bank transfer; the backend settles it as USDC in the treasury). `payMethod` is `"naira"` only (cNGN is gone). New: `POST /drivers/me/withdraw` (driver cashout), `POST /buses/register` (bus drivers onboard before posting location), and a staging-only `POST /payments/mock-deposit` for the demo. See `docs/API.md` for shapes.
 
@@ -143,10 +143,10 @@ POST /rides/:id/complete     rider confirms via QR OR PIN  → { ok, fare }
 GET  /rides/:id/qr           driver fetches QR + PIN        → { qrToken, pin }
 POST /rides/:id/rate         rider rates the driver        → { ok }
 
-POST /payments/init          start a Partna onramp         → { checkoutUrl, reference }
+POST /payments/init          start an onramp (paj|partna)  → { provider, reference, bankDetails? | checkoutUrl? }
 POST /payments/verify        confirm a payment             → { status, amount, paid }
-POST /payments/webhook       Partna → backend (s2s)        → { ok }   (app never calls)
-POST /payments/mock-deposit  staging demo: simulate pay    → { ok }   (staging only)
+POST /payments/webhook       provider → backend (s2s)      → { ok }   (app never calls)
+POST /payments/mock-deposit  staging demo: simulate pay    → { ok }   (Partna only; 400 on paj)
 
 POST /sos                    raise an SOS (AI→Alerta)      → { incidentId }
 POST /incidents/report       report accident/off-route     → { incidentId }

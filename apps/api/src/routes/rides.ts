@@ -28,7 +28,7 @@ import { raiseIncident } from "../lib/incidents.js";
 import { isVaultConfigured, contributeUsdc, koboToUsdcBaseUnits } from "../lib/vault.js";
 import { sendPush } from "../lib/fcm.js";
 import { BookRide, CompleteRide, RateRide, RideId, RideHistoryQuery, UpdateRideStatus } from "../schemas/rides.js";
-import type { Ride, RideStatus } from "../types/index.js";
+import type { Ride, RideStatus, Payment } from "../types/index.js";
 
 const ACTIVE_STATUSES: RideStatus[] = ["assigned", "arriving", "started"];
 const TERMINAL_STATUSES: RideStatus[] = ["completed", "cancelled", "expired"];
@@ -482,17 +482,26 @@ export default async function rideRoutes(app: FastifyInstance) {
       await creditDriver(ride.driverId, ride.id, driverAmount, "fare");
       const platformCut = platformCutKobo(seatFareKobo(ride.seats), PLATFORM_FEE_BPS);
 
-      // Best-effort: mirror the 5% welfare cut into the on-chain vault (todo.md S2). The
-      // Firestore `treasuryContributions` doc is the source of truth; a Solana hiccup must
-      // never fail a completed ride — so we catch and just record the sig when it lands.
+      // Best-effort: mirror the 5% welfare cut into the on-chain vault (todo.md S2). The Firestore
+      // `treasuryContributions` doc (kobo) is the source of truth; a Solana hiccup must never fail
+      // a completed ride. The on-chain leg is sized at the LIVE FX rate the rider settled at
+      // (payment.paidRate) — if we don't have that rate we skip the on-chain leg entirely rather
+      // than invent one (no static fallback), leaving the kobo ledger intact.
       let vaultSig: string | undefined;
+      let vaultBaseUnits: number | undefined;
       if (isVaultConfigured()) {
-        const baseUnits = koboToUsdcBaseUnits(platformCut);
-        if (baseUnits > 0) {
-          vaultSig = await contributeUsdc(baseUnits).catch((err) => {
-            req.log.error({ err, rideId: ride.id }, "vault contribute failed (recorded off-chain only)");
-            return undefined;
-          });
+        const paidRate = ((await db.collection("payments").doc(ride.id).get()).data() as Payment | undefined)?.paidRate;
+        if (paidRate && paidRate > 0) {
+          const baseUnits = koboToUsdcBaseUnits(platformCut, paidRate);
+          if (baseUnits > 0) {
+            vaultBaseUnits = baseUnits;
+            vaultSig = await contributeUsdc(baseUnits).catch((err) => {
+              req.log.error({ err, rideId: ride.id }, "vault contribute failed (recorded off-chain only)");
+              return undefined;
+            });
+          }
+        } else {
+          req.log.warn({ rideId: ride.id }, "vault contribute skipped — no live paidRate on the payment");
         }
       }
 
@@ -505,7 +514,7 @@ export default async function rideRoutes(app: FastifyInstance) {
             driverId: ride.driverId,
             amount: platformCut,
             createdAt: Date.now(),
-            ...(vaultSig ? { vaultSig, vaultBaseUnits: koboToUsdcBaseUnits(platformCut) } : {}),
+            ...(vaultSig ? { vaultSig, vaultBaseUnits } : {}),
           },
           { merge: true },
         );
