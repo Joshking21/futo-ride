@@ -1,9 +1,10 @@
 import { auth } from "./firebaseConfig";
+import { Alert } from "react-native";
 
-// Resolve the LAN IP if running in development (so real devices can connect to Metro host),
-// otherwise use the EXPO_PUBLIC_API_URL or fallback to localhost
+// Use EXPO_PUBLIC_API_URL from environment (set in .env.local),
+// falling back to local LAN IP for development
 const getBaseUrl = (): string => {
-  return "http://10.77.240.190:3001";
+  return process.env.EXPO_PUBLIC_API_URL || "http://10.77.240.190:3001";
 };
 
 export const BASE_URL = getBaseUrl();
@@ -14,7 +15,7 @@ export const BASE_URL = getBaseUrl();
  */
 export async function apiRequest<T>(
   path: string,
-  method: "GET" | "POST" = "GET",
+  method: "GET" | "POST" | "DELETE" = "GET",
   body?: any,
 ): Promise<T> {
   console.log(`[apiRequest] starting request for ${path}`);
@@ -46,7 +47,10 @@ export async function apiRequest<T>(
     });
     // console.log(`[apiRequest] fetch response status: ${response.status}`);
   } catch (fetchErr) {
-    // console.error(`[apiRequest] fetch failed for ${url}:`, fetchErr);
+    Alert.alert(
+      "Connection Failed",
+      "Unable to connect to the server. Please check your internet connection and try again."
+    );
     throw fetchErr;
   }
 

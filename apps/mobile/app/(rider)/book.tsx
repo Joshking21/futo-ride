@@ -36,7 +36,8 @@ export default function BookRide() {
   const [pickup, setPickup] = useState(
     campusStops[0]?.name ?? "FUTO Main Gate",
   );
-  const [destination, setDestination] = useState("");
+  const [destination, setDestination] = useState(
+    campusStops[1]?.name ?? "Main Library");
   const [pickupDesc, setPickupDesc] = useState("");
   const [destinationDesc, setDestinationDesc] = useState(
     "Select your dropoff point",
@@ -104,7 +105,7 @@ export default function BookRide() {
           padding: 2,
           justifyContent: "center",
           alignItems: value ? "flex-end" : "flex-start",
-          backgroundColor: value ? "#001caa" : "#cbd5e1",
+          backgroundColor: value ? "#059669" : "#cbd5e1",
         }}
       >
         <View
@@ -127,9 +128,9 @@ export default function BookRide() {
   const handleSwap = () => {
     const tempName = pickup;
     const tempDesc = pickupDesc;
-    setPickup(destination || "Where to?");
+    setPickup(destination);
     setPickupDesc(destinationDesc);
-    setDestination(tempName === "Where to?" ? "" : tempName);
+    setDestination(tempName);
     setDestinationDesc(tempDesc);
   };
 
@@ -195,7 +196,7 @@ export default function BookRide() {
       >
         <View className="px-margin-mobile pt-6 flex-1 gap-6 md:max-w-[600px] md:mx-auto w-full pb-32">
           {/* Map Preview Card */}
-          <View className="w-full h-[220px] rounded-3xl overflow-hidden shadow-sm border-4 border-white relative bg-surface-container-lowest">
+          {/* <View className="w-full h-[220px] rounded-3xl overflow-hidden shadow-sm border-4 border-white relative bg-surface-container-lowest">
             <Image
               source={{
                 uri: "https://lh3.googleusercontent.com/aida-public/AB6AXuBhChECydpDyPgt27hlQrat9Rk2U89C00BRo9HxQfDmpSr4MRrxjAG1pGL6iwr1A__rTa5hkvxx5VNhyBHIwUrgEL1XAzRh3vdUsCbmpnjEWdd5tXIJyvuoNbsf17_pEryhtId0Y6snYs2mm-iQfYuoPK3Zrsg2EAG-XD5-Bq8QCQpcEyE5GcSDWhm7yhm20vy7oBcRqJFt0hbOoiU-LdxjqFg6qiW_P7A1aJmd6buI9IlGZRklUN8jk7Fl9tud8gafRai7G4XXH9hL",
@@ -209,7 +210,7 @@ export default function BookRide() {
 
               <View className="absolute top-[45%] left-[35%] w-[45%] h-1 bg-primary/80 rotate-[18deg]" />
             </View>
-          </View>
+          </View> */}
 
           {/* Booking Inputs Bento Card */}
           <View
@@ -238,9 +239,9 @@ export default function BookRide() {
                   <Text className="text-body-md font-bold text-on-surface font-jakarta ">
                     {pickup}
                   </Text>
-                  <Text className="text-body-sm text-secondary font-jakarta ">
+                  {/* <Text className="text-body-sm text-secondary font-jakarta ">
                     {pickupDesc}
-                  </Text>
+                  </Text> */}
                 </View>
                 <ChevronDown color="#757687" size={18} />
               </Pressable>
@@ -274,11 +275,11 @@ export default function BookRide() {
                     To
                   </Text>
                   <Text className="text-body-md font-bold text-on-surface font-jakarta mt-0.5">
-                    {destination || "Where to?"}
+                    {destination }
                   </Text>
-                  <Text className="text-body-sm text-secondary font-jakarta mt-0.5">
+                  {/* <Text className="text-body-sm text-secondary font-jakarta mt-0.5">
                     {destinationDesc}
-                  </Text>
+                  </Text> */}
                 </View>
                 <ChevronDown color="#757687" size={18} className="" />
               </Pressable>
@@ -308,7 +309,7 @@ export default function BookRide() {
                 justifyContent: "center",
                 gap: 8,
                 backgroundColor:
-                  rideType === "keke" ? "#001caa" : "transparent",
+                  rideType === "keke" ? "#059669" : "transparent",
                 shadowColor: "#000000",
                 shadowOffset: { width: 0, height: 2 },
                 shadowOpacity: rideType === "keke" ? 0.05 : 0,
@@ -342,7 +343,7 @@ export default function BookRide() {
                 alignItems: "center",
                 justifyContent: "center",
                 gap: 8,
-                backgroundColor: rideType === "bus" ? "#001caa" : "transparent",
+                backgroundColor: rideType === "bus" ? "#059669" : "transparent",
                 shadowColor: "#000000",
                 shadowOffset: { width: 0, height: 2 },
                 shadowOpacity: rideType === "bus" ? 0.05 : 0,
@@ -410,7 +411,7 @@ export default function BookRide() {
                     borderColor: "#e5eeff",
                   }}
                 >
-                  <KekeIcon size={38} color="#001caa" />
+                  <KekeIcon size={38} color="#059669" />
                 </View>
                 <View style={{ flex: 1 }} className="">
                   {/* <Text
@@ -460,7 +461,7 @@ export default function BookRide() {
                       >
                         <Text
                           style={{
-                            color: "#001caa",
+                            color: "#059669",
                             fontWeight: "900",
                             fontSize: 20,
                           }}
@@ -492,7 +493,7 @@ export default function BookRide() {
                       >
                         <Text
                           style={{
-                            color: "#001caa",
+                            color: "#059669",
                             fontWeight: "900",
                             fontSize: 20,
                           }}
@@ -515,10 +516,10 @@ export default function BookRide() {
                         alignSelf: "flex-start",
                       }}
                     >
-                      <User color="#001caa" size={11} />
+                      <User color="#059669" size={11} />
                       <Text
                         style={{
-                          color: "#001caa",
+                          color: "#059669",
                           fontSize: 10,
                           fontWeight: "700",
                           fontFamily: "Plus Jakarta Sans",
@@ -611,7 +612,7 @@ export default function BookRide() {
                       // elevation: 1,
                     }}
                   >
-                    <Zap color="#001caa" size={18} fill="#001caa" />
+                    <Zap color="#059669" size={18} fill="#059669" />
                   </View>
                   <View
                     style={{ flex: 1 }}
@@ -681,7 +682,7 @@ export default function BookRide() {
                   borderRadius: 16,
                   backgroundColor: "#ffffff",
                   borderColor:
-                    paymentMethod === "naira" ? "#001caa" : "#e5eeff",
+                    paymentMethod === "naira" ? "#059669" : "#e5eeff",
                 }}
               >
                 <View
@@ -702,7 +703,7 @@ export default function BookRide() {
                       justifyContent: "center",
                       backgroundColor: "#ffffff",
                       borderColor:
-                        paymentMethod === "naira" ? "#001caa" : "#cbd5e1",
+                        paymentMethod === "naira" ? "#059669" : "#cbd5e1",
                     }}
                   >
                     {paymentMethod === "naira" && (
@@ -710,7 +711,7 @@ export default function BookRide() {
                         style={{
                           width: 12,
                           height: 12,
-                          backgroundColor: "#001caa",
+                          backgroundColor: "#059669",
                           borderRadius: 6,
                         }}
                       />
@@ -723,7 +724,7 @@ export default function BookRide() {
                       width: 32,
                       height: 32,
                       borderRadius: 16,
-                      backgroundColor: "#001caa",
+                      backgroundColor: "#059669",
                       alignItems: "center",
                       justifyContent: "center",
                     }}
@@ -795,7 +796,7 @@ export default function BookRide() {
                   borderWidth: 1,
                   borderRadius: 16,
                   backgroundColor: "#ffffff",
-                  borderColor: paymentMethod === "cngn" ? "#001caa" : "#e5eeff",
+                  borderColor: paymentMethod === "cngn" ? "#059669" : "#e5eeff",
                 }}
               >
                 <View
@@ -816,7 +817,7 @@ export default function BookRide() {
                       justifyContent: "center",
                       backgroundColor: "#ffffff",
                       borderColor:
-                        paymentMethod === "cngn" ? "#001caa" : "#cbd5e1",
+                        paymentMethod === "cngn" ? "#059669" : "#cbd5e1",
                     }}
                   >
                     {paymentMethod === "cngn" && (
@@ -824,7 +825,7 @@ export default function BookRide() {
                         style={{
                           width: 12,
                           height: 12,
-                          backgroundColor: "#001caa",
+                          backgroundColor: "#059669",
                           borderRadius: 6,
                         }}
                       />

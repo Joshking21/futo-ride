@@ -9,7 +9,7 @@ interface KekeIconProps {
 
 export default function KekeIcon({
   size = 48,
-  color = "#001caa",
+  color = "#059669",
   secondaryColor = "#1d35d1",
 }: KekeIconProps) {
   return (

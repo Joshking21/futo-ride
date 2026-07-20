@@ -102,7 +102,7 @@ export default function DriverProfile() {
               abubakar.usman@gmail.com
             </Text>
             <View className="bg-[#e2ebff] px-2.5 py-0.5 rounded-md mt-2.5 self-start">
-              <Text className="text-[#001caa] text-[10px] font-bold font-jakarta">
+              <Text className="text-[#059669] text-[10px] font-bold font-jakarta">
                 Driver Partner
               </Text>
             </View>
@@ -122,7 +122,7 @@ export default function DriverProfile() {
           >
             <View className="flex-row items-center flex-1 mr-2">
               <View className="w-11 h-11 rounded-2xl bg-[#eff3ff] items-center justify-center">
-                <Landmark color="#001caa" size={18} />
+                <Landmark color="#059669" size={18} />
               </View>
               <View className="ml-3.5 flex-1">
                 <Text className="text-[14px] font-bold text-on-surface font-jakarta">
@@ -144,7 +144,7 @@ export default function DriverProfile() {
               <Text className="text-secondary text-[13px] font-medium font-jakarta">
                 Bank
               </Text>
-              <Text className="text-[#001caa] font-bold text-[13px] font-jakarta">
+              <Text className="text-[#059669] font-bold text-[13px] font-jakarta">
                 Access Bank
               </Text>
             </View>
@@ -210,7 +210,7 @@ export default function DriverProfile() {
         >
           <View className="flex-row items-center flex-1 mr-2">
             <View className="w-11 h-11 rounded-2xl bg-[#eff3ff] items-center justify-center">
-              <Bell color="#001caa" size={18} />
+              <Bell color="#059669" size={18} />
             </View>
             <View className="ml-3.5 flex-1">
               <Text className="text-[14px] font-bold text-on-surface font-jakarta">
@@ -236,7 +236,7 @@ export default function DriverProfile() {
         >
           <View className="flex-row items-center flex-1 mr-2">
             <View className="w-11 h-11 rounded-2xl bg-[#eff3ff] items-center justify-center">
-              <Shield color="#001caa" size={18} />
+              <Shield color="#059669" size={18} />
             </View>
             <View className="ml-3.5 flex-1">
               <Text className="text-[14px] font-bold text-on-surface font-jakarta">

@@ -1,7 +1,7 @@
 import { useRouter } from "expo-router";
 import { ArrowLeft, Clock, Info } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
-import { Alert, Pressable, ScrollView, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, Text, View, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import KekeIcon from "../../components/KekeIcon";
 import { apiRequest } from "../../config/apiHelper";
@@ -16,11 +16,13 @@ export default function ConfirmRide() {
     getStopId,
     bookedRequest,
     setBookedRequest,
+    setActiveTrip,
     isSurgeActive,
   } = useApp();
   const [isPriority, setIsPriority] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<"naira" | "cngn">("naira");
   const [seats, setSeats] = useState(1);
+  const [loading, setLoading] = useState(false);
   // const [isSurgeActive, setIsSurgeActive] = useState(false);
  
   const handleCancel = async () => {
@@ -103,8 +105,39 @@ export default function ConfirmRide() {
     basePrice + serviceFee + (isPriority && isSurgeActive ? priorityFee : 0);
 
   const handleConfirm = async () => {
-    // await confirmBooking(isPriority && isSurgeActive, paymentMethod, seats);
-    router.replace("/(rider)/tracking");
+    if (!bookedRequest) return;
+    setLoading(true);
+    try {
+      // 1. Call the payment bypass API to mark the ride as paid
+      await apiRequest("/payments/bypass", "POST", {
+        rideId: bookedRequest.rideId,
+      });
+
+      // 2. Set the active trip in context so the real-time listener starts tracking
+      setActiveTrip({
+        pickup: activeTrip.pickup,
+        destination: activeTrip.destination,
+        rideType: activeTrip.rideType,
+        rideId: bookedRequest.rideId,
+        driverId: bookedRequest.driverId || "",
+        price: (bookedRequest.fare || 30000) / 100, // convert kobo to Naira
+        driverName: "Searching...",
+        driverRating: 5.0,
+        driverPhone: "",
+        vehicleNumber: "",
+        eta: bookedRequest.etaMin ? `${bookedRequest.etaMin} mins` : "5 mins",
+        status: "confirmed",
+        stepIndex: 0,
+      });
+
+      // 3. Clear booked request and navigate to tracking page
+      setBookedRequest(null);
+      router.replace("/(rider)/tracking");
+    } catch (error: any) {
+      Alert.alert("Payment Failed", error.message || "Failed to bypass payment.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Custom Toggle Switch
@@ -125,7 +158,7 @@ export default function ConfirmRide() {
           padding: 2,
           justifyContent: "center",
           alignItems: value ? "flex-end" : "flex-start",
-          backgroundColor: value ? "#001caa" : "#cbd5e1",
+          backgroundColor: value ? "#059669" : "#cbd5e1",
         }}
       >
         <View
@@ -227,7 +260,7 @@ export default function ConfirmRide() {
                 borderColor: "#e5eeff",
               }}
             >
-              <KekeIcon size={38} color="#001caa" />
+              <KekeIcon size={38} color="#059669" />
             </View>
             <View style={{ flex: 1 }} className="">
               <Text
@@ -319,7 +352,7 @@ export default function ConfirmRide() {
                 borderColor: "#e5eeff",
               }}
             >
-              <Clock size={24} color="#001caa" />
+              <Clock size={24} color="#059669" />
             </View>
             <View style={{ flex: 1 }}>
               <Text
@@ -455,7 +488,7 @@ export default function ConfirmRide() {
                   elevation: 1,
                 }}
               >
-                <Zap color="#001caa" size={18} fill="#001caa" />
+                <Zap color="#059669" size={18} fill="#059669" />
               </View>
               <View style={{ flex: 1 }}>
                 <Text
@@ -510,7 +543,7 @@ export default function ConfirmRide() {
               borderWidth: 1,
               borderRadius: 16,
               backgroundColor: "#ffffff",
-              borderColor: paymentMethod === "naira" ? "#001caa" : "#e5eeff",
+              borderColor: paymentMethod === "naira" ? "#059669" : "#e5eeff",
             }}
           >
             <View
@@ -526,7 +559,7 @@ export default function ConfirmRide() {
                   justifyContent: "center",
                   backgroundColor: "#ffffff",
                   borderColor:
-                    paymentMethod === "naira" ? "#001caa" : "#cbd5e1",
+                    paymentMethod === "naira" ? "#059669" : "#cbd5e1",
                 }}
               >
                 {paymentMethod === "naira" && (
@@ -534,7 +567,7 @@ export default function ConfirmRide() {
                     style={{
                       width: 12,
                       height: 12,
-                      backgroundColor: "#001caa",
+                      backgroundColor: "#059669",
                       borderRadius: 6,
                     }}
                   />
@@ -546,7 +579,7 @@ export default function ConfirmRide() {
                   width: 32,
                   height: 32,
                   borderRadius: 16,
-                  backgroundColor: "#001caa",
+                  backgroundColor: "#059669",
                   alignItems: "center",
                   justifyContent: "center",
                 }}
@@ -613,7 +646,7 @@ export default function ConfirmRide() {
               borderWidth: 1,
               borderRadius: 16,
               backgroundColor: "#ffffff",
-              borderColor: paymentMethod === "cngn" ? "#001caa" : "#e5eeff",
+              borderColor: paymentMethod === "cngn" ? "#059669" : "#e5eeff",
             }}
           >
             <View
@@ -628,7 +661,7 @@ export default function ConfirmRide() {
                   alignItems: "center",
                   justifyContent: "center",
                   backgroundColor: "#ffffff",
-                  borderColor: paymentMethod === "cngn" ? "#001caa" : "#cbd5e1",
+                  borderColor: paymentMethod === "cngn" ? "#059669" : "#cbd5e1",
                 }}
               >
                 {paymentMethod === "cngn" && (
@@ -636,7 +669,7 @@ export default function ConfirmRide() {
                     style={{
                       width: 12,
                       height: 12,
-                      backgroundColor: "#001caa",
+                      backgroundColor: "#059669",
                       borderRadius: 6,
                     }}
                   />
@@ -901,10 +934,11 @@ export default function ConfirmRide() {
 
         <Pressable
           onPress={handleConfirm}
+          disabled={loading}
           style={({ pressed }) => ({
             flex: 1.2,
             height: 56,
-            // backgroundColor: "#001caa",
+            // backgroundColor: "#059669",
             borderRadius: 28,
             alignItems: "center",
             justifyContent: "center",
@@ -913,21 +947,25 @@ export default function ConfirmRide() {
             shadowOpacity: 0.1,
             shadowRadius: 3,
             elevation: 2,
-            opacity: pressed ? 0.5 : 1,
+            opacity: pressed || loading ? 0.5 : 1,
           })}
           className=" bg-primary flex-1 p-3 justify-center items-center rounded-3xl"
         >
-          <Text
-            style={{
-              // color: "#ffffff",
-              fontSize: 16,
-              fontWeight: "700",
-              fontFamily: "Plus Jakarta Sans",
-            }}
-            className="  text-white"
-          >
-            Confirm Ride
-          </Text>
+          {loading ? (
+            <ActivityIndicator color="#ffffff" />
+          ) : (
+            <Text
+              style={{
+                // color: "#ffffff",
+                fontSize: 16,
+                fontWeight: "700",
+                fontFamily: "Plus Jakarta Sans",
+              }}
+              className="  text-white"
+            >
+              Confirm Ride
+            </Text>
+          )}
         </Pressable>
       </View>
       </View>

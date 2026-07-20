@@ -18,8 +18,11 @@ config.resolver.nodeModulesPaths = [
 ];
 
 // SVG support (Preserved from your original file)
-config.transformer.babelTransformerPath = require.resolve("react-native-svg-transformer");
-config.resolver.assetExts = config.resolver.assetExts.filter(ext => ext !== "svg");
+config.transformer.babelTransformerPath =
+  require.resolve("react-native-svg-transformer");
+config.resolver.assetExts = config.resolver.assetExts.filter(
+  (ext) => ext !== "svg",
+);
 config.resolver.sourceExts = [...config.resolver.sourceExts, "svg"];
 
 // Export with NativeWind wrapping (Preserved from your original file)

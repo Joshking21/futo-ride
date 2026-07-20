@@ -207,13 +207,13 @@ const [error,setError] = useState<boolean>(false);
               </Text>
               <Info color="#5b5e66" size={13} />
             </View>
-            <Text className="text-[#001caa] text-[34px] font-extrabold font-jakarta mt-1 tracking-tight">
+            <Text className="text-[#059669] text-[34px] font-extrabold font-jakarta mt-1 tracking-tight">
               {formatCurrency((earnings?.totalkobo ?? 0)/100)}
             </Text>
           </View>
 
           <View className="w-12 h-12 rounded-2xl bg-white items-center justify-center border border-[#e5eeff] shadow-xs">
-            <Wallet color="#001caa" size={20} />
+            <Wallet color="#059669" size={20} />
           </View>
         </View>
 
@@ -232,7 +232,7 @@ const [error,setError] = useState<boolean>(false);
               setWithdrawAmount(balance > 0 ? balance.toFixed(2) : "0.00");
               // setShowCashout(true);
             }}
-            className="bg-[#001caa] px-5 py-2.5 rounded-2xl flex-row items-center gap-1 active:scale-[0.98] shadow-sm"
+            className="bg-[#059669] px-5 py-2.5 rounded-2xl flex-row items-center gap-1 active:scale-[0.98] shadow-sm"
           >
             <Text className="text-white text-xs font-bold font-jakarta">
               Cashout
@@ -264,7 +264,7 @@ const [error,setError] = useState<boolean>(false);
                 Available Balance
               </Text>
             </View>
-            <Text className="text-[#001caa] text-[34px] font-extrabold font-jakarta mt-1 tracking-tight">
+            <Text className="text-[#059669] text-[34px] font-extrabold font-jakarta mt-1 tracking-tight">
               {formatCurrency(balance)}
             </Text>
 
@@ -280,7 +280,7 @@ const [error,setError] = useState<boolean>(false);
           </View>
 
           <View className="w-12 h-12 rounded-2xl bg-white items-center justify-center border border-[#e5eeff] shadow-xs">
-            <Wallet color="#001caa" size={20} />
+            <Wallet color="#059669" size={20} />
           </View>
         </View>
       </View> */}
@@ -302,13 +302,13 @@ const [error,setError] = useState<boolean>(false);
           }`}
         >
           <Landmark
-            color={payoutMethod === "bank" ? "#001caa" : "#5b5e66"}
+            color={payoutMethod === "bank" ? "#059669" : "#5b5e66"}
             size={16}
           />
           <Text
             className={`text-[13px] font-jakarta ${
               payoutMethod === "bank"
-                ? "text-[#001caa] font-bold"
+                ? "text-[#059669] font-bold"
                 : "text-secondary font-medium"
             }`}
           >
@@ -326,13 +326,13 @@ const [error,setError] = useState<boolean>(false);
           }`}
         >
           <Wallet
-            color={payoutMethod === "wallet" ? "#001caa" : "#5b5e66"}
+            color={payoutMethod === "wallet" ? "#059669" : "#5b5e66"}
             size={16}
           />
           <Text
             className={`text-[13px] font-jakarta ${
               payoutMethod === "wallet"
-                ? "text-[#001caa] font-bold"
+                ? "text-[#059669] font-bold"
                 : "text-secondary font-medium"
             }`}
           >
@@ -349,7 +349,7 @@ const [error,setError] = useState<boolean>(false);
         >
           <View className="flex-row items-center flex-1 mr-2">
             <View className="w-12 h-12 rounded-2xl bg-[#eff3ff] items-center justify-center">
-              <Landmark color="#001caa" size={20} />
+              <Landmark color="#059669" size={20} />
             </View>
             <View className="ml-3.5 flex-1">
               <Text className="text-[14px] font-bold text-on-surface font-jakarta">
@@ -376,7 +376,7 @@ const [error,setError] = useState<boolean>(false);
             }
             className="active:opacity-75"
           >
-            <Text className="text-[#001caa] font-bold text-[13px] font-jakarta">
+            <Text className="text-[#059669] font-bold text-[13px] font-jakarta">
               Change &gt;
             </Text>
           </Pressable>
@@ -389,7 +389,7 @@ const [error,setError] = useState<boolean>(false);
           <View className="p-4.5 flex-row items-center justify-between">
             <View className="flex-row items-center flex-1 mr-2">
               <View className="w-12 h-12 rounded-full bg-[#eff3ff] items-center justify-center border border-[#bcc2ff]">
-                <Text className="text-[#001caa] font-extrabold text-lg font-jakarta">
+                <Text className="text-[#059669] font-extrabold text-lg font-jakarta">
                   C
                 </Text>
               </View>
@@ -434,10 +434,10 @@ const [error,setError] = useState<boolean>(false);
             }
             className="px-4.5 py-3.5  flex-row items-center justify-between active:bg-slate-50"
           >
-            <Text className="text-[#001caa] font-bold text-[13px] font-jakarta">
+            <Text className="text-[#059669] font-bold text-[13px] font-jakarta">
               Change e-wallet
             </Text>
-            <ChevronRight color="#001caa" size={14} />
+            <ChevronRight color="#059669" size={14} />
           </Pressable>
         </View>
       )}
@@ -466,7 +466,7 @@ const [error,setError] = useState<boolean>(false);
           onPress={handleUseAll}
           className="bg-[#eff3ff] px-4 py-2 rounded-2xl mr-1.5 active:scale-95"
         >
-          <Text className="text-[#001caa] font-bold text-xs font-jakarta">
+          <Text className="text-[#059669] font-bold text-xs font-jakarta">
             Use all
           </Text>
         </Pressable>
@@ -521,7 +521,7 @@ const [error,setError] = useState<boolean>(false);
           className={`w-full h-14 rounded-full flex-row items-center justify-center gap-2 shadow-sm ${
             isWithdrawing || parsedWithdrawAmount <= 0
               ? "bg-slate-300"
-              : "bg-[#001caa] active:scale-[0.98]"
+              : "bg-[#059669] active:scale-[0.98]"
           }`}
         >
           {isWithdrawing ? (
@@ -542,7 +542,7 @@ const [error,setError] = useState<boolean>(false);
 
         <View className="bg-[#f0f4ff] border border-[#dce9ff] p-4 rounded-3xl flex-row items-center gap-3.5 mt-6 shadow-xs">
         <View className="w-10 h-10 rounded-2xl bg-white items-center justify-center border border-[#e5eeff]">
-          <Shield color="#001caa" size={18} />
+          <Shield color="#059669" size={18} />
         </View>
         <View className="flex-1">
           <Text className="text-on-surface text-xs font-bold font-jakarta">
@@ -592,7 +592,7 @@ const [error,setError] = useState<boolean>(false);
             >
               <Bell color="#0B1C30" size={22} />
               
-              <View className="w-2.5 h-2.5 rounded-full bg-[#001caa] absolute top-3.5 right-3.5 border-2 border-white" />
+              <View className="w-2.5 h-2.5 rounded-full bg-[#059669] absolute top-3.5 right-3.5 border-2 border-white" />
             </Pressable>
           </View>
         ) : (

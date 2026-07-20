@@ -219,7 +219,7 @@ export default function RideHistory() {
                 height: 12,
                 borderRadius: 6,
                 borderWidth: 2,
-                borderColor: isCompleted ? "#001caa" : "#ba1a1a",
+                borderColor: isCompleted ? "#059669" : "#ba1a1a",
                 backgroundColor: "#ffffff",
               }}
             />
@@ -313,7 +313,7 @@ export default function RideHistory() {
               width: 6,
               height: 6,
               borderRadius: 3,
-              backgroundColor: "#001caa",
+              backgroundColor: "#059669",
             }}
           />
         </Pressable>
@@ -332,14 +332,14 @@ export default function RideHistory() {
             className="flex-1 p-3 rounded-2xl items-center justify-center"
             style={
               filter === "all"
-                ? { backgroundColor: "#eff4ff" }
+                ? { backgroundColor: "#ecfdf5" }
                 : { backgroundColor: "transparent" }
             }
           >
             <Text
               className="font-jakarta text-body-sm font-bold"
               style={
-                filter === "all" ? { color: "#001caa" } : { color: "#757687" }
+                filter === "all" ? { color: "#059669" } : { color: "#757687" }
               }
             >
               All Rides
@@ -351,7 +351,7 @@ export default function RideHistory() {
             className="flex-1 py-3 rounded-xl items-center justify-center"
             style={
               filter === "completed"
-                ? { backgroundColor: "#eff4ff" }
+                ? { backgroundColor: "#ecfdf5" }
                 : { backgroundColor: "transparent" }
             }
           >
@@ -359,7 +359,7 @@ export default function RideHistory() {
               className="font-jakarta text-body-sm font-bold"
               style={
                 filter === "completed"
-                  ? { color: "#001caa" }
+                  ? { color: "#059669" }
                   : { color: "#757687" }
               }
             >
@@ -372,7 +372,7 @@ export default function RideHistory() {
             className="flex-1 py-3 rounded-xl items-center justify-center"
             style={
               filter === "cancelled"
-                ? { backgroundColor: "#eff4ff" }
+                ? { backgroundColor: "#ecfdf5" }
                 : { backgroundColor: "transparent" }
             }
           >
@@ -380,7 +380,7 @@ export default function RideHistory() {
               className="font-jakarta text-body-sm font-bold"
               style={
                 filter === "cancelled"
-                  ? { color: "#001caa" }
+                  ? { color: "#059669" }
                   : { color: "#757687" }
               }
             >
@@ -392,7 +392,7 @@ export default function RideHistory() {
 
       {loading && rides.length === 0 ? (
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#001caa" />
+          <ActivityIndicator size="large" color="#059669" />
         </View>
       ) : (
         <SectionList
@@ -414,14 +414,14 @@ export default function RideHistory() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              colors={["#001caa"]}
+              colors={["#059669"]}
             />
           }
           onScrollEndDrag={handleScrollEndDrag}
           ListFooterComponent={
             loadingMore ? (
               <View className="py-4 items-center">
-                <ActivityIndicator size="small" color="#001caa" />
+                <ActivityIndicator size="small" color="#059669" />
               </View>
             ) : null
           }

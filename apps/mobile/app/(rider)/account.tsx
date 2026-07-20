@@ -126,8 +126,8 @@ export default function RiderAccount() {
             onPress={() => router.push("/(rider)/payment")}
             className="bg-white rounded-2xl p-4 border border-outline-variant/5 shadow-sm flex-row items-center gap-4 active:opacity-90"
           >
-            <View className="w-12 h-12 rounded-2xl bg-[#eff4ff] items-center justify-center shrink-0">
-              <Wallet color="#001caa" size={20} />
+            <View className="w-12 h-12 rounded-2xl bg-[#ecfdf5] items-center justify-center shrink-0">
+              <Wallet color="#059669" size={20} />
             </View>
             <View className="flex-1">
               <Text className="text-[15px] font-bold text-on-surface font-jakarta">

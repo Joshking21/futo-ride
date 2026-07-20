@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useImperativeHandle, useRef } from "react";
 import { StyleSheet, View, Dimensions, Platform } from "react-native";
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import KekeIcon from "./KekeIcon";
 import { db } from "../config/firebaseConfig";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
+import * as Location from "expo-location";
 
 interface DriverLoc {
   id: string;
@@ -12,7 +13,12 @@ interface DriverLoc {
   currentLng: number;
 }
 
-export default function LiveMapScreen() {
+export interface LiveMapRef {
+  centerOnUser: () => void;
+}
+
+const LiveMapScreen = React.forwardRef<LiveMapRef, {}>((_, ref) => {
+  const mapRef = useRef<MapView>(null);
   const [drivers, setDrivers] = useState<DriverLoc[]>([]);
   const [mapRegion] = useState({
     latitude: 5.3900,   // FUTO Center
@@ -20,6 +26,31 @@ export default function LiveMapScreen() {
     latitudeDelta: 0.015,
     longitudeDelta: 0.015,
   });
+
+  useImperativeHandle(ref, () => ({
+    centerOnUser: async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== "granted") {
+          console.warn("Location permission not granted");
+          return;
+        }
+
+        const loc = await Location.getCurrentPositionAsync({});
+        mapRef.current?.animateToRegion(
+          {
+            latitude: loc.coords.latitude,
+            longitude: loc.coords.longitude,
+            latitudeDelta: 0.012,
+            longitudeDelta: 0.012,
+          },
+          1000
+        );
+      } catch (e) {
+        console.warn("Failed to get current location:", e);
+      }
+    },
+  }));
 
   useEffect(() => {
     const q = query(collection(db, "drivers"), where("online", "==", true));
@@ -44,12 +75,14 @@ export default function LiveMapScreen() {
   return (
     <View style={styles.container}>
       <MapView
+        ref={mapRef}
         // Only use GOOGLE on Android for now. iOS will fall back to beautiful Apple Maps instantly.
-        provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
+        provider={Platform.OS === "android" ? PROVIDER_GOOGLE : undefined}
         style={styles.map}
         initialRegion={mapRegion}
         showsUserLocation={true}
-        showsMyLocationButton={true}
+        showsMyLocationButton={false}
+        showsCompass={false}
       >
         {drivers.map((driver) => (
           <Marker
@@ -62,14 +95,16 @@ export default function LiveMapScreen() {
             description="Available Keke"
           >
             <View style={styles.kekeContainer}>
-              <KekeIcon size={26} color="#001caa" />
+              <KekeIcon size={26} color="#059669" />
             </View>
           </Marker>
         ))}
       </MapView>
     </View>
   );
-}
+});
+
+export default LiveMapScreen;
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#fff" },
@@ -79,7 +114,7 @@ const styles = StyleSheet.create({
     padding: 6,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "rgba(0, 28, 170, 0.15)",
+    borderColor: "rgba(5, 150, 105, 0.15)",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,

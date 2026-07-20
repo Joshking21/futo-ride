@@ -30,7 +30,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import KekeIcon from "../../components/KekeIcon";
 import { apiRequest } from "../../config/apiHelper";
 import { auth, db } from "../../config/firebaseConfig";
-import { useApp } from "../../context/AppContext";
+import { useApp, AlertNotification } from "../../context/AppContext";
 
 const CAMPUS_LOCATIONS = [
   { name: "FUTO Main Gate", desc: "Campus main entrance shuttle park" },
@@ -45,12 +45,43 @@ const CAMPUS_LOCATIONS = [
   { name: "Health Centre", desc: "Campus medical clinic and emergency" },
 ];
 
+const MOCK_NOTIFICATIONS: AlertNotification[] = [
+  {
+    id: "mock-notif-1",
+    title: "Telegram Link Active",
+    body: "Proximity alert notification services have been enabled successfully.",
+    timestamp: "10m ago",
+    type: "proximity",
+    read: false,
+    category: "ride_arriving",
+  },
+  {
+    id: "mock-notif-2",
+    title: "Trip Completed",
+    body: "Your trip to Senate Building was completed successfully.",
+    timestamp: "1h ago",
+    type: "general",
+    read: true,
+    category: "trip_complete",
+  },
+  {
+    id: "mock-notif-3",
+    title: "Surge Alert Active",
+    body: "Surge is currently active at SEET Complex due to high demand.",
+    timestamp: "2h ago",
+    type: "general",
+    read: false,
+    category: "queue_update",
+  },
+];
+
 export default function AlertsScreen() {
   const router = useRouter();
   const { notifications: globalNotifications, addNotification } = useApp();
 
-  const [notificationsList, setNotificationsList] =
-    useState(globalNotifications);
+  const [notificationsList, setNotificationsList] = useState(
+    globalNotifications.length > 0 ? globalNotifications : MOCK_NOTIFICATIONS
+  );
   const [selectedBuilding, setSelectedBuilding] = useState<string | null>(null);
   const [showDropdown, setShowDropdown] = useState(false);
   const [connecting, setConnecting] = useState(false);
@@ -58,7 +89,9 @@ export default function AlertsScreen() {
 
   // Sync with global notifications when added
   useEffect(() => {
-    setNotificationsList(globalNotifications);
+    setNotificationsList(
+      globalNotifications.length > 0 ? globalNotifications : MOCK_NOTIFICATIONS
+    );
   }, [globalNotifications]);
 
   // Listen to the Firestore user profile for real-time Telegram link state
@@ -186,8 +219,8 @@ export default function AlertsScreen() {
     switch (category) {
       case "ride_arriving":
         return (
-          <View className="w-12 h-12 rounded-2xl bg-[#eff4ff] items-center justify-center shrink-0">
-            <KekeIcon size={24} color="#001caa" />
+          <View className="w-12 h-12 rounded-2xl bg-[#ecfdf5] items-center justify-center shrink-0">
+            <KekeIcon size={24} color="#059669" />
           </View>
         );
       case "trip_complete":
@@ -258,7 +291,7 @@ export default function AlertsScreen() {
                   width: 56,
                   height: 56,
                   borderRadius: 28,
-                  backgroundColor: "rgba(0, 28, 170, 0.1)",
+                  backgroundColor: "rgba(5, 150, 105, 0.1)",
                   position: "absolute",
                   transform: [{ scale: pulseValue1 }],
                   opacity: pulseValue1.interpolate({
@@ -273,7 +306,7 @@ export default function AlertsScreen() {
                   width: 44,
                   height: 44,
                   borderRadius: 22,
-                  backgroundColor: "rgba(0, 28, 170, 0.1)",
+                  backgroundColor: "rgba(5, 150, 105, 0.1)",
                   position: "absolute",
                   transform: [{ scale: pulseValue2 }],
                   opacity: pulseValue2.interpolate({
@@ -284,7 +317,7 @@ export default function AlertsScreen() {
               />
               {/* Static White Center */}
               <View className="w-10 h-10 rounded-full bg-white items-center justify-center shadow-sm z-10">
-                <Bell color="#001caa" size={20} />
+                <Bell color="#059669" size={20} />
               </View>
             </View>
 
@@ -462,7 +495,7 @@ export default function AlertsScreen() {
                     </Text>
                   </View>
                   {selectedBuilding === loc.name && (
-                    <CheckCircle2 color="#001caa" size={20} />
+                    <CheckCircle2 color="#059669" size={20} />
                   )}
                 </Pressable>
               ))}

@@ -198,7 +198,7 @@ export default function DriverRides() {
           <View className="bg-[#f0fcf4] border border-[#dcfce7] w-8 h-[64px] rounded-2xl items-center justify-between py-2.5">
             <View className="w-2 h-2 rounded-full bg-success" />
             <View className="w-[1px] border-l border-dashed border-slate-300 flex-1 my-1" />
-            <View className="w-2 h-2 rounded-full bg-[#001caa]" />
+            <View className="w-2 h-2 rounded-full bg-[#059669]" />
           </View>
 
           {/* Texts */}
@@ -282,7 +282,7 @@ export default function DriverRides() {
               width: 6,
               height: 6,
               borderRadius: 3,
-              backgroundColor: "#001caa",
+              backgroundColor: "#059669",
             }}
           />
         </Pressable>
@@ -295,7 +295,7 @@ export default function DriverRides() {
 
       {loading && rides.length === 0 ? (
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#001caa" />
+          <ActivityIndicator size="large" color="#059669" />
         </View>
       ) : (
         <SectionList
@@ -316,14 +316,14 @@ export default function DriverRides() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={handleRefresh}
-              colors={["#001caa"]}
+              colors={["#059669"]}
             />
           }
           onScrollEndDrag={handleScrollEndDrag}
           ListFooterComponent={
             loadingMore ? (
               <View className="py-4 items-center">
-                <ActivityIndicator size="small" color="#001caa" />
+                <ActivityIndicator size="small" color="#059669" />
               </View>
             ) : null
           }
@@ -379,8 +379,8 @@ export default function DriverRides() {
                       <View className="w-1.5 h-1.5 rounded-full bg-success" />
                     </View>
                     <View className="w-[1px] border-l border-dashed border-slate-300 flex-1 my-1.5" />
-                    <View className="w-3.5 h-3.5 rounded-full border-2 border-[#001caa] bg-white items-center justify-center">
-                      <View className="w-1.5 h-1.5 rounded-full bg-[#001caa]" />
+                    <View className="w-3.5 h-3.5 rounded-full border-2 border-[#059669] bg-white items-center justify-center">
+                      <View className="w-1.5 h-1.5 rounded-full bg-[#059669]" />
                     </View>
                   </View>
 
@@ -415,7 +415,7 @@ export default function DriverRides() {
                     <Text className="text-secondary text-[11px] font-bold font-jakarta">
                       FARE
                     </Text>
-                    <Text className="text-[#001caa] text-headline-sm font-extrabold font-jakarta mt-1.5">
+                    <Text className="text-[#059669] text-headline-sm font-extrabold font-jakarta mt-1.5">
                       {formatCurrency(selectedTrip.fare)}
                     </Text>
                   </View>

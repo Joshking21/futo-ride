@@ -14,9 +14,10 @@ import React, {
   useEffect,
   useState,
 } from "react";
-import { Alert, Linking } from "react-native";
-import { apiRequest } from "../config/apiHelper";
+import { Alert, Linking, View, Text } from "react-native";
+import { apiRequest, BASE_URL } from "../config/apiHelper";
 import { auth, db } from "../config/firebaseConfig";
+import { registerDevicePushToken } from "../services/notificationService";
 
 /** A campus stop as returned by GET /stops. */
 export interface CampusStop {
@@ -126,6 +127,7 @@ interface AppContextType {
   earnings: { daily: number; tripsCount: number; onlineTime: string };
   fetchDriverEarnings: () => Promise<void>;
   triggerMockIncomingRequest: () => void;
+  isOffline: boolean;
 }
 
 export interface BookedRideResponse {
@@ -187,6 +189,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
   const [bookedRequest, setBookedRequest] = useState<BookedRideResponse | null>(
     null,
   );
+  const [isOffline, setIsOffline] = useState<boolean>(false);
+
+  // ── Network Connectivity Monitor ──
+  useEffect(() => {
+    const checkConnection = async () => {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3000); // 3s timeout
+        
+        await fetch(`${BASE_URL}/stops`, {
+          method: "GET",
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+        setIsOffline(false);
+      } catch (e) {
+        setIsOffline(true);
+      }
+    };
+
+    // Check immediately and then every 5 seconds
+    checkConnection();
+    const interval = setInterval(checkConnection, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   // ── Fetch campus stops from the backend on mount ──
   // useEffect(() => {
@@ -238,6 +265,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     const unsubAuth = onAuthStateChanged(auth, (user) => {
       if (user) {
+        registerDevicePushToken();
         const userRef = doc(db, "users", user.uid);
         const unsubProfile = onSnapshot(
           userRef,
@@ -711,9 +739,45 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
         earnings,
         fetchDriverEarnings,
         triggerMockIncomingRequest,
+        isOffline,
       }}
     >
       {children}
+      {isOffline && (
+        <View
+          style={{
+            position: "absolute",
+            top: 50,
+            left: 20,
+            right: 20,
+            backgroundColor: "#dc2626",
+            paddingVertical: 12,
+            paddingHorizontal: 16,
+            borderRadius: 16,
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 99999,
+            elevation: 10,
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.2,
+            shadowRadius: 4,
+          }}
+          pointerEvents="none"
+        >
+          <Text
+            style={{
+              color: "#ffffff",
+              fontWeight: "700",
+              fontFamily: "Plus Jakarta Sans",
+              fontSize: 12,
+            }}
+          >
+            No Connection / Server Unreachable
+          </Text>
+        </View>
+      )}
     </AppContext.Provider>
   );
 };

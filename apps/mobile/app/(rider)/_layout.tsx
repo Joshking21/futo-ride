@@ -12,7 +12,7 @@ export default function RiderLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: "#001caa",
+        tabBarActiveTintColor: "#059669",
         tabBarInactiveTintColor: "#9ca1ad",
         tabBarStyle: {
           backgroundColor: "#ffffff",

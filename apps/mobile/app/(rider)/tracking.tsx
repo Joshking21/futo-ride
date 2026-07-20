@@ -113,7 +113,7 @@ export default function LiveTracking() {
               width: 32,
               height: 32,
               borderRadius: 16,
-              backgroundColor: "#001caa",
+              backgroundColor: "#059669",
               alignItems: "center",
               justifyContent: "center",
               borderWidth: 2,
@@ -164,7 +164,7 @@ export default function LiveTracking() {
                 width: 32,
                 height: 32,
                 borderRadius: 16,
-                backgroundColor: "#001caa",
+                backgroundColor: "#059669",
                 alignItems: "center",
                 justifyContent: "center",
                 borderWidth: 2,
@@ -184,7 +184,7 @@ export default function LiveTracking() {
                 width: 32,
                 height: 32,
                 borderRadius: 16,
-                backgroundColor: "#001caa",
+                backgroundColor: "#059669",
                 alignItems: "center",
                 justifyContent: "center",
                 borderWidth: 2,
@@ -231,7 +231,7 @@ export default function LiveTracking() {
               fontFamily: "Plus Jakarta Sans",
               marginTop: 2,
               fontWeight: isActive ? "700" : "500",
-              color: isActive ? "#001caa" : "#5b5e66",
+              color: isActive ? "#059669" : "#5b5e66",
             }}
           >
             In 3:45 min
@@ -362,15 +362,15 @@ export default function LiveTracking() {
             paddingHorizontal: 10,
             paddingVertical: 6,
             borderRadius: 12,
-            backgroundColor: "#eff4ff",
+            backgroundColor: "#ecfdf5",
             borderWidth: 1,
-            borderColor: "#001caa",
+            borderColor: "#059669",
             opacity: pressed ? 0.8 : 1,
           })}
         >
           <Text
             style={{
-              color: "#001caa",
+              color: "#059669",
               fontSize: 11,
               fontWeight: "700",
               fontFamily: "Plus Jakarta Sans",
@@ -484,7 +484,7 @@ export default function LiveTracking() {
             </Text>
             <Text
               style={{
-                color: "#001caa",
+                color: "#059669",
                 fontSize: 15,
                 fontWeight: "800",
                 fontFamily: "Plus Jakarta Sans",
@@ -522,7 +522,7 @@ export default function LiveTracking() {
               style={{
                 width: 6,
                 height: 6,
-                backgroundColor: "#001caa",
+                backgroundColor: "#059669",
                 borderRadius: 3,
                 marginTop: 2,
               }}
@@ -609,7 +609,7 @@ export default function LiveTracking() {
                 justifyContent: "center",
               }}
             >
-              <KekeIcon size={28} color="#001caa" />
+              <KekeIcon size={28} color="#059669" />
             </View>
           )}
 
@@ -633,14 +633,14 @@ export default function LiveTracking() {
                 width: 20,
                 height: 20,
                 borderRadius: 10,
-                backgroundColor: "rgba(0, 28, 170, 0.2)",
+                backgroundColor: "rgba(5, 150, 105, 0.2)",
               }}
             />
             <View
               style={{
                 width: 14,
                 height: 14,
-                backgroundColor: "#001caa",
+                backgroundColor: "#059669",
                 borderRadius: 7,
                 borderWidth: 2,
                 borderColor: "#ffffff",
@@ -717,7 +717,7 @@ export default function LiveTracking() {
                 </Text>
                 <Text
                   style={{
-                    color: "#001caa",
+                    color: "#059669",
                     fontWeight: "700",
                     fontSize: 12,
                     fontFamily: "Plus Jakarta Sans",
@@ -776,7 +776,7 @@ export default function LiveTracking() {
                 opacity: pressed ? 0.8 : 1,
               })}
             >
-              <Phone color="#001caa" size={18} />
+              <Phone color="#059669" size={18} />
             </Pressable>
           </View>
 
@@ -810,7 +810,7 @@ export default function LiveTracking() {
                   left: 54,
                   top: 22,
                   height: 1.5,
-                  backgroundColor: "#001caa",
+                  backgroundColor: "#059669",
                   width: driverState === "arriving" ? "42%" : "84%",
                 }}
               />
@@ -825,11 +825,11 @@ export default function LiveTracking() {
           {driverState === "arrived" ? (
             <View
               style={{
-                backgroundColor: "rgba(0, 28, 170, 0.03)",
+                backgroundColor: "rgba(5, 150, 105, 0.03)",
                 borderRadius: 24,
                 padding: 20,
                 borderWidth: 1,
-                borderColor: "rgba(0, 28, 170, 0.08)",
+                borderColor: "rgba(5, 150, 105, 0.08)",
                 alignItems: "center",
                 justifyContent: "center",
                 gap: 14,
@@ -865,7 +865,7 @@ export default function LiveTracking() {
                 onPress={handleVerifyComplete}
                 style={({ pressed }) => ({
                   width: "100%",
-                  backgroundColor: "#001caa",
+                  backgroundColor: "#059669",
                   height: 56,
                   borderRadius: 28,
                   flexDirection: "row",
@@ -881,10 +881,10 @@ export default function LiveTracking() {
                 })}
                 className="flex justify-center items-center"
               >
-                <Maximize color="#000c61" size={35} className=""/>
+                <Maximize color="#047857" size={35} className=""/>
                 <Text
                   style={{
-                    color: "#000c61",
+                    color: "#047857",
                     fontWeight: "700",
                     fontSize: 15,
                     fontFamily: "Plus Jakarta Sans",
@@ -899,7 +899,7 @@ export default function LiveTracking() {
                 style={({ pressed }) => ({
                   width: "100%",
                   borderWidth: 1.5,
-                  borderColor: "#001caa",
+                  borderColor: "#059669",
                   height: 56,
                   borderRadius: 28,
                   flexDirection: "row",
@@ -912,7 +912,7 @@ export default function LiveTracking() {
               >
                 <Text
                   style={{
-                    color: "#001caa",
+                    color: "#059669",
                     fontWeight: "700",
                     fontSize: 15,
                     fontFamily: "Plus Jakarta Sans",
@@ -952,7 +952,7 @@ export default function LiveTracking() {
                   borderColor: "#e5eeff",
                 }}
               >
-                <Info color="#001caa" size={18} />
+                <Info color="#059669" size={18} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text
@@ -1044,7 +1044,7 @@ export default function LiveTracking() {
               <View className="absolute top-4 right-4 w-8 h-8 border-t-4 border-r-4 border-primary rounded-tr-lg" />
               <View className="absolute bottom-4 left-4 w-8 h-8 border-b-4 border-l-4 border-primary rounded-bl-lg" />
               <View className="absolute bottom-4 right-4 w-8 h-8 border-b-4 border-r-4 border-primary rounded-br-lg" />
-              <ActivityIndicator size="large" color="#001caa" />
+              <ActivityIndicator size="large" color="#059669" />
             </View>
             <Text className="text-white/80 font-bold text-center mt-8 px-8 font-jakarta leading-5 text-sm">
               {scanStatus}
