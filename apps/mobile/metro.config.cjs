@@ -8,8 +8,8 @@ const workspaceRoot = path.resolve(projectRoot, "../..");
 
 const config = getDefaultConfig(projectRoot);
 
-// 2. Watch all files in the monorepo workspace
-config.watchFolders = [workspaceRoot];
+// 2. Watch all files in the mobile app directory
+config.watchFolders = [projectRoot];
 
 // 3. Force Metro to look inside both local and root node_modules for "firebase/auth"
 config.resolver.nodeModulesPaths = [

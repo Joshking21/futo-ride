@@ -1,4 +1,6 @@
 import KekeIcon from "@/components/KekeIcon";
+import BusIcon from "@/components/BusIcon";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { auth } from "@/config/firebaseConfig";
 import { handleUserSignIn } from "@/config/userSignIn";
 import { useNavigation, useRouter } from "expo-router";
@@ -11,8 +13,10 @@ import {
   Lock,
   Mail,
   User,
+  ChevronDown,
+  Check,
 } from "lucide-react-native";
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import {
   ActivityIndicator,
   Keyboard,
@@ -35,6 +39,22 @@ export default function Login() {
   const [error, setError] = useState("");
   const [isEmailFocused, setIsEmailFocused] = useState(false);
   const [isPasswordFocused, setIsPasswordFocused] = useState(false);
+  const [transitMode, setTransitMode] = useState<"keke" | "bus">("keke");
+  const [showTransitDropdown, setShowTransitDropdown] = useState(false);
+
+  useEffect(() => {
+    const loadTransitMode = async () => {
+      try {
+        const stored = await AsyncStorage.getItem("driver_transit_mode");
+        if (stored === "bus" || stored === "keke") {
+          setTransitMode(stored);
+        }
+      } catch (e) {
+        console.warn("Failed to load driver transit mode:", e);
+      }
+    };
+    loadTransitMode();
+  }, []);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -80,7 +100,12 @@ export default function Login() {
         // 4. Success Navigation
         setIsSubmitting(false);
         if (currentAppRole === "driver") {
-          router.replace("/(driver)/home");
+          await AsyncStorage.setItem("driver_transit_mode", transitMode);
+          if (transitMode === "bus") {
+            router.replace("/(bus-driver)/home");
+          } else {
+            router.replace("/(driver)/home");
+          }
         } else {
           router.replace("/(rider)/home");
         }
@@ -173,6 +198,8 @@ export default function Login() {
             <View className="w-20 h-20 rounded-2xl bg-white shadow-md shadow-black/5 flex items-center justify-center border border-outline-variant/10">
               {userRole === "rider" ? (
                 <CircleUserRound size={54} color="#059669" />
+              ) : transitMode === "bus" ? (
+                <BusIcon size={54} color="#059669" />
               ) : (
                 <KekeIcon size={54} color="#059669" />
               )}
@@ -180,20 +207,77 @@ export default function Login() {
           </View>
 
           {/* Welcome Headline */}
-          <View className="mb-8 items-center">
-            <Text className="font-jakarta text-headline-lg text-on-surface font-bold text-center">
-              Log <Text className="text-primary">In</Text>
-            </Text>
-            <Text className="font-jakarta text-body-sm text-secondary text-center mt-2 px-4 leading-5">
+          <View className="mb-8 items-center w-full">
+            {userRole === "driver" ? (
+              <Pressable
+                onPress={() => setShowTransitDropdown(!showTransitDropdown)}
+                className="flex-row items-center gap-1.5 bg-primary/10 px-4 py-2 rounded-full border border-primary/20 mb-3 active:bg-primary/20"
+              >
+                <Text className="font-jakarta text-body-md text-primary font-bold text-center">
+                  Log in as "{transitMode === "keke" ? "Keke" : "Bus"}"
+                </Text>
+                <ChevronDown size={16} color="#059669" />
+              </Pressable>
+            ) : (
+              <Text className="font-jakarta text-headline-lg text-on-surface font-bold text-center">
+                Log <Text className="text-primary">In</Text>
+              </Text>
+            )}
+            <Text className="font-jakarta text-body-sm text-secondary text-center mt-1 px-4 leading-5">
               Welcome back{" "}
               <Text className="text-primary uppercase font-extrabold tracking-wider">
                 {userRole}!
               </Text>{" "}
             </Text>
-            <Text className="font-jakarta text-body-sm text-secondary text-center mt-2 px-4 leading-5">
+            <Text className="font-jakarta text-body-sm text-secondary text-center mt-1 px-4 leading-5">
               Please log in to continue riding with Futo Ride.
             </Text>
           </View>
+
+          {/* Transit Selection Dropdown */}
+          {userRole === "driver" && showTransitDropdown && (
+            <View className="w-full bg-white border border-outline-variant/10 rounded-2xl p-3 shadow-md mb-6 gap-2">
+              <Text className="text-2xs text-secondary font-bold font-jakarta px-2 mb-1 uppercase tracking-wider">
+                Select Transit Mode
+              </Text>
+              
+              <Pressable
+                onPress={() => {
+                  setTransitMode("keke");
+                  setShowTransitDropdown(false);
+                }}
+                className={`flex-row items-center justify-between p-3 rounded-xl ${
+                  transitMode === "keke" ? "bg-primary/10 border border-primary/20" : "bg-transparent"
+                }`}
+              >
+                <View className="flex-row items-center gap-3">
+                  <KekeIcon size={32} color="#059669" />
+                  <Text className="font-jakarta text-body-sm font-bold text-on-surface">
+                    Keke (Tricycle)
+                  </Text>
+                </View>
+                {transitMode === "keke" && <Check size={18} color="#059669" />}
+              </Pressable>
+
+              <Pressable
+                onPress={() => {
+                  setTransitMode("bus");
+                  setShowTransitDropdown(false);
+                }}
+                className={`flex-row items-center justify-between p-3 rounded-xl ${
+                  transitMode === "bus" ? "bg-primary/10 border border-primary/20" : "bg-transparent"
+                }`}
+              >
+                <View className="flex-row items-center gap-3">
+                  <BusIcon size={32} color="#059669" />
+                  <Text className="font-jakarta text-body-sm font-bold text-on-surface">
+                    Shuttle Bus
+                  </Text>
+                </View>
+                {transitMode === "bus" && <Check size={18} color="#059669" />}
+              </Pressable>
+            </View>
+          )}
 
           {error ? (
             <Text className="text-error text-body-sm mb-4 font-semibold text-center">

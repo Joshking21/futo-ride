@@ -9,6 +9,7 @@ import "../global.css";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "@/config/firebaseConfig";
 import { doc, getDoc } from "firebase/firestore";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function Splash() {
   const router = useRouter();
@@ -71,11 +72,20 @@ export default function Splash() {
     });
 
     // Unified routing decision pipeline
-    const handleNavigationDecision = () => {
+    const handleNavigationDecision = async () => {
       if (foundUser.current) {
         // Token found! Route smoothly straight into the authenticated Home dashboard based on role
         if (userRole.current === "driver") {
-          router.replace('/(driver)/home');
+          try {
+            const stored = await AsyncStorage.getItem("driver_transit_mode");
+            if (stored === "bus") {
+              router.replace('/(bus-driver)/home');
+            } else {
+              router.replace('/(driver)/home');
+            }
+          } catch (e) {
+            router.replace('/(driver)/home');
+          }
         } else {
           router.replace('/(rider)/home');
         }
