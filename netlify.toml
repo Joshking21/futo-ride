@@ -1,13 +1,7 @@
 [build]
-  # Tell Netlify where the sub-project lives relative to the root
-  base = "website" # or "packages/website", wherever your folder is
-
-  # The command to build your website (run relative to the base directory)
+  base = "website"
   command = "npm run build"
-
-  # The output folder created by your build tool (e.g., dist, build, .next, out)
   publish = "dist"
 
 [build.environment]
-  # If using pnpm or yarn workspaces, you may need to specify Node/package manager versions
   NODE_VERSION = "20"
