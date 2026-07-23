@@ -1,68 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>FUTO-Ride — H4F 5.0</title>
 
+<!-- Google Fonts Import for Ultra-Crisp Presentation Typography -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@600;700;800&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+
 <style>
   /* ============================================================
-   FUTO-RIDE — pitch deck
-   Fixed 1920x1080 stage, scaled to fit. Behaves like PowerPoint:
-   discrete slides, advanced with arrows / space / clicker.
-   ============================================================ */
+     FUTO-RIDE — Pitch Deck Stage System
+     Fixed 1920x1080 stage, GPU-scaled to viewport fit.
+     ============================================================ */
 
   :root {
-    /* --- palette: premium green (locked light; a projected deck
-         must not flip with the presenter laptop's OS theme) --- */
+    /* Brand Palette: Premium Emerald & Mint */
     --g-700: #15803D;
-    --g-600: #16A34A;
-    /* primary   */
-    --g-500: #22C55E;
-    /* secondary */
-    --g-400: #4ADE80;
-    /* accent    */
+    --g-600: #16A34A; /* Primary Green */
+    --g-500: #22C55E; /* Secondary Green */
+    --g-400: #4ADE80; /* Accent Light Green */
+    --g-300: #86EFAC;
     --g-050: #EDF7F0;
 
     --ink: #0F172A;
     --ink-2: #33443E;
     --ink-3: #66776F;
-    /* neutral biased toward the accent, not slate */
 
     --ground: #F8FAF8;
     --surface: #FFFFFF;
     --line: #E3EAE5;
 
-    /* inverted ground for the blockchain section */
+    /* Inverted Ground (Solana & Blockchain Slides) */
     --dark: #0A1410;
     --dark-2: #0F1F18;
     --dark-line: #1E3329;
     --dark-ink: #EAF3ED;
     --dark-ink-2: #C2D4C9;
 
-    --display: "Plus Jakarta Sans", "Segoe UI Variable Display", "SF Pro Display",
-      -apple-system, "Segoe UI", system-ui, sans-serif;
-    --mono: "Cascadia Code", "SF Mono", ui-monospace, Consolas, monospace;
+    --display: "Outfit", "Plus Jakarta Sans", -apple-system, sans-serif;
+    --body: "Plus Jakarta Sans", -apple-system, sans-serif;
+    --mono: "JetBrains Mono", "Cascadia Code", monospace;
 
-    --shadow: 0 10px 30px rgba(15, 23, 42, .06);
+    --shadow: 0 14px 40px rgba(15, 23, 42, .07);
+    --shadow-hover: 0 22px 50px rgba(15, 23, 42, .12);
+    --dark-shadow: 0 16px 45px rgba(0, 0, 0, .4);
   }
 
   * {
     box-sizing: border-box;
     margin: 0;
-    padding: 0
+    padding: 0;
   }
 
-  html,
-  body {
+  html, body {
     height: 100%;
     overflow: hidden;
-    background: #0B0F0D
+    background: #060907;
   }
 
   body {
-    font-family: var(--display);
-    -webkit-font-smoothing: antialiased
+    font-family: var(--body);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
-  /* ---------- the stage: fixed 16:9, scaled to viewport ---------- */
+  /* ---------- The Stage: Fixed 16:9, GPU scaled ---------- */
   #stage {
     position: absolute;
     top: 50%;
@@ -72,128 +77,126 @@
     transform-origin: center center;
     background: var(--ground);
     overflow: hidden;
+    box-shadow: 0 0 80px rgba(0,0,0,0.8);
   }
 
+  /* Slide Transitions: Smooth Depth Morphing */
   .slide {
     position: absolute;
     inset: 0;
     padding: 72px 112px 64px;
-    display: none;
+    display: flex;
     flex-direction: column;
     background: var(--ground);
     color: var(--ink);
     overflow: hidden;
+    opacity: 0;
+    visibility: hidden;
+    transform: scale(0.96) translateZ(0);
+    transition: opacity 0.55s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.55s cubic-bezier(0.16, 1, 0.3, 1),
+                visibility 0.55s;
+    pointer-events: none;
   }
 
   .slide.active {
-    display: flex
+    opacity: 1;
+    visibility: visible;
+    transform: scale(1) translateZ(0);
+    pointer-events: auto;
   }
 
-  /* everything authored sits above the ambient background layer */
-  .slide>* {
+  /* Everything authored sits above ambient background layers */
+  .slide > * {
     position: relative;
-    z-index: 1
+    z-index: 1;
   }
 
   /* ============================================================
-   AMBIENT BACKGROUND — slow, low-contrast, never competes
-   with type. Two drifting shapes + a travelling route line.
-   ============================================================ */
+     AMBIENT BACKGROUND — Glowing Orbs & Dynamic Arc Dynamics
+     ============================================================ */
   .slide::before,
   .slide::after {
     content: "";
     position: absolute;
     z-index: 0;
-    pointer-events: none
+    pointer-events: none;
   }
 
-  /* soft orb, top-right */
+  /* Glowing Radial Orb Top-Right */
   .slide::before {
-    width: 1080px;
-    height: 1080px;
-    right: -360px;
-    top: -400px;
+    width: 1150px;
+    height: 1150px;
+    right: -340px;
+    top: -420px;
     border-radius: 50%;
-    background: radial-gradient(circle, rgba(34, 197, 94, .22), rgba(34, 197, 94, 0) 68%);
-    animation: orb 26s ease-in-out infinite alternate;
+    background: radial-gradient(circle, rgba(34, 197, 94, .24), rgba(34, 197, 94, 0) 68%);
+    animation: orbFloat 24s ease-in-out infinite alternate;
   }
 
-  /* bold open arc, bottom-left — bleeds off the edge */
+  /* Bold Open Arc Bottom-Left */
   .slide::after {
-    width: 620px;
-    height: 620px;
-    left: -230px;
-    bottom: -260px;
+    width: 680px;
+    height: 680px;
+    left: -240px;
+    bottom: -280px;
     border-radius: 50%;
-    border: 74px solid rgba(22, 163, 74, .075);
+    border: 76px solid rgba(22, 163, 74, .08);
     border-top-color: transparent;
     border-right-color: transparent;
-    animation: arc 46s linear infinite;
+    animation: arcRotate 42s linear infinite;
   }
 
   .slide.dark::before {
-    background: radial-gradient(circle, rgba(74, 222, 128, .17), rgba(74, 222, 128, 0) 68%);
+    background: radial-gradient(circle, rgba(74, 222, 128, .2), rgba(74, 222, 128, 0) 68%);
   }
 
   .slide.dark::after {
-    border-color: rgba(74, 222, 128, .085);
+    border-color: rgba(74, 222, 128, .09);
     border-top-color: transparent;
     border-right-color: transparent;
   }
 
-  @keyframes orb {
-    from {
-      transform: translate(0, 0) scale(1)
-    }
-
-    to {
-      transform: translate(-90px, 70px) scale(1.16)
-    }
+  @keyframes orbFloat {
+    from { transform: translate(0, 0) scale(1); }
+    to { transform: translate(-100px, 80px) scale(1.18); }
   }
 
-  @keyframes arc {
-    from {
-      transform: rotate(0deg) scale(1)
-    }
-
-    50% {
-      transform: rotate(180deg) scale(1.09)
-    }
-
-    to {
-      transform: rotate(360deg) scale(1)
-    }
+  @keyframes arcRotate {
+    from { transform: rotate(0deg) scale(1); }
+    50% { transform: rotate(180deg) scale(1.08); }
+    to { transform: rotate(360deg) scale(1); }
   }
 
-  /* the travelling route line (injected as the last child of each slide) */
+  /* Ambient Route Canvas / SVG Layer */
   .bgfx {
     position: absolute;
     inset: 0;
     z-index: 0 !important;
-    pointer-events: none
+    pointer-events: none;
   }
 
   .bgfx svg {
     width: 100%;
     height: 100%;
-    display: block
+    display: block;
   }
 
-  /* the per-slide animated scene — ONE canvas, moved into the active slide */
   #fx {
     position: absolute;
     inset: 0;
     width: 100%;
     height: 100%;
     pointer-events: none;
-    display: block
+    display: block;
   }
 
-  /* ---------- shared type ---------- */
+  /* ---------- Shared Typography ---------- */
   .eyebrow {
-    font-size: 24px;
+    font-family: var(--mono);
+    font-size: 23px;
     font-weight: 700;
-    letter-spacing: .2em;
+    letter-spacing: .22em;
     text-transform: uppercase;
     color: var(--g-600);
     display: flex;
@@ -206,13 +209,14 @@
     content: "";
     flex: 1;
     height: 0;
-    border-top: 2px dashed color-mix(in srgb, var(--g-600) 34%, transparent);
+    border-top: 2px dashed color-mix(in srgb, var(--g-600) 36%, transparent);
   }
 
   .title {
-    font-size: 80px;
+    font-family: var(--display);
+    font-size: 82px;
     font-weight: 800;
-    letter-spacing: -.035em;
+    letter-spacing: -.038em;
     line-height: 1.02;
     margin-top: 16px;
     text-wrap: balance;
@@ -220,8 +224,12 @@
     flex: none;
   }
 
+  /* High-end Gradient Text Sheen for Highlights */
   .title .hl {
-    color: var(--g-600)
+    background: linear-gradient(135deg, var(--g-600) 0%, var(--g-500) 50%, var(--g-400) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 4px 12px rgba(34, 197, 94, 0.15));
   }
 
   .sub {
@@ -229,12 +237,12 @@
     font-weight: 400;
     color: var(--ink-3);
     margin-top: 12px;
-    line-height: 1.32;
+    line-height: 1.35;
     max-width: 42ch;
     flex: none;
   }
 
-  /* ---------- body grid: copy left, illustration right ---------- */
+  /* ---------- Body Grid Layout ---------- */
   .body {
     flex: 1;
     display: grid;
@@ -247,26 +255,40 @@
 
   .body.wide {
     grid-template-columns: 1fr;
-    align-content: center
+    align-content: center;
   }
 
   .cards {
     display: flex;
     flex-direction: column;
-    gap: 20px
+    gap: 20px;
   }
 
+  /* Glassmorphism Cards with 3D Tilt Hover */
   .card {
-    background: rgba(255, 255, 255, .40);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    border: 1px solid rgba(227, 234, 229, .6);
-    border-radius: 24px;
+    background: rgba(255, 255, 255, .55);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(227, 234, 229, .8);
+    border-radius: 26px;
     padding: 30px 34px;
-    box-shadow: 0 10px 34px rgba(15, 23, 42, .06);
+    box-shadow: var(--shadow);
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+                box-shadow 0.35s,
+                border-color 0.35s,
+                background 0.35s;
+    transform-style: preserve-3d;
+  }
+
+  .card:hover {
+    transform: translateY(-5px) scale(1.008);
+    border-color: rgba(34, 197, 94, .45);
+    box-shadow: var(--shadow-hover);
+    background: rgba(255, 255, 255, .8);
   }
 
   .card h3 {
+    font-family: var(--display);
     font-size: 33px;
     font-weight: 700;
     letter-spacing: -.02em;
@@ -280,16 +302,16 @@
   .card p {
     font-size: 29px;
     line-height: 1.42;
-    color: var(--ink-2)
+    color: var(--ink-2);
   }
 
   .card b {
     font-weight: 700;
-    color: var(--ink)
+    color: var(--ink);
   }
 
   .slide.dark .card b {
-    color: var(--dark-ink)
+    color: var(--dark-ink);
   }
 
   .dot {
@@ -297,17 +319,11 @@
     height: 13px;
     border-radius: 50%;
     background: var(--g-500);
-    flex: none
+    box-shadow: 0 0 10px rgba(34, 197, 94, 0.6);
+    flex: none;
   }
 
-  /* ---------- illustration slot ---------- */
-  /* square, sized by the row height — the generated art is 1:1, so a
-   1:1 slot means no letterboxing and no cropping */
-  /* A framed compartment, matching the .card language on the left.
-     The art never has to blend into the slide — it sits inside a
-     panel, so any mismatch between the image's own background and
-     the slide reads as intentional matting, not a seam. Overflow
-     is clipped, so a stray aspect ratio can never look broken. */
+  /* ---------- Illustration Compartment (.ill) ---------- */
   .ill {
     position: relative;
     align-self: stretch;
@@ -318,38 +334,80 @@
     max-width: 100%;
     background: var(--surface);
     border: 1px solid var(--line);
-    border-radius: 28px;
+    border-radius: 30px;
     box-shadow: var(--shadow);
     padding: 16px;
     overflow: hidden;
     display: flex;
     align-items: center;
     justify-content: center;
+    animation: illLevitate 7s ease-in-out infinite;
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s;
+  }
+
+  .ill:hover {
+    transform: translateY(-8px) scale(1.01);
+    box-shadow: var(--shadow-hover);
+  }
+
+  /* Ambient Rim Glow Aura Behind Art */
+  .ill::before {
+    content: "";
+    position: absolute;
+    inset: -30px;
+    background: radial-gradient(circle at center, rgba(34, 197, 94, 0.16), transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Diagonal Glass Glare Sweep */
+  .ill::after {
+    content: "";
+    position: absolute;
+    top: -50%; left: -50%; width: 200%; height: 200%;
+    background: linear-gradient(45deg, transparent 44%, rgba(255,255,255,0.18) 50%, transparent 56%);
+    transform: rotate(30deg);
+    animation: glassShine 10s ease-in-out infinite;
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  @keyframes illLevitate {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-7px) rotate(0.3deg); }
+  }
+
+  @keyframes glassShine {
+    0%, 75% { transform: translateX(-120%) rotate(30deg); }
+    100% { transform: translateX(120%) rotate(30deg); }
   }
 
   .ill img {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    border-radius: 14px;
-    display: block
+    border-radius: 16px;
+    display: block;
+    position: relative;
+    z-index: 1;
   }
 
-  /* on the blockchain slides the matting inverts with the ground */
+  /* Dark Slide Matting & Inversion */
   .slide.dark .ill {
     background: var(--dark-2);
     border-color: var(--dark-line);
-    box-shadow: none;
+    box-shadow: 0 16px 45px rgba(0, 0, 0, .4);
   }
 
-  .ill.empty img {
-    display: none
+  .slide.dark .ill::before {
+    background: radial-gradient(circle at center, rgba(74, 222, 128, 0.2), transparent 70%);
   }
 
+  .ill.empty img { display: none; }
   .ill.empty {
-    border: 2px dashed color-mix(in srgb, var(--g-600) 32%, transparent);
+    border: 2px dashed color-mix(in srgb, var(--g-600) 35%, transparent);
     background:
-      radial-gradient(circle at 30% 25%, rgba(34, 197, 94, .09), transparent 60%),
+      radial-gradient(circle at 30% 25%, rgba(34, 197, 94, .1), transparent 60%),
       var(--g-050);
   }
 
@@ -360,58 +418,51 @@
     font-weight: 600;
     letter-spacing: .04em;
     color: var(--g-700);
-    opacity: .8;
+    opacity: .85;
     text-align: center;
     padding: 0 40px;
     line-height: 1.5;
+    z-index: 3;
   }
 
   .slide.dark .ill.empty {
     background: rgba(34, 197, 94, .06);
-    border-color: rgba(74, 222, 128, .3)
+    border-color: rgba(74, 222, 128, .35);
   }
 
   .slide.dark .ill.empty::after {
-    color: var(--g-400)
+    color: var(--g-400);
   }
 
-  /* ---------- inverted (blockchain) slides ---------- */
+  /* ---------- Inverted (Solana / Blockchain) Slides ---------- */
   .slide.dark {
     background:
-      radial-gradient(1100px 620px at 82% 12%, rgba(22, 163, 74, .15), transparent 68%),
+      radial-gradient(1100px 620px at 82% 12%, rgba(22, 163, 74, .18), transparent 68%),
       var(--dark);
     color: var(--dark-ink);
   }
 
-  .slide.dark .sub {
-    color: var(--dark-ink-2)
-  }
-
-  .slide.dark .eyebrow {
-    color: var(--g-400)
-  }
-
-  .slide.dark .eyebrow::after {
-    border-top-color: rgba(74, 222, 128, .3)
-  }
+  .slide.dark .sub { color: var(--dark-ink-2); }
+  .slide.dark .eyebrow { color: var(--g-400); }
+  .slide.dark .eyebrow::after { border-top-color: rgba(74, 222, 128, .3); }
 
   .slide.dark .card {
-    background: rgba(20, 42, 32, .38);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    border-color: rgba(36, 64, 47, .5);
-    box-shadow: 0 6px 28px rgba(0, 0, 0, .25)
+    background: rgba(20, 42, 32, .48);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-color: rgba(36, 64, 47, .6);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, .3);
   }
 
-  .slide.dark .card p {
-    color: var(--dark-ink-2)
+  .slide.dark .card:hover {
+    background: rgba(26, 54, 41, .68);
+    border-color: rgba(74, 222, 128, .5);
+    box-shadow: 0 16px 45px rgba(0, 0, 0, .45);
   }
 
-  .slide.dark .title .hl {
-    color: var(--g-400)
-  }
+  .slide.dark .card p { color: var(--dark-ink-2); }
 
-  /* ---------- status chip: encodes what is actually built ---------- */
+  /* ---------- Status Chips ---------- */
   .chip {
     display: inline-flex;
     align-items: center;
@@ -426,23 +477,25 @@
   }
 
   .chip.live {
-    background: rgba(22, 163, 74, .13);
-    color: var(--g-700)
+    background: rgba(22, 163, 74, .15);
+    color: var(--g-700);
+    border: 1px solid rgba(22, 163, 74, .25);
   }
 
   .chip.next {
     background: rgba(102, 119, 111, .18);
-    color: var(--ink-3)
+    color: var(--ink-3);
   }
 
   .slide.dark .chip.live {
-    background: rgba(74, 222, 128, .15);
-    color: var(--g-400)
+    background: rgba(74, 222, 128, .18);
+    color: var(--g-400);
+    border: 1px solid rgba(74, 222, 128, .3);
   }
 
   .slide.dark .chip.next {
     background: rgba(168, 190, 178, .16);
-    color: var(--dark-ink-2)
+    color: var(--dark-ink-2);
   }
 
   .chip .pulse {
@@ -454,38 +507,36 @@
   }
 
   @keyframes pulse {
-    0% {
-      box-shadow: 0 0 0 0 color-mix(in srgb, currentColor 55%, transparent)
-    }
-
-    70% {
-      box-shadow: 0 0 0 11px transparent
-    }
-
-    100% {
-      box-shadow: 0 0 0 0 transparent
-    }
+    0% { box-shadow: 0 0 0 0 color-mix(in srgb, currentColor 65%, transparent); }
+    70% { box-shadow: 0 0 0 12px transparent; }
+    100% { box-shadow: 0 0 0 0 transparent; }
   }
 
-  /* ---------- flow diagram ---------- */
+  /* ---------- Flow Diagrams ---------- */
   .flow {
     display: flex;
     align-items: stretch;
     gap: 18px;
-    width: 100%
+    width: 100%;
   }
 
   .step {
     flex: 1;
-    background: rgba(20, 42, 32, .38);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    border: 1px solid rgba(30, 51, 41, .5);
-    border-radius: 22px;
+    background: rgba(20, 42, 32, .42);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(30, 51, 41, .6);
+    border-radius: 24px;
     padding: 32px 28px;
     display: flex;
     flex-direction: column;
     gap: 12px;
+    transition: transform 0.35s, border-color 0.35s, box-shadow 0.35s;
+  }
+
+  .step:hover {
+    transform: translateY(-4px);
+    border-color: rgba(74, 222, 128, .4);
   }
 
   .step .n {
@@ -497,95 +548,104 @@
   }
 
   .step h4 {
+    font-family: var(--display);
     font-size: 32px;
     font-weight: 700;
     letter-spacing: -.02em;
-    line-height: 1.18
+    line-height: 1.18;
   }
 
   .step p {
     font-size: 25px;
     line-height: 1.42;
-    color: var(--dark-ink-2)
+    color: var(--dark-ink-2);
   }
 
-  .step b {
-    color: var(--dark-ink);
-    font-weight: 700
-  }
+  .step b { color: var(--dark-ink); font-weight: 700; }
 
   .arrow {
     align-self: center;
     color: var(--g-400);
     font-size: 36px;
     flex: none;
-    opacity: .55;
+    opacity: .6;
     font-family: var(--mono);
+    transition: transform 0.3s, opacity 0.3s;
   }
 
-  /* light-ground variant, for the solution slide */
+  /* Light Ground Flow Variant */
   .flow.light .step {
-    background: rgba(255, 255, 255, .40);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    border-color: rgba(227, 234, 229, .6);
-    box-shadow: 0 10px 34px rgba(15, 23, 42, .06)
+    background: rgba(255, 255, 255, .55);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-color: rgba(227, 234, 229, .8);
+    box-shadow: var(--shadow);
   }
 
-  .flow.light .step .n {
-    color: var(--g-600)
+  .flow.light .step:hover {
+    border-color: rgba(34, 197, 94, .45);
+    box-shadow: var(--shadow-hover);
   }
 
-  .flow.light .step h4 {
-    color: var(--ink)
-  }
+  .flow.light .step .n { color: var(--g-600); }
+  .flow.light .step h4 { color: var(--ink); }
+  .flow.light .step p { color: var(--ink-2); }
 
-  .flow.light .step p {
-    color: var(--ink-2)
-  }
-
-  /* ---------- stat strip ---------- */
+  /* ---------- Stat Strip ---------- */
   .stats {
     display: flex;
     gap: 26px;
     margin-top: 28px;
-    width: 100%
+    width: 100%;
   }
 
   .stat {
     flex: 1;
     border-left: 4px solid var(--g-500);
-    padding: 4px 0 4px 22px
+    padding: 4px 0 4px 22px;
+    transition: transform 0.3s;
+  }
+
+  .stat:hover {
+    transform: translateX(4px);
   }
 
   .stat .v {
-    font-size: 58px;
+    font-family: var(--display);
+    font-size: 60px;
     font-weight: 800;
     letter-spacing: -.035em;
     font-variant-numeric: tabular-nums;
     line-height: 1;
+    background: linear-gradient(135deg, var(--ink) 0%, var(--ink-2) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
   }
 
   .stat .k {
     font-size: 24px;
     color: var(--ink-3);
     margin-top: 11px;
-    line-height: 1.32
+    line-height: 1.32;
   }
 
-  .slide.dark .stat .k {
-    color: var(--dark-ink-2)
+  .slide.dark .stat .v {
+    background: linear-gradient(135deg, #FFFFFF 0%, var(--dark-ink) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
   }
 
-  /* ---------- mono callout (technical truth) ---------- */
+  .slide.dark .stat .k { color: var(--dark-ink-2); }
+
+  /* ---------- Technical Mono Callout ---------- */
   .mono-note {
     font-family: var(--mono);
     font-size: 24px;
     color: var(--dark-ink-2);
-    background: rgba(255, 255, 255, .06);
+    background: rgba(255, 255, 255, .07);
     border: 1px solid var(--dark-line);
-    border-radius: 16px;
-    padding: 18px 24px;
+    border-radius: 18px;
+    padding: 20px 26px;
     margin-top: 26px;
     display: flex;
     align-items: center;
@@ -593,38 +653,40 @@
     letter-spacing: .01em;
     line-height: 1.5;
     flex-wrap: wrap;
+    backdrop-filter: blur(10px);
   }
 
-  .mono-note b {
-    color: var(--g-400);
-    font-weight: 700
-  }
+  .mono-note b { color: var(--g-400); font-weight: 700; }
 
-  /* ---------- cover ---------- */
+  /* ---------- Cover Slide ---------- */
   .cover {
     justify-content: center;
     padding: 0 112px;
     background:
-      radial-gradient(900px 560px at 76% 32%, rgba(34, 197, 94, .13), transparent 66%),
+      radial-gradient(950px 600px at 76% 32%, rgba(34, 197, 94, .16), transparent 66%),
       var(--ground);
   }
 
   .wordmark {
-    font-size: 150px;
+    font-family: var(--display);
+    font-size: 154px;
     font-weight: 800;
     letter-spacing: -.055em;
-    line-height: .92
+    line-height: .92;
   }
 
   .wordmark .ride {
-    color: var(--g-600)
+    background: linear-gradient(135deg, var(--g-600) 0%, var(--g-400) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
   }
 
   .cover .tag {
-    font-size: 40px;
+    font-size: 42px;
     color: var(--ink-2);
     margin-top: 30px;
-    font-weight: 400
+    font-weight: 400;
+    letter-spacing: -.01em;
   }
 
   .cover .meta {
@@ -639,10 +701,11 @@
   }
 
   .cover .meta span {
-    padding: 11px 20px;
+    padding: 11px 22px;
     border: 1px solid var(--line);
     border-radius: 999px;
     background: var(--surface);
+    box-shadow: 0 4px 14px rgba(15,23,42,0.04);
   }
 
   #map {
@@ -651,7 +714,8 @@
     top: 50%;
     transform: translateY(-50%);
     width: 730px;
-    z-index: 1
+    z-index: 1;
+    filter: drop-shadow(0 10px 25px rgba(34, 197, 94, 0.15));
   }
 
   .map-cap {
@@ -666,13 +730,14 @@
     text-align: right;
   }
 
-  /* ---------- chrome ---------- */
+  /* ---------- Chrome & Progress ---------- */
   #bar {
     position: absolute;
     left: 0;
     bottom: 0;
     height: 6px;
-    background: linear-gradient(90deg, var(--g-600), var(--g-400));
+    background: linear-gradient(90deg, var(--g-600), var(--g-400), #86EFAC);
+    box-shadow: 0 0 12px rgba(34, 197, 94, 0.8);
     width: 0;
     transition: width .45s cubic-bezier(.22, 1, .36, 1);
     z-index: 30;
@@ -687,6 +752,7 @@
     font-size: 20px;
     font-variant-numeric: tabular-nums;
     letter-spacing: .08em;
+    font-weight: 600;
   }
 
   #notes {
@@ -702,12 +768,10 @@
     line-height: 1.55;
     display: none;
     border-top: 2px solid var(--g-600);
+    backdrop-filter: blur(16px);
   }
 
-  #notes.on {
-    display: block
-  }
-
+  #notes.on { display: block; }
   #notes b {
     color: var(--g-400);
     font-family: var(--mono);
@@ -715,7 +779,7 @@
     letter-spacing: .12em;
     display: block;
     margin-bottom: 6px;
-    text-transform: uppercase
+    text-transform: uppercase;
   }
 
   #help {
@@ -725,86 +789,63 @@
     z-index: 60;
     font-family: var(--mono);
     font-size: 13px;
-    color: rgba(255, 255, 255, .42);
+    color: rgba(255, 255, 255, .45);
     letter-spacing: .05em;
     transition: opacity .6s;
     pointer-events: none;
   }
 
-  /* ---------- entrance motion (PowerPoint-style builds) ---------- */
+  /* ---------- Staggered Element Build Motion ---------- */
   .slide.active .anim {
-    animation: rise .7s cubic-bezier(.22, 1, .36, 1) backwards
+    animation: rise .75s cubic-bezier(.16, 1, .3, 1) backwards;
   }
 
-  .slide.active .anim:nth-child(1) {
-    animation-delay: .04s
-  }
-
-  .slide.active .anim:nth-child(2) {
-    animation-delay: .12s
-  }
-
-  .slide.active .anim:nth-child(3) {
-    animation-delay: .20s
-  }
-
-  .slide.active .anim:nth-child(4) {
-    animation-delay: .28s
-  }
-
-  .slide.active .anim:nth-child(5) {
-    animation-delay: .36s
-  }
+  .slide.active .anim:nth-child(1) { animation-delay: .05s; }
+  .slide.active .anim:nth-child(2) { animation-delay: .13s; }
+  .slide.active .anim:nth-child(3) { animation-delay: .21s; }
+  .slide.active .anim:nth-child(4) { animation-delay: .29s; }
+  .slide.active .anim:nth-child(5) { animation-delay: .37s; }
 
   @keyframes rise {
     from {
       opacity: 0;
-      transform: translateY(24px)
+      transform: translateY(28px) rotateX(4deg);
     }
-
     to {
       opacity: 1;
-      transform: none
+      transform: translateY(0) rotateX(0deg);
     }
   }
 
-  /* fragments: revealed one advance at a time */
+  /* Fragment Step Reveals */
   [data-frag] {
     opacity: 0;
-    transform: translateY(14px);
-    transition: opacity .45s, transform .45s
+    transform: translateY(16px);
+    transition: opacity .5s cubic-bezier(.16, 1, .3, 1), transform .5s cubic-bezier(.16, 1, .3, 1);
   }
 
   [data-frag].shown {
     opacity: 1;
-    transform: none
+    transform: none;
   }
 
-  @media (prefers-reduced-motion:reduce) {
-    .slide.active .anim {
-      animation: none
-    }
+  /* Step glowing border pulse on fragment show */
+  .step[data-frag].shown {
+    border-left: 4px solid var(--g-400);
+    box-shadow: 0 10px 30px rgba(34, 197, 94, 0.15);
+  }
 
-    [data-frag] {
-      transition: none
-    }
-
-    .chip .pulse,
-    .slide::before,
-    .slide::after {
-      animation: none
-    }
-
-    .bgfx {
-      display: none
-    }
-
-    #bar {
-      transition: none
-    }
+  @media (prefers-reduced-motion: reduce) {
+    .slide, .slide.active .anim { animation: none; transition: none; }
+    [data-frag] { transition: none; }
+    .chip .pulse, .slide::before, .slide::after, .ill, .ill::after { animation: none; }
+    .bgfx { display: none; }
+    #bar { transition: none; }
   }
 </style>
+</head>
 
+<body>
 <div id="stage">
 
   <!-- ═══════════ 1 · COVER ═══════════ -->
@@ -854,12 +895,10 @@
         </div>
         <div class="card anim">
           <h3><i class="dot"></i>Cash leaves no trail</h3>
-          <p>No receipts, no ratings, no record. The SUG can't hold a driver accountable for a trip that produced no
-            data.</p>
+          <p>No receipts, no ratings, no record. The SUG can't hold a driver accountable for a trip that produced no data.</p>
         </div>
       </div>
-      <div class="ill" data-slot="ILLUSTRATION 03 — lone student, night stop"><img src="illustrations/03.png" alt="">
-      </div>
+      <div class="ill" data-slot="ILLUSTRATION 03 — lone student, night stop"><img src="illustrations/03.png" alt=""></div>
     </div>
   </section>
 
@@ -893,19 +932,19 @@
       </div>
       <div class="stats anim">
         <div class="stat">
-          <div class="v">33</div>
+          <div class="v" data-count="33">33</div>
           <div class="k">campus stops mapped with real coordinates</div>
         </div>
         <div class="stat">
-          <div class="v">4</div>
+          <div class="v" data-count="4">4</div>
           <div class="k">seats pooled per keke, on one lane</div>
         </div>
         <div class="stat">
-          <div class="v">₦150</div>
+          <div class="v" data-count="150" data-prefix="₦">₦150</div>
           <div class="k">flat per seat — seen before you book</div>
         </div>
         <div class="stat">
-          <div class="v">5%</div>
+          <div class="v" data-count="5" data-suffix="%">5%</div>
           <div class="k">of every fare locked on-chain</div>
         </div>
       </div>
@@ -933,8 +972,7 @@
           <p>Scan the driver's QR at your stop. <b>No trip starts until payment clears</b>.</p>
         </div>
       </div>
-      <div class="ill" data-slot="ILLUSTRATION 05 — keke pooling on one lane"><img src="illustrations/05.png" alt="">
-      </div>
+      <div class="ill" data-slot="ILLUSTRATION 05 — keke pooling on one lane"><img src="illustrations/05.png" alt=""></div>
     </div>
   </section>
 
@@ -995,13 +1033,12 @@
         </div>
       </div>
       <div class="mono-note" data-frag>
-        <b>Why it must be Solana:</b>&nbsp;a single bank fee would eat a ₦150 fare.
-        Sub-cent settlement is the only reason these economics work.
+        <b>Why it must be Solana:</b>&nbsp;a single bank fee would eat a ₦150 fare. Sub-cent settlement is the only reason these economics work.
       </div>
     </div>
   </section>
 
-  <!-- ═══════════ 8 · SOLANA II — THE VAULT (hero) ═══════════ -->
+  <!-- ═══════════ 8 · SOLANA II — THE VAULT ═══════════ -->
   <section class="slide dark"
     data-note="THE hero slide. This is deployed, not a mock — read the program ID out loud if a judge looks skeptical. 'The welfare fund lives in code, on-chain — not in an admin's bank account.' ~30s">
     <div class="eyebrow anim">Solana · Smart Contract</div>
@@ -1022,8 +1059,7 @@
           <p>Every contribution is a public transaction. A driver verifies the fund without trusting us.</p>
         </div>
       </div>
-      <div class="ill" data-slot="ILLUSTRATION 08 — PDA vault, locked on-chain"><img src="illustrations/08.png" alt="">
-      </div>
+      <div class="ill" data-slot="ILLUSTRATION 08 — PDA vault, locked on-chain"><img src="illustrations/08.png" alt=""></div>
     </div>
   </section>
 
@@ -1086,8 +1122,7 @@
           <p>Campus kekes are SUG-run — captive driver supply and student trust from day one.</p>
         </div>
       </div>
-      <div class="ill" data-slot="ILLUSTRATION 10 — surge pulls drivers online"><img src="illustrations/10.png" alt="">
-      </div>
+      <div class="ill" data-slot="ILLUSTRATION 10 — surge pulls drivers online"><img src="illustrations/10.png" alt=""></div>
     </div>
   </section>
 
@@ -1136,51 +1171,54 @@
 
     var i = 0, frag = 0, notesOn = false, blanked = false;
 
-    /* ---- scale the fixed stage to fill the viewport (letterboxed) ---- */
+    /* ---- Fit Stage to Viewport with Crisp Scaling ---- */
     function fit() {
       var s = Math.min(innerWidth / 1920, innerHeight / 1080);
       stage.style.transform = "translate(-50%,-50%) scale(" + s + ")";
     }
     addEventListener("resize", fit); fit();
 
-    /* ---- ambient travelling route line, appended LAST so the
-            .anim:nth-child stagger above is unaffected ---- */
+    /* ---- Ambient Travelling Route Lines ---- */
     slides.forEach(function (s, n) {
       var dark = s.classList.contains("dark");
-      var stroke = dark ? "rgba(74,222,128,.20)" : "rgba(22,163,74,.16)";
+      var stroke = dark ? "rgba(74,222,128,.22)" : "rgba(22,163,74,.18)";
       var fx = document.createElement("div");
       fx.className = "bgfx";
-      // two lines per slide, offset per index so no two slides look identical
       var y1 = 760 + (n % 3) * 70, y2 = 250 + (n % 4) * 60;
       fx.innerHTML =
         '<svg viewBox="0 0 1920 1080" preserveAspectRatio="none" aria-hidden="true">' +
         '<path d="M-120,' + y1 + ' C420,' + (y1 - 130) + ' 760,' + (y1 + 110) +
         ' 1180,' + (y1 - 60) + ' S1720,' + (y1 - 190) + ' 2040,' + (y1 - 110) + '"' +
-        ' fill="none" stroke="' + stroke + '" stroke-width="3"' +
-        ' stroke-dasharray="16 20" stroke-linecap="round">' +
-        '<animate attributeName="stroke-dashoffset" from="0" to="-360"' +
+        ' fill="none" stroke="' + stroke + '" stroke-width="3.5"' +
+        ' stroke-dasharray="18 22" stroke-linecap="round">' +
+        '<animate attributeName="stroke-dashoffset" from="0" to="-400"' +
         ' dur="14s" repeatCount="indefinite"/></path>' +
         '<path d="M-120,' + y2 + ' C520,' + (y2 + 120) + ' 900,' + (y2 - 90) +
         ' 1400,' + (y2 + 70) + ' S1860,' + (y2 + 150) + ' 2040,' + (y2 + 60) + '"' +
-        ' fill="none" stroke="' + stroke + '" stroke-width="2"' +
-        ' stroke-dasharray="10 26" stroke-linecap="round" opacity=".7">' +
-        '<animate attributeName="stroke-dashoffset" from="0" to="360"' +
+        ' fill="none" stroke="' + stroke + '" stroke-width="2.5"' +
+        ' stroke-dasharray="12 28" stroke-linecap="round" opacity=".75">' +
+        '<animate attributeName="stroke-dashoffset" from="0" to="400"' +
         ' dur="22s" repeatCount="indefinite"/></path>' +
         '</svg>';
       s.appendChild(fx);
     });
 
     /* ============================================================
-       FX — ONE canvas, ONE loop, only ever drawing the active
-       slide's scene. Cheap on purpose: no shadows, no blurs, no
-       filters, capped particle counts, paused when hidden.
-       Press G to kill it outright if a machine struggles.
+       CANVAS ENGINE (#fx) — High-DPI, 60FPS Multi-Scene Renderer
        ============================================================ */
     var FX = (function () {
       var W = 1920, H = 1080;
       var cv = document.createElement("canvas");
-      cv.id = "fx"; cv.width = W; cv.height = H;
+      cv.id = "fx";
+      
+      // High DPI retina crispness
+      var dpr = window.devicePixelRatio || 1;
+      cv.width = W * dpr;
+      cv.height = H * dpr;
+      
       var ctx = cv.getContext("2d");
+      ctx.scale(dpr, dpr);
+
       var raf = null, t = 0, scene = null, dark = false, on = true;
       var reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -1189,29 +1227,20 @@
       function n(a) { return dark ? "rgba(168,190,178," + a + ")" : "rgba(51,68,62," + a + ")"; }
       function rnd(a, b) { return a + Math.random() * (b - a); }
 
-      /* rounded rect path (not every engine ships ctx.roundRect) */
-      function rr(x, y, w, h, r) {
-        ctx.beginPath();
-        ctx.moveTo(x + r, y);
-        ctx.arcTo(x + w, y, x + w, y + h, r);
-        ctx.arcTo(x + w, y + h, x, y + h, r);
-        ctx.arcTo(x, y + h, x, y, r);
-        ctx.arcTo(x, y, x + w, y, r);
-        ctx.closePath();
-      }
-
-      /* ---------- sprites ----------
-         A keke in side view, facing right: domed roof, raked
-         windscreen, open passenger bay, big rear wheel + small
-         front wheel. ~118 x 80 at scale 1.                     */
+      /* Vector Keke Sprite */
       function keke(x, y, s, a) {
         ctx.save(); ctx.translate(x, y); ctx.scale(s, s);
         ctx.lineJoin = "round"; ctx.lineCap = "round";
-        ctx.lineWidth = 2.4;
-        ctx.fillStyle = gf(a * .25);
+        ctx.lineWidth = 2.6;
+
+        // Radial bloom glow
+        ctx.shadowColor = g(a * 0.5);
+        ctx.shadowBlur = 12;
+
+        ctx.fillStyle = gf(a * .28);
         ctx.strokeStyle = g(a);
 
-        // Keke main chassis/canopy
+        // Keke Canopy Chassis
         ctx.beginPath();
         ctx.moveTo(-45, 0);
         ctx.lineTo(-45, -30);
@@ -1225,51 +1254,39 @@
         ctx.closePath();
         ctx.fill(); ctx.stroke();
 
-        // Passenger cabin opening
-        ctx.fillStyle = gf(a * .1);
+        // Passenger Bay
+        ctx.fillStyle = gf(a * .12);
         ctx.beginPath();
-        ctx.moveTo(-33, -42);
-        ctx.lineTo(-2, -42);
+        ctx.moveTo(-33, -42); ctx.lineTo(-2, -42);
         ctx.bezierCurveTo(2, -42, 4, -40, 4, -36);
-        ctx.lineTo(4, -5);
-        ctx.bezierCurveTo(4, -1, 2, 1, -2, 1);
-        ctx.lineTo(-33, 1);
-        ctx.bezierCurveTo(-37, 1, -39, -1, -39, -5);
-        ctx.lineTo(-39, -36);
-        ctx.bezierCurveTo(-39, -40, -37, -42, -33, -42);
+        ctx.lineTo(4, -5); ctx.bezierCurveTo(4, -1, 2, 1, -2, 1);
+        ctx.lineTo(-33, 1); ctx.bezierCurveTo(-37, 1, -39, -1, -39, -5);
+        ctx.lineTo(-39, -36); ctx.bezierCurveTo(-39, -40, -37, -42, -33, -42);
         ctx.closePath();
         ctx.fill(); ctx.stroke();
 
-        // Driver cabin opening
+        // Driver Bay
         ctx.beginPath();
-        ctx.moveTo(12, -42);
-        ctx.bezierCurveTo(21, -42, 26, -35, 29, -25);
-        ctx.lineTo(36, -5);
-        ctx.lineTo(12, -5);
-        ctx.closePath();
-        ctx.fill(); ctx.stroke();
+        ctx.moveTo(12, -42); ctx.bezierCurveTo(21, -42, 26, -35, 29, -25);
+        ctx.lineTo(36, -5); ctx.lineTo(12, -5);
+        ctx.closePath(); ctx.fill(); ctx.stroke();
 
-        // Passenger silhouette
-        ctx.fillStyle = g(a * .45);
+        // Passengers
+        ctx.fillStyle = g(a * .55);
         ctx.beginPath(); ctx.arc(-18, -20, 5.5, 0, 6.283); ctx.fill();
         ctx.beginPath();
-        ctx.moveTo(-24, -10);
-        ctx.quadraticCurveTo(-18, -16, -12, -10);
-        ctx.lineTo(-12, 1); ctx.lineTo(-24, 1);
-        ctx.closePath(); ctx.fill();
+        ctx.moveTo(-24, -10); ctx.quadraticCurveTo(-18, -16, -12, -10);
+        ctx.lineTo(-12, 1); ctx.lineTo(-24, 1); ctx.closePath(); ctx.fill();
 
-        // Driver silhouette
+        // Driver
         ctx.beginPath(); ctx.arc(18, -18, 5, 0, 6.283); ctx.fill();
         ctx.beginPath();
-        ctx.moveTo(13, -10);
-        ctx.quadraticCurveTo(18, -14, 23, -10);
-        ctx.lineTo(23, -5); ctx.lineTo(13, -5);
-        ctx.closePath(); ctx.fill();
+        ctx.moveTo(13, -10); ctx.quadraticCurveTo(18, -14, 23, -10);
+        ctx.lineTo(23, -5); ctx.lineTo(13, -5); ctx.closePath(); ctx.fill();
 
         // Wheels
-        ctx.lineWidth = 3;
-        ctx.strokeStyle = g(a);
-        ctx.fillStyle = g(a);
+        ctx.lineWidth = 3.2;
+        ctx.strokeStyle = g(a); ctx.fillStyle = g(a);
         ctx.beginPath(); ctx.arc(-22, 8, 12, 0, 6.283); ctx.stroke();
         ctx.beginPath(); ctx.arc(-22, 8, 3.5, 0, 6.283); ctx.fill();
         ctx.beginPath(); ctx.arc(34, 8, 9.5, 0, 6.283); ctx.stroke();
@@ -1278,40 +1295,29 @@
         ctx.restore();
       }
 
-      /* the town bus — ~150 x 78 at scale 1 */
+      /* Town Bus Sprite */
       function bus(x, y, s, a) {
         ctx.save(); ctx.translate(x, y); ctx.scale(s, s);
         ctx.lineJoin = "round"; ctx.lineCap = "round";
-        ctx.lineWidth = 2.4;
-        ctx.fillStyle = gf(a * .25);
-        ctx.strokeStyle = g(a);
+        ctx.lineWidth = 2.6;
+        ctx.shadowColor = g(a * 0.4); ctx.shadowBlur = 10;
+        ctx.fillStyle = gf(a * .28); ctx.strokeStyle = g(a);
 
-        // Main body
         ctx.beginPath();
-        ctx.moveTo(-75, -5);
-        ctx.lineTo(-75, -45);
-        ctx.bezierCurveTo(-75, -56, -65, -60, -55, -60);
-        ctx.lineTo(45, -60);
-        ctx.bezierCurveTo(60, -60, 70, -50, 75, -30);
-        ctx.lineTo(80, -10);
-        ctx.bezierCurveTo(82, -2, 75, 4, 65, 4);
-        ctx.lineTo(-65, 4);
-        ctx.bezierCurveTo(-72, 4, -75, -2, -75, -5);
-        ctx.closePath();
+        ctx.moveTo(-75, -5); ctx.lineTo(-75, -45);
+        ctx.bezierCurveTo(-75, -56, -65, -60, -55, -60); ctx.lineTo(45, -60);
+        ctx.bezierCurveTo(60, -60, 70, -50, 75, -30); ctx.lineTo(80, -10);
+        ctx.bezierCurveTo(82, -2, 75, 4, 65, 4); ctx.lineTo(-65, 4);
+        ctx.bezierCurveTo(-72, 4, -75, -2, -75, -5); ctx.closePath();
         ctx.fill(); ctx.stroke();
 
-        // Window strip
-        ctx.fillStyle = gf(a * .1);
+        ctx.fillStyle = gf(a * .12);
         ctx.beginPath();
-        ctx.moveTo(-65, -48);
-        ctx.lineTo(35, -48);
-        ctx.bezierCurveTo(48, -48, 55, -42, 60, -30);
-        ctx.lineTo(62, -20);
-        ctx.lineTo(-65, -20);
-        ctx.closePath();
+        ctx.moveTo(-65, -48); ctx.lineTo(35, -48);
+        ctx.bezierCurveTo(48, -48, 55, -42, 60, -30); ctx.lineTo(62, -20);
+        ctx.lineTo(-65, -20); ctx.closePath();
         ctx.fill(); ctx.stroke();
 
-        // Window pillars
         ctx.beginPath();
         ctx.moveTo(-35, -48); ctx.lineTo(-35, -20);
         ctx.moveTo(-5, -48); ctx.lineTo(-5, -20);
@@ -1319,10 +1325,7 @@
         ctx.moveTo(50, -48); ctx.lineTo(53, -20);
         ctx.stroke();
 
-        // Wheels
-        ctx.lineWidth = 3;
-        ctx.strokeStyle = g(a);
-        ctx.fillStyle = g(a);
+        ctx.lineWidth = 3.2; ctx.strokeStyle = g(a); ctx.fillStyle = g(a);
         ctx.beginPath(); ctx.arc(-45, 6, 13, 0, 6.283); ctx.stroke();
         ctx.beginPath(); ctx.arc(-45, 6, 4, 0, 6.283); ctx.fill();
         ctx.beginPath(); ctx.arc(45, 6, 13, 0, 6.283); ctx.stroke();
@@ -1331,225 +1334,223 @@
         ctx.restore();
       }
 
-      /* a waiting student — ~26 x 54 at scale 1 */
       function person(x, y, s, a) {
         ctx.save(); ctx.translate(x, y); ctx.scale(s, s);
         ctx.fillStyle = n(a);
-        ctx.beginPath(); ctx.arc(0, -18, 5.5, 0, 6.283); ctx.fill(); // head
+        ctx.beginPath(); ctx.arc(0, -18, 5.5, 0, 6.283); ctx.fill();
         ctx.beginPath();
-        ctx.moveTo(-6, -8);
-        ctx.quadraticCurveTo(0, -14, 6, -8); // shoulders
-        ctx.lineTo(6, 12);
-        ctx.quadraticCurveTo(0, 16, -6, 12); // bottom rounded
-        ctx.closePath();
-        ctx.fill();
-        ctx.restore();
-      }
-      function coin(x, y, r, c, filled) {
-        ctx.beginPath(); ctx.arc(x, y, r, 0, 6.283);
-        if (filled) { ctx.fillStyle = c; ctx.fill(); }
-        else { ctx.strokeStyle = c; ctx.lineWidth = 2.2; ctx.stroke(); }
+        ctx.moveTo(-6, -8); ctx.quadraticCurveTo(0, -14, 6, -8);
+        ctx.lineTo(6, 12); ctx.quadraticCurveTo(0, 16, -6, 12); ctx.closePath();
+        ctx.fill(); ctx.restore();
       }
 
-      /* ---------- scenes: each owns its particles ---------- */
+      function coin(x, y, r, c, filled) {
+        ctx.save();
+        ctx.beginPath(); ctx.arc(x, y, r, 0, 6.283);
+        if (filled) {
+          ctx.fillStyle = c; ctx.shadowColor = c; ctx.shadowBlur = 8; ctx.fill();
+        } else {
+          ctx.strokeStyle = c; ctx.lineWidth = 2.4; ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      /* Multi-Scene Array */
       var P = [];
       var S = {
-        /* cover — sparse, calm traffic drifting across campus */
         traffic: {
           init: function () {
             P = []; var ys = [230, 470, 880];
-            for (var i = 0; i < 3; i++)
-              P.push({ x: rnd(-300, W), y: ys[i], v: rnd(26, 44), s: rnd(.85, 1.1) });
+            for (var i = 0; i < 4; i++)
+              P.push({ x: rnd(-300, W), y: ys[i % 3], v: rnd(32, 52), s: rnd(.88, 1.1) });
           },
           draw: function (d) {
             ctx.globalAlpha = 1;
             for (var i = 0; i < P.length; i++) {
               var p = P[i];
               p.x += p.v * d; if (p.x > W + 160) p.x = -160;
-              keke(p.x, p.y, p.s, .4);
+              keke(p.x, p.y, p.s, .45);
             }
           }
         },
-        /* problem I — everything converging on one junction, bunching up */
         converge: {
           init: function () {
             P = []; var i;
-            for (i = 0; i < 5; i++) P.push({ k: 1, a: rnd(0, 6.283), r: rnd(420, 980), s: rnd(.8, 1.05) });
-            for (i = 0; i < 6; i++) P.push({ k: 0, a: rnd(0, 6.283), r: rnd(300, 880), s: rnd(.9, 1.2) });
+            for (i = 0; i < 6; i++) P.push({ k: 1, a: rnd(0, 6.283), r: rnd(420, 980), s: rnd(.85, 1.1) });
+            for (i = 0; i < 7; i++) P.push({ k: 0, a: rnd(0, 6.283), r: rnd(300, 880), s: rnd(.9, 1.25) });
           },
           draw: function (d) {
             ctx.globalAlpha = 1;
             var cx = 1360, cy = 640;
+            // Friction Ripple Waves
+            ctx.save();
+            ctx.strokeStyle = g(0.12); ctx.lineWidth = 2;
+            var rWave = (t * 80) % 300;
+            ctx.beginPath(); ctx.arc(cx, cy, rWave, 0, 6.283); ctx.stroke();
+            ctx.restore();
+
             for (var i = 0; i < P.length; i++) {
               var p = P[i];
-              p.r -= (30 + p.r * .05) * d;                 // slow down as it crowds in
-              if (p.r < 140) { p.r = rnd(820, 1060); p.a = rnd(0, 6.283); }
+              p.r -= (32 + p.r * .055) * d;
+              if (p.r < 130) { p.r = rnd(840, 1080); p.a = rnd(0, 6.283); }
               var x = cx + Math.cos(p.a) * p.r, y = cy + Math.sin(p.a) * p.r * .5;
-              var a = Math.min(.6, (p.r - 130) / 900);
-              if (p.k) keke(x, y, p.s, a); else person(x, y, p.s, a * .9);
+              var a = Math.min(.65, (p.r - 120) / 900);
+              if (p.k) keke(x, y, p.s, a); else person(x, y, p.s, a * .95);
             }
           }
         },
-        /* problem II — one keke leaving, pings that nobody answers */
         lost: {
           init: function () { P = [{ x: 860, o: 1 }, { r: 0 }, { r: 220 }, { r: 440 }]; },
           draw: function (d) {
             for (var i = 1; i < 4; i++) {
               var q = P[i];
-              q.r += 78 * d; if (q.r > 680) q.r = 0;
-              ctx.globalAlpha = Math.max(0, 1 - q.r / 680) * .3;
-              ctx.strokeStyle = g(1); ctx.lineWidth = 2.8;
+              q.r += 85 * d; if (q.r > 680) q.r = 0;
+              ctx.globalAlpha = Math.max(0, 1 - q.r / 680) * .35;
+              ctx.strokeStyle = g(1); ctx.lineWidth = 3;
               ctx.beginPath(); ctx.arc(620, 700, q.r, 0, 6.283); ctx.stroke();
             }
             ctx.globalAlpha = 1;
             var p = P[0];
-            p.x += 62 * d; p.o -= .13 * d;
+            p.x += 68 * d; p.o -= .14 * d;
             if (p.o <= 0) { p.x = 780; p.o = 1; }
-            keke(p.x, 700, 1.3, Math.max(0, p.o) * .68);
+            keke(p.x, 700, 1.3, Math.max(0, p.o) * .72);
           }
         },
-        /* solution — orderly lanes, everything moving as it should */
         lanes: {
           init: function () {
             P = []; var ys = [235, 445, 690, 915];
-            for (var i = 0; i < 7; i++)
-              P.push({ x: rnd(-400, W), y: ys[i % 4], v: rnd(54, 76), b: (i % 4) === 2, s: .82 });
+            for (var i = 0; i < 8; i++)
+              P.push({ x: rnd(-400, W), y: ys[i % 4], v: rnd(58, 82), b: (i % 4) === 2, s: .85 });
           },
           draw: function (d) {
             ctx.globalAlpha = 1;
             for (var i = 0; i < P.length; i++) {
               var p = P[i];
               p.x += p.v * d; if (p.x > W + 180) p.x = -180;
-              if (p.b) bus(p.x, p.y, p.s, .38); else keke(p.x, p.y, p.s, .42);
+              if (p.b) bus(p.x, p.y, p.s, .42); else keke(p.x, p.y, p.s, .46);
             }
           }
         },
-        /* how it works — four riders merge into one keke, then it drives off */
         pool: {
           init: function () { P = [{ t: 0 }]; },
           draw: function (d) {
             ctx.globalAlpha = 1;
-            var s = P[0]; s.t += d * .2; if (s.t > 1) s.t = 0;
+            var s = P[0]; s.t += d * .22; if (s.t > 1) s.t = 0;
             var lane = 730, k = s.t;
-            for (var i = 0; i < 4; i++) {                    // riders sliding onto the lane
+            for (var i = 0; i < 4; i++) {
               var off = i * .06, p = Math.max(0, Math.min(1, (k - off) / .45));
               var sy = 430 + i * 115, x = 470 + p * 380;
               var y = sy + (lane - sy) * p;
-              person(x, y, 1.15, .55 * (1 - Math.max(0, (k - .5) / .3)));
+              person(x, y, 1.18, .6 * (1 - Math.max(0, (k - .5) / .3)));
             }
-            var kx = 900 + Math.max(0, (k - .45) / .55) * 950;   // the keke leaves full
-            keke(kx, lane, 1.25, .6);
+            var kx = 900 + Math.max(0, (k - .45) / .55) * 950;
+            keke(kx, lane, 1.28, .65);
           }
         },
-        /* AI safety — SOS pulse, then a packet flying to the security group */
         radar: {
           init: function () { P = [{ r: 0 }, { r: 200 }, { r: 400 }, { t: 0 }]; },
           draw: function (d) {
             for (var i = 0; i < 3; i++) {
               var q = P[i];
-              q.r += 96 * d; if (q.r > 560) q.r = 0;
-              ctx.globalAlpha = Math.max(0, 1 - q.r / 560) * .22;
-              ctx.strokeStyle = g(1); ctx.lineWidth = 2.6;
+              q.r += 105 * d; if (q.r > 560) q.r = 0;
+              ctx.globalAlpha = Math.max(0, 1 - q.r / 560) * .28;
+              ctx.strokeStyle = g(1); ctx.lineWidth = 3;
               ctx.beginPath(); ctx.arc(430, 640, q.r, 0, 6.283); ctx.stroke();
             }
-            var s = P[3]; s.t += d * .42; if (s.t > 1) s.t = 0;
+            var s = P[3]; s.t += d * .45; if (s.t > 1) s.t = 0;
             var e = s.t, x = 430 + (1420 - 430) * e, y = 640 - Math.sin(e * Math.PI) * 300;
-            ctx.globalAlpha = .28; ctx.fillStyle = g(1);
-            ctx.beginPath(); ctx.arc(x, y, 7, 0, 6.283); ctx.fill();
-            ctx.globalAlpha = .18; ctx.strokeStyle = g(1); ctx.lineWidth = 2;
-            ctx.beginPath(); ctx.arc(1420, 340, 16 + Math.sin(t * 3) * 4, 0, 6.283); ctx.stroke();
+            ctx.globalAlpha = .35; ctx.fillStyle = g(1); ctx.shadowColor = g(1); ctx.shadowBlur = 10;
+            ctx.beginPath(); ctx.arc(x, y, 8.5, 0, 6.283); ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.globalAlpha = .22; ctx.strokeStyle = g(1); ctx.lineWidth = 2.4;
+            ctx.beginPath(); ctx.arc(1420, 340, 18 + Math.sin(t * 3.5) * 5, 0, 6.283); ctx.stroke();
           }
         },
-        /* solana pay — naira flows in, becomes tokens halfway across */
         tokens: {
           init: function () {
-            P = []; for (var i = 0; i < 10; i++)
-              P.push({ x: rnd(-300, W), y: rnd(200, 900), v: rnd(120, 210), r: rnd(5, 9) });
+            P = []; for (var i = 0; i < 12; i++)
+              P.push({ x: rnd(-300, W), y: rnd(200, 900), v: rnd(130, 230), r: rnd(5.5, 9.5) });
           },
           draw: function (d) {
             for (var i = 0; i < P.length; i++) {
               var p = P[i];
               p.x += p.v * d; if (p.x > W + 40) { p.x = -40; p.y = rnd(200, 900); }
               var conv = p.x > 900;
-              ctx.globalAlpha = conv ? .14 : .09;
+              ctx.globalAlpha = conv ? .18 : .11;
               coin(p.x, p.y, p.r, g(1), conv);
             }
           }
         },
-        /* solana vault — value spiralling inward and locking away */
         vault: {
           init: function () {
-            P = []; for (var i = 0; i < 10; i++)
-              P.push({ a: rnd(0, 6.283), r: rnd(240, 640), v: rnd(.5, 1.1), s: rnd(4, 8) });
+            P = []; for (var i = 0; i < 12; i++)
+              P.push({ a: rnd(0, 6.283), r: rnd(240, 640), v: rnd(.55, 1.2), s: rnd(4.5, 8.5) });
           },
           draw: function (d) {
             var cx = 1400, cy = 560;
             for (var i = 0; i < P.length; i++) {
               var p = P[i];
-              p.a += p.v * d; p.r -= 62 * d;
-              if (p.r < 60) { p.r = rnd(520, 700); p.a = rnd(0, 6.283); }
-              ctx.globalAlpha = Math.min(.22, (p.r - 50) / 640 * .35);
+              p.a += p.v * d; p.r -= 68 * d;
+              if (p.r < 60) { p.r = rnd(520, 720); p.a = rnd(0, 6.283); }
+              ctx.globalAlpha = Math.min(.28, (p.r - 50) / 640 * .4);
               coin(cx + Math.cos(p.a) * p.r, cy + Math.sin(p.a) * p.r * .58, p.s, g(1), true);
             }
-            ctx.globalAlpha = .07; ctx.strokeStyle = g(1); ctx.lineWidth = 2;
+            ctx.globalAlpha = .12; ctx.strokeStyle = g(1); ctx.lineWidth = 2.4;
             for (var k = 0; k < 2; k++) {
-              ctx.save(); ctx.translate(cx, cy); ctx.rotate(t * (.12 + k * .07));
-              ctx.beginPath(); ctx.ellipse(0, 0, 300 + k * 130, 175 + k * 76, 0, 0, 6.283);
+              ctx.save(); ctx.translate(cx, cy); ctx.rotate(t * (.14 + k * .08));
+              ctx.beginPath(); ctx.ellipse(0, 0, 310 + k * 135, 180 + k * 80, 0, 0, 6.283);
               ctx.stroke(); ctx.restore();
             }
           }
         },
-        /* claims — the vault paying back out to a driver */
         payout: {
           init: function () {
-            P = []; for (var i = 0; i < 9; i++)
-              P.push({ a: rnd(-.7, .7), r: rnd(60, 760), v: rnd(150, 250), s: rnd(4, 8) });
+            P = []; for (var i = 0; i < 10; i++)
+              P.push({ a: rnd(-.75, .75), r: rnd(60, 760), v: rnd(160, 270), s: rnd(4.5, 8.5) });
           },
           draw: function (d) {
             var cx = 430, cy = 620;
             for (var i = 0; i < P.length; i++) {
               var p = P[i];
               p.r += p.v * d;
-              if (p.r > 1180) { p.r = 60; p.a = rnd(-.7, .7); }
-              ctx.globalAlpha = Math.max(0, 1 - p.r / 1180) * .16;
+              if (p.r > 1180) { p.r = 60; p.a = rnd(-.75, .75); }
+              ctx.globalAlpha = Math.max(0, 1 - p.r / 1180) * .22;
               coin(cx + Math.cos(p.a) * p.r, cy + Math.sin(p.a) * p.r, p.s, g(1), true);
             }
-            ctx.globalAlpha = .09; ctx.strokeStyle = g(1); ctx.lineWidth = 2.4;
-            ctx.beginPath(); ctx.arc(cx, cy, 40 + Math.sin(t * 2) * 6, 0, 6.283); ctx.stroke();
+            ctx.globalAlpha = .12; ctx.strokeStyle = g(1); ctx.lineWidth = 2.6;
+            ctx.beginPath(); ctx.arc(cx, cy, 42 + Math.sin(t * 2.2) * 7, 0, 6.283); ctx.stroke();
           }
         },
-        /* business — demand spikes, and more kekes come online */
         surge: {
           init: function () {
             P = []; for (var i = 0; i < 10; i++) P.push({ ph: i * .62 });
-            for (var j = 0; j < 4; j++) P.push({ k: 1, x: rnd(-300, W), v: rnd(60, 96), y: rnd(240, 400) });
+            for (var j = 0; j < 5; j++) P.push({ k: 1, x: rnd(-300, W), v: rnd(65, 105), y: rnd(240, 400) });
           },
           draw: function (d) {
             for (var i = 0; i < 10; i++) {
-              var h = 60 + (Math.sin(t * .9 + P[i].ph) * .5 + .5) * 250;
-              ctx.globalAlpha = .1; ctx.fillStyle = g(1);
-              ctx.fillRect(190 + i * 108, H - 130 - h, 46, h);
+              var h = 60 + (Math.sin(t * 1.1 + P[i].ph) * .5 + .5) * 260;
+              ctx.globalAlpha = .14; ctx.fillStyle = g(1);
+              ctx.fillRect(190 + i * 108, H - 130 - h, 48, h);
             }
             ctx.globalAlpha = 1;
             for (var j = 10; j < P.length; j++) {
               var p = P[j];
               p.x += p.v * d; if (p.x > W + 160) p.x = -160;
-              keke(p.x, p.y, .95, .45);
+              keke(p.x, p.y, .98, .5);
             }
           }
         },
-        /* close — a calm procession heading off campus */
         procession: {
           init: function () {
-            P = []; for (var i = 0; i < 3; i++)
-              P.push({ x: -260 - i * 330, y: 845 - i * 30, v: 36 + i * 6, s: 1.05 + i * .08 });
+            P = []; for (var i = 0; i < 4; i++)
+              P.push({ x: -260 - i * 320, y: 845 - i * 32, v: 38 + i * 6.5, s: 1.05 + i * .08 });
           },
           draw: function (d) {
             ctx.globalAlpha = 1;
             for (var i = 0; i < P.length; i++) {
               var p = P[i];
               p.x += p.v * d; if (p.x > W + 200) p.x = -200;
-              keke(p.x, p.y, p.s, .48);
+              keke(p.x, p.y, p.s, .52);
             }
           }
         }
@@ -1568,7 +1569,6 @@
       }
 
       return {
-        /* move the single canvas into the active slide and swap the scene */
         mount: function (slideEl, index) {
           if (!on || reduce) return;
           var host = slideEl.querySelector(".bgfx") || slideEl;
@@ -1591,13 +1591,35 @@
       };
     })();
 
-    // don't burn cycles while the deck isn't on screen
     document.addEventListener("visibilitychange", function () {
       if (document.hidden) FX.pause(); else FX.resume();
     });
 
     function frags(n) {
       return Array.prototype.slice.call(slides[n].querySelectorAll("[data-frag]"));
+    }
+
+    /* Stat Counter Animator for Slide 4 */
+    function animateCounters(slideEl) {
+      var counters = slideEl.querySelectorAll("[data-count]");
+      counters.forEach(function (el) {
+        var target = parseInt(el.getAttribute("data-count"), 10);
+        var prefix = el.getAttribute("data-prefix") || "";
+        var suffix = el.getAttribute("data-suffix") || "";
+        var startTime = performance.now();
+        var duration = 900; // ms
+
+        function step(now) {
+          var progress = Math.min(1, (now - startTime) / duration);
+          // Ease out cubic
+          var ease = 1 - Math.pow(1 - progress, 3);
+          var current = Math.floor(ease * target);
+          el.textContent = prefix + current + suffix;
+          if (progress < 1) requestAnimationFrame(step);
+          else el.textContent = prefix + target + suffix;
+        }
+        requestAnimationFrame(step);
+      });
     }
 
     function render() {
@@ -1608,10 +1630,10 @@
       count.textContent = String(i + 1).padStart(2, "0") + " / " + slides.length;
       count.style.color = slides[i].classList.contains("dark") ? "#A8BEB2" : "#66776F";
 
-      notes.innerHTML = "<b>Slide " + (i + 1) + " — speaker note</b>" +
-        (slides[i].dataset.note || "");
+      notes.innerHTML = "<b>Slide " + (i + 1) + " — speaker note</b>" + (slides[i].dataset.note || "");
 
       FX.mount(slides[i], i);
+      animateCounters(slides[i]);
     }
 
     function go(n, built) {
@@ -1622,13 +1644,13 @@
     }
 
     function next() {
-      if (frag < frags(i).length) { frag++; render(); return; }  // build within slide
+      if (frag < frags(i).length) { frag++; render(); return; }
       if (i < slides.length - 1) go(i + 1, false);
     }
 
     function prev() {
       if (frag > 0) { frag--; render(); return; }
-      if (i > 0) go(i - 1, true);                               // land fully built
+      if (i > 0) go(i - 1, true);
     }
 
     addEventListener("keydown", function (e) {
@@ -1646,7 +1668,7 @@
         blanked = !blanked;
         stage.style.visibility = blanked ? "hidden" : "visible";
       }
-      else if (k === "g" || k === "G") {        // panic switch: kill all motion
+      else if (k === "g" || k === "G") {
         var live = FX.toggle();
         if (live) FX.mount(slides[i], i);
         help.style.opacity = "1";
@@ -1659,7 +1681,7 @@
       if (e.clientX < innerWidth * 0.12) prev(); else next();
     });
 
-    /* ---- swap in illustrations when they exist; keep the slot clean if not ---- */
+    /* Illustration Error / Empty Handlers */
     Array.prototype.forEach.call(document.querySelectorAll(".ill"), function (box) {
       var img = box.querySelector("img");
       if (!img) { box.classList.add("empty"); return; }
@@ -1667,7 +1689,22 @@
       if (img.complete && img.naturalWidth === 0) box.classList.add("empty");
     });
 
-    /* ---- cover map: the 33 real FUTO stop coordinates ---- */
+    /* Interactive 3D Cursor Tilt for Cards and Illustrations */
+    document.querySelectorAll(".card, .ill").forEach(function (el) {
+      el.addEventListener("mousemove", function (e) {
+        var rect = el.getBoundingClientRect();
+        var x = e.clientX - rect.left - rect.width / 2;
+        var y = e.clientY - rect.top - rect.height / 2;
+        var rotX = (-y / rect.height) * 8;
+        var rotY = (x / rect.width) * 8;
+        el.style.transform = "perspective(1000px) rotateX(" + rotX.toFixed(2) + "deg) rotateY(" + rotY.toFixed(2) + "deg) translateY(-4px)";
+      });
+      el.addEventListener("mouseleave", function () {
+        el.style.transform = "";
+      });
+    });
+
+    /* Cover Map Rendering — 33 Mapped FUTO Stops */
     var STOPS = [
       [5.386519, 7.008486], [5.385540, 7.006347], [5.384875, 7.005164], [5.384471, 7.004188],
       [5.384351, 7.003899], [5.384304, 7.002635], [5.383334, 7.001899], [5.385213, 7.000606],
@@ -1690,28 +1727,26 @@
       var minLa = Math.min.apply(null, lats), maxLa = Math.max.apply(null, lats),
         minLo = Math.min.apply(null, lngs), maxLo = Math.max.apply(null, lngs);
 
-      // preserve true geographic aspect so the campus isn't stretched
       var spanLo = maxLo - minLo, spanLa = maxLa - minLa;
       var k = Math.min((W - PAD * 2) / spanLo, (H - PAD * 2) / spanLa);
       var offX = (W - spanLo * k) / 2, offY = (H - spanLa * k) / 2;
 
       var pts = STOPS.map(function (s) {
-        return [offX + (s[1] - minLo) * k,      // lng → x
-        offY + (maxLa - s[0]) * k];    // lat → y (north up)
+        return [offX + (s[1] - minLo) * k, offY + (maxLa - s[0]) * k];
       });
 
       var out = '<polyline points="' + pts.map(function (p) {
         return p[0].toFixed(1) + "," + p[1].toFixed(1);
-      }).join(" ") + '" fill="none" stroke="#16A34A" stroke-opacity=".24" ' +
-        'stroke-width="2.5" stroke-dasharray="7 7" stroke-linejoin="round"/>';
+      }).join(" ") + '" fill="none" stroke="#16A34A" stroke-opacity=".3" ' +
+        'stroke-width="3" stroke-dasharray="8 8" stroke-linejoin="round"/>';
 
       pts.forEach(function (p, n) {
         var big = (n % 7 === 0);
         out += '<circle cx="' + p[0].toFixed(1) + '" cy="' + p[1].toFixed(1) + '" ' +
-          'r="' + (big ? 9 : 5) + '" fill="' + (big ? "#16A34A" : "#22C55E") + '" ' +
-          'fill-opacity="' + (big ? ".95" : ".5") + '">' +
+          'r="' + (big ? 9.5 : 5.5) + '" fill="' + (big ? "#16A34A" : "#22C55E") + '" ' +
+          'fill-opacity="' + (big ? ".95" : ".55") + '">' +
           '<animate attributeName="fill-opacity" values="' +
-          (big ? ".95;.5;.95" : ".5;.22;.5") + '" dur="' +
+          (big ? ".95;.45;.95" : ".55;.25;.55") + '" dur="' +
           (3.2 + (n % 5) * 0.5) + 's" begin="' + (n * 0.09) + 's" ' +
           'repeatCount="indefinite"/></circle>';
       });
@@ -1723,3 +1758,5 @@
     setTimeout(function () { help.style.opacity = "0"; }, 6000);
   })();
 </script>
+</body>
+</html>
