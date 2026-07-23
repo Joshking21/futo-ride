@@ -1,0 +1,1725 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FUTO-Ride — H4F 5.0</title>
+
+<style>
+  /* ============================================================
+   FUTO-RIDE — pitch deck
+   Fixed 1920x1080 stage, scaled to fit. Behaves like PowerPoint:
+   discrete slides, advanced with arrows / space / clicker.
+   ============================================================ */
+
+  :root {
+    /* --- palette: premium green (locked light; a projected deck
+         must not flip with the presenter laptop's OS theme) --- */
+    --g-700: #15803D;
+    --g-600: #16A34A;
+    /* primary   */
+    --g-500: #22C55E;
+    /* secondary */
+    --g-400: #4ADE80;
+    /* accent    */
+    --g-050: #EDF7F0;
+
+    --ink: #0F172A;
+    --ink-2: #33443E;
+    --ink-3: #66776F;
+    /* neutral biased toward the accent, not slate */
+
+    --ground: #F8FAF8;
+    --surface: #FFFFFF;
+    --line: #E3EAE5;
+
+    /* inverted ground for the blockchain section */
+    --dark: #0A1410;
+    --dark-2: #0F1F18;
+    --dark-line: #1E3329;
+    --dark-ink: #EAF3ED;
+    --dark-ink-2: #C2D4C9;
+
+    --display: "Plus Jakarta Sans", "Segoe UI Variable Display", "SF Pro Display",
+      -apple-system, "Segoe UI", system-ui, sans-serif;
+    --mono: "Cascadia Code", "SF Mono", ui-monospace, Consolas, monospace;
+
+    --shadow: 0 10px 30px rgba(15, 23, 42, .06);
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0
+  }
+
+  html,
+  body {
+    height: 100%;
+    overflow: hidden;
+    background: #0B0F0D
+  }
+
+  body {
+    font-family: var(--display);
+    -webkit-font-smoothing: antialiased
+  }
+
+  /* ---------- the stage: fixed 16:9, scaled to viewport ---------- */
+  #stage {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 1920px;
+    height: 1080px;
+    transform-origin: center center;
+    background: var(--ground);
+    overflow: hidden;
+  }
+
+  .slide {
+    position: absolute;
+    inset: 0;
+    padding: 72px 112px 64px;
+    display: none;
+    flex-direction: column;
+    background: var(--ground);
+    color: var(--ink);
+    overflow: hidden;
+  }
+
+  .slide.active {
+    display: flex
+  }
+
+  /* everything authored sits above the ambient background layer */
+  .slide>* {
+    position: relative;
+    z-index: 1
+  }
+
+  /* ============================================================
+   AMBIENT BACKGROUND — slow, low-contrast, never competes
+   with type. Two drifting shapes + a travelling route line.
+   ============================================================ */
+  .slide::before,
+  .slide::after {
+    content: "";
+    position: absolute;
+    z-index: 0;
+    pointer-events: none
+  }
+
+  /* soft orb, top-right */
+  .slide::before {
+    width: 1080px;
+    height: 1080px;
+    right: -360px;
+    top: -400px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(34, 197, 94, .22), rgba(34, 197, 94, 0) 68%);
+    animation: orb 26s ease-in-out infinite alternate;
+  }
+
+  /* bold open arc, bottom-left — bleeds off the edge */
+  .slide::after {
+    width: 620px;
+    height: 620px;
+    left: -230px;
+    bottom: -260px;
+    border-radius: 50%;
+    border: 74px solid rgba(22, 163, 74, .075);
+    border-top-color: transparent;
+    border-right-color: transparent;
+    animation: arc 46s linear infinite;
+  }
+
+  .slide.dark::before {
+    background: radial-gradient(circle, rgba(74, 222, 128, .17), rgba(74, 222, 128, 0) 68%);
+  }
+
+  .slide.dark::after {
+    border-color: rgba(74, 222, 128, .085);
+    border-top-color: transparent;
+    border-right-color: transparent;
+  }
+
+  @keyframes orb {
+    from {
+      transform: translate(0, 0) scale(1)
+    }
+
+    to {
+      transform: translate(-90px, 70px) scale(1.16)
+    }
+  }
+
+  @keyframes arc {
+    from {
+      transform: rotate(0deg) scale(1)
+    }
+
+    50% {
+      transform: rotate(180deg) scale(1.09)
+    }
+
+    to {
+      transform: rotate(360deg) scale(1)
+    }
+  }
+
+  /* the travelling route line (injected as the last child of each slide) */
+  .bgfx {
+    position: absolute;
+    inset: 0;
+    z-index: 0 !important;
+    pointer-events: none
+  }
+
+  .bgfx svg {
+    width: 100%;
+    height: 100%;
+    display: block
+  }
+
+  /* the per-slide animated scene — ONE canvas, moved into the active slide */
+  #fx {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    display: block
+  }
+
+  /* ---------- shared type ---------- */
+  .eyebrow {
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: .2em;
+    text-transform: uppercase;
+    color: var(--g-600);
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex: none;
+  }
+
+  .eyebrow::after {
+    content: "";
+    flex: 1;
+    height: 0;
+    border-top: 2px dashed color-mix(in srgb, var(--g-600) 34%, transparent);
+  }
+
+  .title {
+    font-size: 80px;
+    font-weight: 800;
+    letter-spacing: -.035em;
+    line-height: 1.02;
+    margin-top: 16px;
+    text-wrap: balance;
+    max-width: 20ch;
+    flex: none;
+  }
+
+  .title .hl {
+    color: var(--g-600)
+  }
+
+  .sub {
+    font-size: 34px;
+    font-weight: 400;
+    color: var(--ink-3);
+    margin-top: 12px;
+    line-height: 1.32;
+    max-width: 42ch;
+    flex: none;
+  }
+
+  /* ---------- body grid: copy left, illustration right ---------- */
+  .body {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1.06fr 1fr;
+    gap: 60px;
+    align-items: center;
+    margin-top: 32px;
+    min-height: 0;
+  }
+
+  .body.wide {
+    grid-template-columns: 1fr;
+    align-content: center
+  }
+
+  .cards {
+    display: flex;
+    flex-direction: column;
+    gap: 20px
+  }
+
+  .card {
+    background: rgba(255, 255, 255, .40);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(227, 234, 229, .6);
+    border-radius: 24px;
+    padding: 30px 34px;
+    box-shadow: 0 10px 34px rgba(15, 23, 42, .06);
+  }
+
+  .card h3 {
+    font-size: 33px;
+    font-weight: 700;
+    letter-spacing: -.02em;
+    margin-bottom: 11px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+
+  .card p {
+    font-size: 29px;
+    line-height: 1.42;
+    color: var(--ink-2)
+  }
+
+  .card b {
+    font-weight: 700;
+    color: var(--ink)
+  }
+
+  .slide.dark .card b {
+    color: var(--dark-ink)
+  }
+
+  .dot {
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    background: var(--g-500);
+    flex: none
+  }
+
+  /* ---------- illustration slot ---------- */
+  /* square, sized by the row height — the generated art is 1:1, so a
+   1:1 slot means no letterboxing and no cropping */
+  /* A framed compartment, matching the .card language on the left.
+     The art never has to blend into the slide — it sits inside a
+     panel, so any mismatch between the image's own background and
+     the slide reads as intentional matting, not a seam. Overflow
+     is clipped, so a stray aspect ratio can never look broken. */
+  .ill {
+    position: relative;
+    align-self: stretch;
+    justify-self: center;
+    height: 100%;
+    aspect-ratio: 1/1;
+    width: auto;
+    max-width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 28px;
+    box-shadow: var(--shadow);
+    padding: 16px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .ill img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 14px;
+    display: block
+  }
+
+  /* on the blockchain slides the matting inverts with the ground */
+  .slide.dark .ill {
+    background: var(--dark-2);
+    border-color: var(--dark-line);
+    box-shadow: none;
+  }
+
+  .ill.empty img {
+    display: none
+  }
+
+  .ill.empty {
+    border: 2px dashed color-mix(in srgb, var(--g-600) 32%, transparent);
+    background:
+      radial-gradient(circle at 30% 25%, rgba(34, 197, 94, .09), transparent 60%),
+      var(--g-050);
+  }
+
+  .ill.empty::after {
+    content: attr(data-slot);
+    font-family: var(--mono);
+    font-size: 25px;
+    font-weight: 600;
+    letter-spacing: .04em;
+    color: var(--g-700);
+    opacity: .8;
+    text-align: center;
+    padding: 0 40px;
+    line-height: 1.5;
+  }
+
+  .slide.dark .ill.empty {
+    background: rgba(34, 197, 94, .06);
+    border-color: rgba(74, 222, 128, .3)
+  }
+
+  .slide.dark .ill.empty::after {
+    color: var(--g-400)
+  }
+
+  /* ---------- inverted (blockchain) slides ---------- */
+  .slide.dark {
+    background:
+      radial-gradient(1100px 620px at 82% 12%, rgba(22, 163, 74, .15), transparent 68%),
+      var(--dark);
+    color: var(--dark-ink);
+  }
+
+  .slide.dark .sub {
+    color: var(--dark-ink-2)
+  }
+
+  .slide.dark .eyebrow {
+    color: var(--g-400)
+  }
+
+  .slide.dark .eyebrow::after {
+    border-top-color: rgba(74, 222, 128, .3)
+  }
+
+  .slide.dark .card {
+    background: rgba(20, 42, 32, .38);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-color: rgba(36, 64, 47, .5);
+    box-shadow: 0 6px 28px rgba(0, 0, 0, .25)
+  }
+
+  .slide.dark .card p {
+    color: var(--dark-ink-2)
+  }
+
+  .slide.dark .title .hl {
+    color: var(--g-400)
+  }
+
+  /* ---------- status chip: encodes what is actually built ---------- */
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    font-family: var(--mono);
+    font-size: 19px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    padding: 7px 15px;
+    border-radius: 999px;
+    font-weight: 700;
+  }
+
+  .chip.live {
+    background: rgba(22, 163, 74, .13);
+    color: var(--g-700)
+  }
+
+  .chip.next {
+    background: rgba(102, 119, 111, .18);
+    color: var(--ink-3)
+  }
+
+  .slide.dark .chip.live {
+    background: rgba(74, 222, 128, .15);
+    color: var(--g-400)
+  }
+
+  .slide.dark .chip.next {
+    background: rgba(168, 190, 178, .16);
+    color: var(--dark-ink-2)
+  }
+
+  .chip .pulse {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: currentColor;
+    animation: pulse 2.4s infinite;
+  }
+
+  @keyframes pulse {
+    0% {
+      box-shadow: 0 0 0 0 color-mix(in srgb, currentColor 55%, transparent)
+    }
+
+    70% {
+      box-shadow: 0 0 0 11px transparent
+    }
+
+    100% {
+      box-shadow: 0 0 0 0 transparent
+    }
+  }
+
+  /* ---------- flow diagram ---------- */
+  .flow {
+    display: flex;
+    align-items: stretch;
+    gap: 18px;
+    width: 100%
+  }
+
+  .step {
+    flex: 1;
+    background: rgba(20, 42, 32, .38);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(30, 51, 41, .5);
+    border-radius: 22px;
+    padding: 32px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .step .n {
+    font-family: var(--mono);
+    font-size: 18px;
+    letter-spacing: .14em;
+    color: var(--g-400);
+    font-weight: 700;
+  }
+
+  .step h4 {
+    font-size: 32px;
+    font-weight: 700;
+    letter-spacing: -.02em;
+    line-height: 1.18
+  }
+
+  .step p {
+    font-size: 25px;
+    line-height: 1.42;
+    color: var(--dark-ink-2)
+  }
+
+  .step b {
+    color: var(--dark-ink);
+    font-weight: 700
+  }
+
+  .arrow {
+    align-self: center;
+    color: var(--g-400);
+    font-size: 36px;
+    flex: none;
+    opacity: .55;
+    font-family: var(--mono);
+  }
+
+  /* light-ground variant, for the solution slide */
+  .flow.light .step {
+    background: rgba(255, 255, 255, .40);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-color: rgba(227, 234, 229, .6);
+    box-shadow: 0 10px 34px rgba(15, 23, 42, .06)
+  }
+
+  .flow.light .step .n {
+    color: var(--g-600)
+  }
+
+  .flow.light .step h4 {
+    color: var(--ink)
+  }
+
+  .flow.light .step p {
+    color: var(--ink-2)
+  }
+
+  /* ---------- stat strip ---------- */
+  .stats {
+    display: flex;
+    gap: 26px;
+    margin-top: 28px;
+    width: 100%
+  }
+
+  .stat {
+    flex: 1;
+    border-left: 4px solid var(--g-500);
+    padding: 4px 0 4px 22px
+  }
+
+  .stat .v {
+    font-size: 58px;
+    font-weight: 800;
+    letter-spacing: -.035em;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+
+  .stat .k {
+    font-size: 24px;
+    color: var(--ink-3);
+    margin-top: 11px;
+    line-height: 1.32
+  }
+
+  .slide.dark .stat .k {
+    color: var(--dark-ink-2)
+  }
+
+  /* ---------- mono callout (technical truth) ---------- */
+  .mono-note {
+    font-family: var(--mono);
+    font-size: 24px;
+    color: var(--dark-ink-2);
+    background: rgba(255, 255, 255, .06);
+    border: 1px solid var(--dark-line);
+    border-radius: 16px;
+    padding: 18px 24px;
+    margin-top: 26px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    letter-spacing: .01em;
+    line-height: 1.5;
+    flex-wrap: wrap;
+  }
+
+  .mono-note b {
+    color: var(--g-400);
+    font-weight: 700
+  }
+
+  /* ---------- cover ---------- */
+  .cover {
+    justify-content: center;
+    padding: 0 112px;
+    background:
+      radial-gradient(900px 560px at 76% 32%, rgba(34, 197, 94, .13), transparent 66%),
+      var(--ground);
+  }
+
+  .wordmark {
+    font-size: 150px;
+    font-weight: 800;
+    letter-spacing: -.055em;
+    line-height: .92
+  }
+
+  .wordmark .ride {
+    color: var(--g-600)
+  }
+
+  .cover .tag {
+    font-size: 40px;
+    color: var(--ink-2);
+    margin-top: 30px;
+    font-weight: 400
+  }
+
+  .cover .meta {
+    margin-top: 54px;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    font-family: var(--mono);
+    font-size: 23px;
+    color: var(--ink-3);
+    letter-spacing: .05em;
+  }
+
+  .cover .meta span {
+    padding: 11px 20px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--surface);
+  }
+
+  #map {
+    position: absolute;
+    right: 96px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 730px;
+    z-index: 1
+  }
+
+  .map-cap {
+    position: absolute;
+    right: 96px;
+    bottom: 88px;
+    z-index: 1;
+    font-family: var(--mono);
+    font-size: 22px;
+    color: var(--ink-3);
+    letter-spacing: .04em;
+    text-align: right;
+  }
+
+  /* ---------- chrome ---------- */
+  #bar {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    height: 6px;
+    background: linear-gradient(90deg, var(--g-600), var(--g-400));
+    width: 0;
+    transition: width .45s cubic-bezier(.22, 1, .36, 1);
+    z-index: 30;
+  }
+
+  #count {
+    position: absolute;
+    right: 44px;
+    bottom: 28px;
+    z-index: 30;
+    font-family: var(--mono);
+    font-size: 20px;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: .08em;
+  }
+
+  #notes {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 60;
+    background: rgba(10, 20, 16, .96);
+    color: #DCEAE2;
+    padding: 20px 32px;
+    font-size: 17px;
+    line-height: 1.55;
+    display: none;
+    border-top: 2px solid var(--g-600);
+  }
+
+  #notes.on {
+    display: block
+  }
+
+  #notes b {
+    color: var(--g-400);
+    font-family: var(--mono);
+    font-size: 13px;
+    letter-spacing: .12em;
+    display: block;
+    margin-bottom: 6px;
+    text-transform: uppercase
+  }
+
+  #help {
+    position: fixed;
+    left: 20px;
+    bottom: 16px;
+    z-index: 60;
+    font-family: var(--mono);
+    font-size: 13px;
+    color: rgba(255, 255, 255, .42);
+    letter-spacing: .05em;
+    transition: opacity .6s;
+    pointer-events: none;
+  }
+
+  /* ---------- entrance motion (PowerPoint-style builds) ---------- */
+  .slide.active .anim {
+    animation: rise .7s cubic-bezier(.22, 1, .36, 1) backwards
+  }
+
+  .slide.active .anim:nth-child(1) {
+    animation-delay: .04s
+  }
+
+  .slide.active .anim:nth-child(2) {
+    animation-delay: .12s
+  }
+
+  .slide.active .anim:nth-child(3) {
+    animation-delay: .20s
+  }
+
+  .slide.active .anim:nth-child(4) {
+    animation-delay: .28s
+  }
+
+  .slide.active .anim:nth-child(5) {
+    animation-delay: .36s
+  }
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(24px)
+    }
+
+    to {
+      opacity: 1;
+      transform: none
+    }
+  }
+
+  /* fragments: revealed one advance at a time */
+  [data-frag] {
+    opacity: 0;
+    transform: translateY(14px);
+    transition: opacity .45s, transform .45s
+  }
+
+  [data-frag].shown {
+    opacity: 1;
+    transform: none
+  }
+
+  @media (prefers-reduced-motion:reduce) {
+    .slide.active .anim {
+      animation: none
+    }
+
+    [data-frag] {
+      transition: none
+    }
+
+    .chip .pulse,
+    .slide::before,
+    .slide::after {
+      animation: none
+    }
+
+    .bgfx {
+      display: none
+    }
+
+    #bar {
+      transition: none
+    }
+  }
+</style>
+
+<div id="stage">
+
+  <!-- ═══════════ 1 · COVER ═══════════ -->
+  <section class="slide cover active"
+    data-note="Open calm. 'We're FUTO-Ride — one app for every campus trip: visible, paid on Solana, and safe.' Then move. ~12s">
+    <div class="anim">
+      <div class="wordmark">FUTO<span class="ride">-Ride</span></div>
+      <p class="tag">Safe campus rides. Powered by AI&nbsp;+&nbsp;Solana.</p>
+    </div>
+    <div class="meta anim">
+      <span>H4F 5.0</span><span>Federal University of Technology, Owerri</span>
+    </div>
+    <svg id="map" viewBox="0 0 730 520" aria-label="The 33 mapped keke stops on FUTO campus"></svg>
+    <p class="map-cap">33 mapped stops · real coordinates</p>
+  </section>
+
+  <!-- ═══════════ 2 · PROBLEM I ═══════════ -->
+  <section class="slide"
+    data-note="Say it like you live it — you do. 'You either wait in the sun, or you pay last price.' Don't rush; this is the Problem Understanding score. ~22s">
+    <div class="eyebrow anim">The Problem</div>
+    <h1 class="title anim">Every FUTO student knows this <span class="hl">trek</span>.</h1>
+    <div class="body">
+      <div class="cards">
+        <div class="card anim">
+          <h3><i class="dot"></i>The rush-hour scramble</h3>
+          <p>Everyone floods the same junction. Fares jump when it rains or after dark. Pure haggling.</p>
+        </div>
+        <div class="card anim">
+          <h3><i class="dot"></i>Half-empty the rest of the day</h3>
+          <p>Off-peak, drivers circle burning fuel with empty seats — then overcharge to make it back.</p>
+        </div>
+      </div>
+      <div class="ill" data-slot="ILLUSTRATION 02 — crowded junction"><img src="illustrations/02.png" alt=""></div>
+    </div>
+  </section>
+
+  <!-- ═══════════ 3 · PROBLEM II ═══════════ -->
+  <section class="slide"
+    data-note="The emotional turn — drop your voice. 'Nobody knows which keke you're in.' This sets up the safety layer. ~20s">
+    <div class="eyebrow anim">The Problem</div>
+    <h1 class="title anim">And nobody knows <span class="hl">where you are</span>.</h1>
+    <div class="body">
+      <div class="cards">
+        <div class="card anim">
+          <h3><i class="dot"></i>Safety is invisible</h3>
+          <p>You board a keke you've never seen, alone at night. No one knows which one — no fast line to security.</p>
+        </div>
+        <div class="card anim">
+          <h3><i class="dot"></i>Cash leaves no trail</h3>
+          <p>No receipts, no ratings, no record. The SUG can't hold a driver accountable for a trip that produced no
+            data.</p>
+        </div>
+      </div>
+      <div class="ill" data-slot="ILLUSTRATION 03 — lone student, night stop"><img src="illustrations/03.png" alt="">
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ 4 · SOLUTION ═══════════ -->
+  <section class="slide"
+    data-note="Fast — four beats, one breath each. 'Ride-hailing you know, plus a safety and settlement layer you don't.' ~18s">
+    <div class="eyebrow anim">The Solution</div>
+    <h1 class="title anim">Four layers. <span class="hl">One app.</span></h1>
+    <div class="body wide">
+      <div class="flow light anim">
+        <div class="step">
+          <div class="n">01 · HAIL</div>
+          <h4>Hail a keke</h4>
+          <p>Building to building, shared seats, live-tracked from booking.</p>
+        </div>
+        <div class="step">
+          <div class="n">02 · TRACK</div>
+          <h4>Track the town bus</h4>
+          <p>Live position on a fixed route. A ping when it nears your stop.</p>
+        </div>
+        <div class="step">
+          <div class="n">03 · PAY</div>
+          <h4>Pay digitally</h4>
+          <p>Naira in, USDC on Solana underneath. Fixed price, every time.</p>
+        </div>
+        <div class="step">
+          <div class="n">04 · PROTECT</div>
+          <h4>Stay safe</h4>
+          <p>One-tap SOS → AI triage → SUG Security on Telegram, in seconds.</p>
+        </div>
+      </div>
+      <div class="stats anim">
+        <div class="stat">
+          <div class="v">33</div>
+          <div class="k">campus stops mapped with real coordinates</div>
+        </div>
+        <div class="stat">
+          <div class="v">4</div>
+          <div class="k">seats pooled per keke, on one lane</div>
+        </div>
+        <div class="stat">
+          <div class="v">₦150</div>
+          <div class="k">flat per seat — seen before you book</div>
+        </div>
+        <div class="stat">
+          <div class="v">5%</div>
+          <div class="k">of every fare locked on-chain</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ 5 · HOW IT WORKS ═══════════ -->
+  <section class="slide"
+    data-note="The innovation beat. 'We didn't copy Uber — we modelled how FUTO kekes already move.' Stress that we pool on the LANE, not just the destination. ~22s">
+    <div class="eyebrow anim">How It Works</div>
+    <h1 class="title anim">Two modes, tuned <span class="hl">for campus</span>.</h1>
+    <p class="sub anim">We didn't copy Uber. We modelled how FUTO kekes already move.</p>
+    <div class="body">
+      <div class="cards">
+        <div class="card anim">
+          <h3><i class="dot"></i>Shared-seat pooling <span class="chip live"><i class="pulse"></i>Live</span></h3>
+          <p>Four seats, pooled when riders share the <b>same pickup and destination</b>. ₦150 flat.</p>
+        </div>
+        <div class="card anim">
+          <h3><i class="dot"></i>Fixed-route bus tracker <span class="chip live"><i class="pulse"></i>Live</span></h3>
+          <p>No dispatch, no booking. Live position on the route, ETA to every stop.</p>
+        </div>
+        <div class="card anim">
+          <h3><i class="dot"></i>Zero-fraud drop-off <span class="chip live"><i class="pulse"></i>Live</span></h3>
+          <p>Scan the driver's QR at your stop. <b>No trip starts until payment clears</b>.</p>
+        </div>
+      </div>
+      <div class="ill" data-slot="ILLUSTRATION 05 — keke pooling on one lane"><img src="illustrations/05.png" alt="">
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ 6 · AI SAFETY ═══════════ -->
+  <section class="slide"
+    data-note="THE headline layer. 'This is not a chatbot.' Land the fallback line — if the AI fails, it defaults to critical and STILL sends help. That detail wins trust. ~25s">
+    <div class="eyebrow anim">Automated Guard</div>
+    <h1 class="title anim">One tap. Security knows <span class="hl">in seconds</span>.</h1>
+    <div class="body">
+      <div class="cards">
+        <div class="card anim">
+          <h3><i class="dot"></i>Tap SOS</h3>
+          <p>Exact location, ride ID, driver and plate — from any screen in the app.</p>
+        </div>
+        <div class="card anim">
+          <h3><i class="dot"></i>AI reads the situation</h3>
+          <p>Gemini weighs time, route deviation and context — filters false alarms. If it fails, defaults to <b>critical</b> and still sends help.</p>
+        </div>
+        <div class="card anim">
+          <h3><i class="dot"></i>Lands in the security group</h3>
+          <p>Into SUG Security's Telegram, with a live map link. Not an alarm — exact coordinates, on their phones.</p>
+        </div>
+      </div>
+      <div class="ill" data-slot="ILLUSTRATION 06 — SOS to Telegram alert"><img src="illustrations/06.png" alt=""></div>
+    </div>
+  </section>
+
+  <!-- ═══════════ 7 · SOLANA I — PAYMENTS ═══════════ -->
+  <section class="slide dark"
+    data-note="Blockchain section — 25 points. SLOW DOWN. 'Crypto isn't legal tender here, so we keep it invisible, exactly like Uber's float.' Advance the four steps one at a time. ~28s">
+    <div class="eyebrow anim">Solana · Settlement</div>
+    <h1 class="title anim">Naira in. <span class="hl">USDC on Solana</span> underneath.</h1>
+    <p class="sub anim">The student never sees crypto. They pay naira, like always.</p>
+    <div class="body wide">
+      <div class="flow">
+        <div class="step" data-frag>
+          <div class="n">01</div>
+          <h4>Rider pays ₦</h4>
+          <p>An ordinary bank transfer to a virtual account. Nothing new to learn.</p>
+        </div>
+        <div class="arrow" data-frag>→</div>
+        <div class="step" data-frag>
+          <div class="n">02</div>
+          <h4>Licensed rail converts</h4>
+          <p>Our provider takes the naira and settles <b>USDC on Solana</b> into the treasury.</p>
+        </div>
+        <div class="arrow" data-frag>→</div>
+        <div class="step" data-frag>
+          <div class="n">03</div>
+          <h4>Signed webhook unlocks</h4>
+          <p>A verified callback confirms the money landed. The ride opens.</p>
+        </div>
+        <div class="arrow" data-frag>→</div>
+        <div class="step" data-frag>
+          <div class="n">04</div>
+          <h4>Driver withdraws</h4>
+          <p>Earnings batch into a ledger, then cash out — bank or on-chain USDC.</p>
+        </div>
+      </div>
+      <div class="mono-note" data-frag>
+        <b>Why it must be Solana:</b>&nbsp;a single bank fee would eat a ₦150 fare.
+        Sub-cent settlement is the only reason these economics work.
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ 8 · SOLANA II — THE VAULT (hero) ═══════════ -->
+  <section class="slide dark"
+    data-note="THE hero slide. This is deployed, not a mock — read the program ID out loud if a judge looks skeptical. 'The welfare fund lives in code, on-chain — not in an admin's bank account.' ~30s">
+    <div class="eyebrow anim">Solana · Smart Contract</div>
+    <h1 class="title anim">The welfare fund <span class="hl">is a smart contract</span>.</h1>
+    <p class="sub anim">A program-owned vault holds it. Not a person.</p>
+    <div class="body">
+      <div class="cards">
+        <div class="card anim">
+          <h3><i class="dot"></i>5% locks itself away <span class="chip live"><i class="pulse"></i>Deployed</span></h3>
+          <p>Every fare sends 5% into a PDA vault — a welfare fund built from rides already happening.</p>
+        </div>
+        <div class="card anim">
+          <h3><i class="dot"></i>No admin can drain it</h3>
+          <p>Three instructions — <b>initialize, contribute, payout</b>. Authority-signed, hard-capped in the contract.</p>
+        </div>
+        <div class="card anim">
+          <h3><i class="dot"></i>Auditable by anyone</h3>
+          <p>Every contribution is a public transaction. A driver verifies the fund without trusting us.</p>
+        </div>
+      </div>
+      <div class="ill" data-slot="ILLUSTRATION 08 — PDA vault, locked on-chain"><img src="illustrations/08.png" alt="">
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ 9 · SOLANA III — AI CLAIMS ═══════════ -->
+  <section class="slide dark"
+    data-note="The vision beat — say plainly this one is NEXT, not shipped. Judges reward the honesty and remember the idea. 'Decentralised mutual insurance for informal drivers.' ~25s">
+    <div class="eyebrow anim">Solana × AI · What's Next</div>
+    <h1 class="title anim">Your keke breaks. AI verifies. <span class="hl">The vault pays.</span></h1>
+    <p class="sub anim">The fund isn't a balance to admire. It's insurance that pays out.</p>
+    <div class="body wide">
+      <div class="flow">
+        <div class="step" data-frag>
+          <div class="n">01</div>
+          <h4>A tyre bursts</h4>
+          <p>A repair he can't afford costs a day of income. No driver has cover.</p>
+        </div>
+        <div class="arrow" data-frag>→</div>
+        <div class="step" data-frag>
+          <div class="n">02</div>
+          <h4>He photographs it</h4>
+          <p>A claim filed from his phone. No forms, no branch visit, no broker.</p>
+        </div>
+        <div class="arrow" data-frag>→</div>
+        <div class="step" data-frag>
+          <div class="n">03</div>
+          <h4>The same AI verifies</h4>
+          <p>The same SOS-filtering AI assesses the photo and flags fraud.</p>
+        </div>
+        <div class="arrow" data-frag>→</div>
+        <div class="step" data-frag>
+          <div class="n">04</div>
+          <h4>The vault pays USDC</h4>
+          <p>Straight to his wallet, out of the fund his own rides built.</p>
+        </div>
+      </div>
+      <div class="mono-note" data-frag>
+        <b>What this really is:</b>&nbsp;decentralised mutual insurance for informal drivers.
+        <span class="chip next">Next</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ 10 · BUSINESS MODEL ═══════════ -->
+  <section class="slide"
+    data-note="Revenue + the Jito line — the brief asked for a business model explicitly. 'Solana users pay a Jito tip to be processed faster; our riders pay a micro-tip to be MATCHED faster — and the tip pulls more kekes onto the road.' ~24s">
+    <div class="eyebrow anim">The Business Model</div>
+    <h1 class="title anim">A thin cut. High frequency. <span class="hl">Zero acquisition cost.</span></h1>
+    <div class="body">
+      <div class="cards">
+        <div class="card anim">
+          <h3><i class="dot"></i>5% of every seat fare</h3>
+          <p>Into the on-chain treasury. Driver keeps 95%. Payouts batch so bank fees never eat a ₦150 fare.</p>
+        </div>
+        <div class="card anim">
+          <h3><i class="dot"></i>Priority fee — Jito, for kekes</h3>
+          <p>When demand spikes, riders add a skip-the-queue tip. Half is a driver bonus that <b>pulls more kekes onto the road</b>.</p>
+        </div>
+        <div class="card anim">
+          <h3><i class="dot"></i>The SUG partnership is the moat</h3>
+          <p>Campus kekes are SUG-run — captive driver supply and student trust from day one.</p>
+        </div>
+      </div>
+      <div class="ill" data-slot="ILLUSTRATION 10 — surge pulls drivers online"><img src="illustrations/10.png" alt="">
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ 11 · TEAM & CLOSE ═══════════ -->
+  <section class="slide"
+    data-note="Land it and stop talking. Say the final line, then let the silence sit. 'Every campus trip: visible, paid on Solana, and safe.' ~15s">
+    <div class="eyebrow anim">Built by FUTO students</div>
+    <h1 class="title anim">We don't research this problem. <span class="hl">We live it.</span></h1>
+    <div class="body">
+      <div class="cards">
+        <div class="card anim">
+          <h3><i class="dot"></i>We trek this campus every day</h3>
+          <p>Every stop on our map is one we've waited at. Those 33 coordinates were walked, not scraped.</p>
+        </div>
+        <div class="card anim">
+          <h3><i class="dot"></i>And we shipped the whole stack</h3>
+          <p>React&nbsp;Native · Fastify · Firebase · an Anchor program on Solana · Gemini · Alerta.</p>
+        </div>
+        <div class="card anim" style="background:var(--ink);border-color:var(--ink)">
+          <p style="font-size:42px;font-weight:800;letter-spacing:-.03em;line-height:1.2;color:#fff">
+            Every campus trip — visible, paid on Solana, and&nbsp;<span style="color:var(--g-400)">safe</span>.
+          </p>
+        </div>
+      </div>
+      <div class="ill" data-slot="ILLUSTRATION 11 — the team / campus"><img src="illustrations/11.png" alt=""></div>
+    </div>
+  </section>
+
+  <div id="bar"></div>
+  <div id="count"></div>
+</div>
+
+<div id="notes"></div>
+<div id="help">← → navigate · F fullscreen · N notes · B blank · G kill animation</div>
+
+<script>
+  (function () {
+    "use strict";
+
+    var stage = document.getElementById("stage"),
+      slides = Array.prototype.slice.call(document.querySelectorAll(".slide")),
+      bar = document.getElementById("bar"),
+      count = document.getElementById("count"),
+      notes = document.getElementById("notes"),
+      help = document.getElementById("help");
+
+    var i = 0, frag = 0, notesOn = false, blanked = false;
+
+    /* ---- scale the fixed stage to fill the viewport (letterboxed) ---- */
+    function fit() {
+      var s = Math.min(innerWidth / 1920, innerHeight / 1080);
+      stage.style.transform = "translate(-50%,-50%) scale(" + s + ")";
+    }
+    addEventListener("resize", fit); fit();
+
+    /* ---- ambient travelling route line, appended LAST so the
+            .anim:nth-child stagger above is unaffected ---- */
+    slides.forEach(function (s, n) {
+      var dark = s.classList.contains("dark");
+      var stroke = dark ? "rgba(74,222,128,.20)" : "rgba(22,163,74,.16)";
+      var fx = document.createElement("div");
+      fx.className = "bgfx";
+      // two lines per slide, offset per index so no two slides look identical
+      var y1 = 760 + (n % 3) * 70, y2 = 250 + (n % 4) * 60;
+      fx.innerHTML =
+        '<svg viewBox="0 0 1920 1080" preserveAspectRatio="none" aria-hidden="true">' +
+        '<path d="M-120,' + y1 + ' C420,' + (y1 - 130) + ' 760,' + (y1 + 110) +
+        ' 1180,' + (y1 - 60) + ' S1720,' + (y1 - 190) + ' 2040,' + (y1 - 110) + '"' +
+        ' fill="none" stroke="' + stroke + '" stroke-width="3"' +
+        ' stroke-dasharray="16 20" stroke-linecap="round">' +
+        '<animate attributeName="stroke-dashoffset" from="0" to="-360"' +
+        ' dur="14s" repeatCount="indefinite"/></path>' +
+        '<path d="M-120,' + y2 + ' C520,' + (y2 + 120) + ' 900,' + (y2 - 90) +
+        ' 1400,' + (y2 + 70) + ' S1860,' + (y2 + 150) + ' 2040,' + (y2 + 60) + '"' +
+        ' fill="none" stroke="' + stroke + '" stroke-width="2"' +
+        ' stroke-dasharray="10 26" stroke-linecap="round" opacity=".7">' +
+        '<animate attributeName="stroke-dashoffset" from="0" to="360"' +
+        ' dur="22s" repeatCount="indefinite"/></path>' +
+        '</svg>';
+      s.appendChild(fx);
+    });
+
+    /* ============================================================
+       FX — ONE canvas, ONE loop, only ever drawing the active
+       slide's scene. Cheap on purpose: no shadows, no blurs, no
+       filters, capped particle counts, paused when hidden.
+       Press G to kill it outright if a machine struggles.
+       ============================================================ */
+    var FX = (function () {
+      var W = 1920, H = 1080;
+      var cv = document.createElement("canvas");
+      cv.id = "fx"; cv.width = W; cv.height = H;
+      var ctx = cv.getContext("2d");
+      var raf = null, t = 0, scene = null, dark = false, on = true;
+      var reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+      function g(a) { return dark ? "rgba(74,222,128," + a + ")" : "rgba(22,163,74," + a + ")"; }
+      function gf(a) { return dark ? "rgba(74,222,128," + a + ")" : "rgba(34,197,94," + a + ")"; }
+      function n(a) { return dark ? "rgba(168,190,178," + a + ")" : "rgba(51,68,62," + a + ")"; }
+      function rnd(a, b) { return a + Math.random() * (b - a); }
+
+      /* rounded rect path (not every engine ships ctx.roundRect) */
+      function rr(x, y, w, h, r) {
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.arcTo(x + w, y, x + w, y + h, r);
+        ctx.arcTo(x + w, y + h, x, y + h, r);
+        ctx.arcTo(x, y + h, x, y, r);
+        ctx.arcTo(x, y, x + w, y, r);
+        ctx.closePath();
+      }
+
+      /* ---------- sprites ----------
+         A keke in side view, facing right: domed roof, raked
+         windscreen, open passenger bay, big rear wheel + small
+         front wheel. ~118 x 80 at scale 1.                     */
+      function keke(x, y, s, a) {
+        ctx.save(); ctx.translate(x, y); ctx.scale(s, s);
+        ctx.lineJoin = "round"; ctx.lineCap = "round";
+        ctx.lineWidth = 2.4;
+        ctx.fillStyle = gf(a * .25);
+        ctx.strokeStyle = g(a);
+
+        // Keke main chassis/canopy
+        ctx.beginPath();
+        ctx.moveTo(-45, 0);
+        ctx.lineTo(-45, -30);
+        ctx.bezierCurveTo(-45, -48, -38, -52, -25, -52);
+        ctx.lineTo(8, -52);
+        ctx.bezierCurveTo(24, -52, 33, -42, 38, -25);
+        ctx.lineTo(48, -5);
+        ctx.bezierCurveTo(52, 3, 45, 5, 40, 5);
+        ctx.lineTo(-40, 5);
+        ctx.bezierCurveTo(-45, 5, -45, 0, -45, 0);
+        ctx.closePath();
+        ctx.fill(); ctx.stroke();
+
+        // Passenger cabin opening
+        ctx.fillStyle = gf(a * .1);
+        ctx.beginPath();
+        ctx.moveTo(-33, -42);
+        ctx.lineTo(-2, -42);
+        ctx.bezierCurveTo(2, -42, 4, -40, 4, -36);
+        ctx.lineTo(4, -5);
+        ctx.bezierCurveTo(4, -1, 2, 1, -2, 1);
+        ctx.lineTo(-33, 1);
+        ctx.bezierCurveTo(-37, 1, -39, -1, -39, -5);
+        ctx.lineTo(-39, -36);
+        ctx.bezierCurveTo(-39, -40, -37, -42, -33, -42);
+        ctx.closePath();
+        ctx.fill(); ctx.stroke();
+
+        // Driver cabin opening
+        ctx.beginPath();
+        ctx.moveTo(12, -42);
+        ctx.bezierCurveTo(21, -42, 26, -35, 29, -25);
+        ctx.lineTo(36, -5);
+        ctx.lineTo(12, -5);
+        ctx.closePath();
+        ctx.fill(); ctx.stroke();
+
+        // Passenger silhouette
+        ctx.fillStyle = g(a * .45);
+        ctx.beginPath(); ctx.arc(-18, -20, 5.5, 0, 6.283); ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(-24, -10);
+        ctx.quadraticCurveTo(-18, -16, -12, -10);
+        ctx.lineTo(-12, 1); ctx.lineTo(-24, 1);
+        ctx.closePath(); ctx.fill();
+
+        // Driver silhouette
+        ctx.beginPath(); ctx.arc(18, -18, 5, 0, 6.283); ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(13, -10);
+        ctx.quadraticCurveTo(18, -14, 23, -10);
+        ctx.lineTo(23, -5); ctx.lineTo(13, -5);
+        ctx.closePath(); ctx.fill();
+
+        // Wheels
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = g(a);
+        ctx.fillStyle = g(a);
+        ctx.beginPath(); ctx.arc(-22, 8, 12, 0, 6.283); ctx.stroke();
+        ctx.beginPath(); ctx.arc(-22, 8, 3.5, 0, 6.283); ctx.fill();
+        ctx.beginPath(); ctx.arc(34, 8, 9.5, 0, 6.283); ctx.stroke();
+        ctx.beginPath(); ctx.arc(34, 8, 2.5, 0, 6.283); ctx.fill();
+
+        ctx.restore();
+      }
+
+      /* the town bus — ~150 x 78 at scale 1 */
+      function bus(x, y, s, a) {
+        ctx.save(); ctx.translate(x, y); ctx.scale(s, s);
+        ctx.lineJoin = "round"; ctx.lineCap = "round";
+        ctx.lineWidth = 2.4;
+        ctx.fillStyle = gf(a * .25);
+        ctx.strokeStyle = g(a);
+
+        // Main body
+        ctx.beginPath();
+        ctx.moveTo(-75, -5);
+        ctx.lineTo(-75, -45);
+        ctx.bezierCurveTo(-75, -56, -65, -60, -55, -60);
+        ctx.lineTo(45, -60);
+        ctx.bezierCurveTo(60, -60, 70, -50, 75, -30);
+        ctx.lineTo(80, -10);
+        ctx.bezierCurveTo(82, -2, 75, 4, 65, 4);
+        ctx.lineTo(-65, 4);
+        ctx.bezierCurveTo(-72, 4, -75, -2, -75, -5);
+        ctx.closePath();
+        ctx.fill(); ctx.stroke();
+
+        // Window strip
+        ctx.fillStyle = gf(a * .1);
+        ctx.beginPath();
+        ctx.moveTo(-65, -48);
+        ctx.lineTo(35, -48);
+        ctx.bezierCurveTo(48, -48, 55, -42, 60, -30);
+        ctx.lineTo(62, -20);
+        ctx.lineTo(-65, -20);
+        ctx.closePath();
+        ctx.fill(); ctx.stroke();
+
+        // Window pillars
+        ctx.beginPath();
+        ctx.moveTo(-35, -48); ctx.lineTo(-35, -20);
+        ctx.moveTo(-5, -48); ctx.lineTo(-5, -20);
+        ctx.moveTo(25, -48); ctx.lineTo(25, -20);
+        ctx.moveTo(50, -48); ctx.lineTo(53, -20);
+        ctx.stroke();
+
+        // Wheels
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = g(a);
+        ctx.fillStyle = g(a);
+        ctx.beginPath(); ctx.arc(-45, 6, 13, 0, 6.283); ctx.stroke();
+        ctx.beginPath(); ctx.arc(-45, 6, 4, 0, 6.283); ctx.fill();
+        ctx.beginPath(); ctx.arc(45, 6, 13, 0, 6.283); ctx.stroke();
+        ctx.beginPath(); ctx.arc(45, 6, 4, 0, 6.283); ctx.fill();
+
+        ctx.restore();
+      }
+
+      /* a waiting student — ~26 x 54 at scale 1 */
+      function person(x, y, s, a) {
+        ctx.save(); ctx.translate(x, y); ctx.scale(s, s);
+        ctx.fillStyle = n(a);
+        ctx.beginPath(); ctx.arc(0, -18, 5.5, 0, 6.283); ctx.fill(); // head
+        ctx.beginPath();
+        ctx.moveTo(-6, -8);
+        ctx.quadraticCurveTo(0, -14, 6, -8); // shoulders
+        ctx.lineTo(6, 12);
+        ctx.quadraticCurveTo(0, 16, -6, 12); // bottom rounded
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      }
+      function coin(x, y, r, c, filled) {
+        ctx.beginPath(); ctx.arc(x, y, r, 0, 6.283);
+        if (filled) { ctx.fillStyle = c; ctx.fill(); }
+        else { ctx.strokeStyle = c; ctx.lineWidth = 2.2; ctx.stroke(); }
+      }
+
+      /* ---------- scenes: each owns its particles ---------- */
+      var P = [];
+      var S = {
+        /* cover — sparse, calm traffic drifting across campus */
+        traffic: {
+          init: function () {
+            P = []; var ys = [230, 470, 880];
+            for (var i = 0; i < 3; i++)
+              P.push({ x: rnd(-300, W), y: ys[i], v: rnd(26, 44), s: rnd(.85, 1.1) });
+          },
+          draw: function (d) {
+            ctx.globalAlpha = 1;
+            for (var i = 0; i < P.length; i++) {
+              var p = P[i];
+              p.x += p.v * d; if (p.x > W + 160) p.x = -160;
+              keke(p.x, p.y, p.s, .4);
+            }
+          }
+        },
+        /* problem I — everything converging on one junction, bunching up */
+        converge: {
+          init: function () {
+            P = []; var i;
+            for (i = 0; i < 5; i++) P.push({ k: 1, a: rnd(0, 6.283), r: rnd(420, 980), s: rnd(.8, 1.05) });
+            for (i = 0; i < 6; i++) P.push({ k: 0, a: rnd(0, 6.283), r: rnd(300, 880), s: rnd(.9, 1.2) });
+          },
+          draw: function (d) {
+            ctx.globalAlpha = 1;
+            var cx = 1360, cy = 640;
+            for (var i = 0; i < P.length; i++) {
+              var p = P[i];
+              p.r -= (30 + p.r * .05) * d;                 // slow down as it crowds in
+              if (p.r < 140) { p.r = rnd(820, 1060); p.a = rnd(0, 6.283); }
+              var x = cx + Math.cos(p.a) * p.r, y = cy + Math.sin(p.a) * p.r * .5;
+              var a = Math.min(.6, (p.r - 130) / 900);
+              if (p.k) keke(x, y, p.s, a); else person(x, y, p.s, a * .9);
+            }
+          }
+        },
+        /* problem II — one keke leaving, pings that nobody answers */
+        lost: {
+          init: function () { P = [{ x: 860, o: 1 }, { r: 0 }, { r: 220 }, { r: 440 }]; },
+          draw: function (d) {
+            for (var i = 1; i < 4; i++) {
+              var q = P[i];
+              q.r += 78 * d; if (q.r > 680) q.r = 0;
+              ctx.globalAlpha = Math.max(0, 1 - q.r / 680) * .3;
+              ctx.strokeStyle = g(1); ctx.lineWidth = 2.8;
+              ctx.beginPath(); ctx.arc(620, 700, q.r, 0, 6.283); ctx.stroke();
+            }
+            ctx.globalAlpha = 1;
+            var p = P[0];
+            p.x += 62 * d; p.o -= .13 * d;
+            if (p.o <= 0) { p.x = 780; p.o = 1; }
+            keke(p.x, 700, 1.3, Math.max(0, p.o) * .68);
+          }
+        },
+        /* solution — orderly lanes, everything moving as it should */
+        lanes: {
+          init: function () {
+            P = []; var ys = [235, 445, 690, 915];
+            for (var i = 0; i < 7; i++)
+              P.push({ x: rnd(-400, W), y: ys[i % 4], v: rnd(54, 76), b: (i % 4) === 2, s: .82 });
+          },
+          draw: function (d) {
+            ctx.globalAlpha = 1;
+            for (var i = 0; i < P.length; i++) {
+              var p = P[i];
+              p.x += p.v * d; if (p.x > W + 180) p.x = -180;
+              if (p.b) bus(p.x, p.y, p.s, .38); else keke(p.x, p.y, p.s, .42);
+            }
+          }
+        },
+        /* how it works — four riders merge into one keke, then it drives off */
+        pool: {
+          init: function () { P = [{ t: 0 }]; },
+          draw: function (d) {
+            ctx.globalAlpha = 1;
+            var s = P[0]; s.t += d * .2; if (s.t > 1) s.t = 0;
+            var lane = 730, k = s.t;
+            for (var i = 0; i < 4; i++) {                    // riders sliding onto the lane
+              var off = i * .06, p = Math.max(0, Math.min(1, (k - off) / .45));
+              var sy = 430 + i * 115, x = 470 + p * 380;
+              var y = sy + (lane - sy) * p;
+              person(x, y, 1.15, .55 * (1 - Math.max(0, (k - .5) / .3)));
+            }
+            var kx = 900 + Math.max(0, (k - .45) / .55) * 950;   // the keke leaves full
+            keke(kx, lane, 1.25, .6);
+          }
+        },
+        /* AI safety — SOS pulse, then a packet flying to the security group */
+        radar: {
+          init: function () { P = [{ r: 0 }, { r: 200 }, { r: 400 }, { t: 0 }]; },
+          draw: function (d) {
+            for (var i = 0; i < 3; i++) {
+              var q = P[i];
+              q.r += 96 * d; if (q.r > 560) q.r = 0;
+              ctx.globalAlpha = Math.max(0, 1 - q.r / 560) * .22;
+              ctx.strokeStyle = g(1); ctx.lineWidth = 2.6;
+              ctx.beginPath(); ctx.arc(430, 640, q.r, 0, 6.283); ctx.stroke();
+            }
+            var s = P[3]; s.t += d * .42; if (s.t > 1) s.t = 0;
+            var e = s.t, x = 430 + (1420 - 430) * e, y = 640 - Math.sin(e * Math.PI) * 300;
+            ctx.globalAlpha = .28; ctx.fillStyle = g(1);
+            ctx.beginPath(); ctx.arc(x, y, 7, 0, 6.283); ctx.fill();
+            ctx.globalAlpha = .18; ctx.strokeStyle = g(1); ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.arc(1420, 340, 16 + Math.sin(t * 3) * 4, 0, 6.283); ctx.stroke();
+          }
+        },
+        /* solana pay — naira flows in, becomes tokens halfway across */
+        tokens: {
+          init: function () {
+            P = []; for (var i = 0; i < 10; i++)
+              P.push({ x: rnd(-300, W), y: rnd(200, 900), v: rnd(120, 210), r: rnd(5, 9) });
+          },
+          draw: function (d) {
+            for (var i = 0; i < P.length; i++) {
+              var p = P[i];
+              p.x += p.v * d; if (p.x > W + 40) { p.x = -40; p.y = rnd(200, 900); }
+              var conv = p.x > 900;
+              ctx.globalAlpha = conv ? .14 : .09;
+              coin(p.x, p.y, p.r, g(1), conv);
+            }
+          }
+        },
+        /* solana vault — value spiralling inward and locking away */
+        vault: {
+          init: function () {
+            P = []; for (var i = 0; i < 10; i++)
+              P.push({ a: rnd(0, 6.283), r: rnd(240, 640), v: rnd(.5, 1.1), s: rnd(4, 8) });
+          },
+          draw: function (d) {
+            var cx = 1400, cy = 560;
+            for (var i = 0; i < P.length; i++) {
+              var p = P[i];
+              p.a += p.v * d; p.r -= 62 * d;
+              if (p.r < 60) { p.r = rnd(520, 700); p.a = rnd(0, 6.283); }
+              ctx.globalAlpha = Math.min(.22, (p.r - 50) / 640 * .35);
+              coin(cx + Math.cos(p.a) * p.r, cy + Math.sin(p.a) * p.r * .58, p.s, g(1), true);
+            }
+            ctx.globalAlpha = .07; ctx.strokeStyle = g(1); ctx.lineWidth = 2;
+            for (var k = 0; k < 2; k++) {
+              ctx.save(); ctx.translate(cx, cy); ctx.rotate(t * (.12 + k * .07));
+              ctx.beginPath(); ctx.ellipse(0, 0, 300 + k * 130, 175 + k * 76, 0, 0, 6.283);
+              ctx.stroke(); ctx.restore();
+            }
+          }
+        },
+        /* claims — the vault paying back out to a driver */
+        payout: {
+          init: function () {
+            P = []; for (var i = 0; i < 9; i++)
+              P.push({ a: rnd(-.7, .7), r: rnd(60, 760), v: rnd(150, 250), s: rnd(4, 8) });
+          },
+          draw: function (d) {
+            var cx = 430, cy = 620;
+            for (var i = 0; i < P.length; i++) {
+              var p = P[i];
+              p.r += p.v * d;
+              if (p.r > 1180) { p.r = 60; p.a = rnd(-.7, .7); }
+              ctx.globalAlpha = Math.max(0, 1 - p.r / 1180) * .16;
+              coin(cx + Math.cos(p.a) * p.r, cy + Math.sin(p.a) * p.r, p.s, g(1), true);
+            }
+            ctx.globalAlpha = .09; ctx.strokeStyle = g(1); ctx.lineWidth = 2.4;
+            ctx.beginPath(); ctx.arc(cx, cy, 40 + Math.sin(t * 2) * 6, 0, 6.283); ctx.stroke();
+          }
+        },
+        /* business — demand spikes, and more kekes come online */
+        surge: {
+          init: function () {
+            P = []; for (var i = 0; i < 10; i++) P.push({ ph: i * .62 });
+            for (var j = 0; j < 4; j++) P.push({ k: 1, x: rnd(-300, W), v: rnd(60, 96), y: rnd(240, 400) });
+          },
+          draw: function (d) {
+            for (var i = 0; i < 10; i++) {
+              var h = 60 + (Math.sin(t * .9 + P[i].ph) * .5 + .5) * 250;
+              ctx.globalAlpha = .1; ctx.fillStyle = g(1);
+              ctx.fillRect(190 + i * 108, H - 130 - h, 46, h);
+            }
+            ctx.globalAlpha = 1;
+            for (var j = 10; j < P.length; j++) {
+              var p = P[j];
+              p.x += p.v * d; if (p.x > W + 160) p.x = -160;
+              keke(p.x, p.y, .95, .45);
+            }
+          }
+        },
+        /* close — a calm procession heading off campus */
+        procession: {
+          init: function () {
+            P = []; for (var i = 0; i < 3; i++)
+              P.push({ x: -260 - i * 330, y: 845 - i * 30, v: 36 + i * 6, s: 1.05 + i * .08 });
+          },
+          draw: function (d) {
+            ctx.globalAlpha = 1;
+            for (var i = 0; i < P.length; i++) {
+              var p = P[i];
+              p.x += p.v * d; if (p.x > W + 200) p.x = -200;
+              keke(p.x, p.y, p.s, .48);
+            }
+          }
+        }
+      };
+
+      var ORDER = ["traffic", "converge", "lost", "lanes", "pool",
+        "radar", "tokens", "vault", "payout", "surge", "procession"];
+
+      var last = 0;
+      function loop(ts) {
+        raf = requestAnimationFrame(loop);
+        var d = Math.min(.05, (ts - last) / 1000 || 0); last = ts; t += d;
+        ctx.clearRect(0, 0, W, H);
+        if (scene) scene.draw(d);
+        ctx.globalAlpha = 1;
+      }
+
+      return {
+        /* move the single canvas into the active slide and swap the scene */
+        mount: function (slideEl, index) {
+          if (!on || reduce) return;
+          var host = slideEl.querySelector(".bgfx") || slideEl;
+          if (cv.parentNode !== host) host.appendChild(cv);
+          dark = slideEl.classList.contains("dark");
+          scene = S[ORDER[index] || "traffic"];
+          if (scene) scene.init();
+          if (!raf) { last = performance.now(); raf = requestAnimationFrame(loop); }
+        },
+        toggle: function () {
+          on = !on;
+          if (on) return true;
+          if (raf) { cancelAnimationFrame(raf); raf = null; }
+          scene = null; ctx.clearRect(0, 0, W, H);
+          if (cv.parentNode) cv.parentNode.removeChild(cv);
+          return false;
+        },
+        pause: function () { if (raf) { cancelAnimationFrame(raf); raf = null; } },
+        resume: function () { if (on && !reduce && !raf && scene) { last = performance.now(); raf = requestAnimationFrame(loop); } }
+      };
+    })();
+
+    // don't burn cycles while the deck isn't on screen
+    document.addEventListener("visibilitychange", function () {
+      if (document.hidden) FX.pause(); else FX.resume();
+    });
+
+    function frags(n) {
+      return Array.prototype.slice.call(slides[n].querySelectorAll("[data-frag]"));
+    }
+
+    function render() {
+      slides.forEach(function (s, n) { s.classList.toggle("active", n === i); });
+      frags(i).forEach(function (el, n) { el.classList.toggle("shown", n < frag); });
+
+      bar.style.width = (i / (slides.length - 1) * 100) + "%";
+      count.textContent = String(i + 1).padStart(2, "0") + " / " + slides.length;
+      count.style.color = slides[i].classList.contains("dark") ? "#A8BEB2" : "#66776F";
+
+      notes.innerHTML = "<b>Slide " + (i + 1) + " — speaker note</b>" +
+        (slides[i].dataset.note || "");
+
+      FX.mount(slides[i], i);
+    }
+
+    function go(n, built) {
+      if (n < 0 || n >= slides.length) return;
+      i = n;
+      frag = built ? frags(n).length : 0;
+      render();
+    }
+
+    function next() {
+      if (frag < frags(i).length) { frag++; render(); return; }  // build within slide
+      if (i < slides.length - 1) go(i + 1, false);
+    }
+
+    function prev() {
+      if (frag > 0) { frag--; render(); return; }
+      if (i > 0) go(i - 1, true);                               // land fully built
+    }
+
+    addEventListener("keydown", function (e) {
+      var k = e.key;
+      if (k === "ArrowRight" || k === " " || k === "PageDown" || k === "Enter") { e.preventDefault(); next(); }
+      else if (k === "ArrowLeft" || k === "PageUp" || k === "Backspace") { e.preventDefault(); prev(); }
+      else if (k === "Home") { e.preventDefault(); go(0, false); }
+      else if (k === "End") { e.preventDefault(); go(slides.length - 1, true); }
+      else if (k === "f" || k === "F") {
+        if (document.fullscreenElement) document.exitFullscreen();
+        else document.documentElement.requestFullscreen();
+      }
+      else if (k === "n" || k === "N") { notesOn = !notesOn; notes.classList.toggle("on", notesOn); }
+      else if (k === "b" || k === "B") {
+        blanked = !blanked;
+        stage.style.visibility = blanked ? "hidden" : "visible";
+      }
+      else if (k === "g" || k === "G") {        // panic switch: kill all motion
+        var live = FX.toggle();
+        if (live) FX.mount(slides[i], i);
+        help.style.opacity = "1";
+        help.textContent = live ? "background animation ON" : "background animation OFF";
+        setTimeout(function () { help.style.opacity = "0"; }, 1400);
+      }
+    });
+
+    addEventListener("click", function (e) {
+      if (e.clientX < innerWidth * 0.12) prev(); else next();
+    });
+
+    /* ---- swap in illustrations when they exist; keep the slot clean if not ---- */
+    Array.prototype.forEach.call(document.querySelectorAll(".ill"), function (box) {
+      var img = box.querySelector("img");
+      if (!img) { box.classList.add("empty"); return; }
+      img.addEventListener("error", function () { box.classList.add("empty"); });
+      if (img.complete && img.naturalWidth === 0) box.classList.add("empty");
+    });
+
+    /* ---- cover map: the 33 real FUTO stop coordinates ---- */
+    var STOPS = [
+      [5.386519, 7.008486], [5.385540, 7.006347], [5.384875, 7.005164], [5.384471, 7.004188],
+      [5.384351, 7.003899], [5.384304, 7.002635], [5.383334, 7.001899], [5.385213, 7.000606],
+      [5.386227, 7.000412], [5.387154, 7.000621], [5.385980, 7.000686], [5.387865, 6.999618],
+      [5.388535, 6.999605], [5.389219, 6.999353], [5.383962, 7.000033], [5.384204, 6.999218],
+      [5.384939, 6.998664], [5.384238, 6.998502], [5.383481, 6.997651], [5.385268, 6.998764],
+      [5.381822, 6.997474], [5.382098, 6.996923], [5.382007, 6.998515], [5.380899, 6.997891],
+      [5.379418, 6.997072], [5.380404, 6.998116], [5.379903, 6.998287], [5.380218, 6.996708],
+      [5.380532, 6.995494], [5.381824, 6.995680], [5.381077, 6.994916], [5.382345, 6.994672],
+      [5.383222, 6.996258]
+    ];
+
+    (function drawMap() {
+      var svg = document.getElementById("map");
+      if (!svg) return;
+      var W = 730, H = 520, PAD = 44;
+
+      var lats = STOPS.map(function (s) { return s[0]; }),
+        lngs = STOPS.map(function (s) { return s[1]; });
+      var minLa = Math.min.apply(null, lats), maxLa = Math.max.apply(null, lats),
+        minLo = Math.min.apply(null, lngs), maxLo = Math.max.apply(null, lngs);
+
+      // preserve true geographic aspect so the campus isn't stretched
+      var spanLo = maxLo - minLo, spanLa = maxLa - minLa;
+      var k = Math.min((W - PAD * 2) / spanLo, (H - PAD * 2) / spanLa);
+      var offX = (W - spanLo * k) / 2, offY = (H - spanLa * k) / 2;
+
+      var pts = STOPS.map(function (s) {
+        return [offX + (s[1] - minLo) * k,      // lng → x
+        offY + (maxLa - s[0]) * k];    // lat → y (north up)
+      });
+
+      var out = '<polyline points="' + pts.map(function (p) {
+        return p[0].toFixed(1) + "," + p[1].toFixed(1);
+      }).join(" ") + '" fill="none" stroke="#16A34A" stroke-opacity=".24" ' +
+        'stroke-width="2.5" stroke-dasharray="7 7" stroke-linejoin="round"/>';
+
+      pts.forEach(function (p, n) {
+        var big = (n % 7 === 0);
+        out += '<circle cx="' + p[0].toFixed(1) + '" cy="' + p[1].toFixed(1) + '" ' +
+          'r="' + (big ? 9 : 5) + '" fill="' + (big ? "#16A34A" : "#22C55E") + '" ' +
+          'fill-opacity="' + (big ? ".95" : ".5") + '">' +
+          '<animate attributeName="fill-opacity" values="' +
+          (big ? ".95;.5;.95" : ".5;.22;.5") + '" dur="' +
+          (3.2 + (n % 5) * 0.5) + 's" begin="' + (n * 0.09) + 's" ' +
+          'repeatCount="indefinite"/></circle>';
+      });
+
+      svg.innerHTML = out;
+    })();
+
+    render();
+    setTimeout(function () { help.style.opacity = "0"; }, 6000);
+  })();
+</script>
