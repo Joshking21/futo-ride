@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import { Calendar, Home, User, Wallet } from "lucide-react-native";
+import { Calendar, Home, User, Wallet, Coins } from "lucide-react-native";
 import React from "react";
 import { Platform, View } from "react-native";
 
@@ -65,6 +65,21 @@ export default function DriverLayout() {
           tabBarIcon: ({ color, focused }) => (
             <View className={focused ? " px-3 py-1" : "px-3 py-1"}>
               <Calendar
+                color={color}
+                size={focused ? 25 : 22}
+                strokeWidth={2}
+              />
+            </View>
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="treasury"
+        options={{
+          title: "Treasury",
+          tabBarIcon: ({ color, focused }) => (
+            <View className={focused ? " px-3 py-1" : "px-3 py-1"}>
+              <Coins
                 color={color}
                 size={focused ? 25 : 22}
                 strokeWidth={2}

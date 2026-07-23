@@ -103,7 +103,7 @@ export default function RiderHome() {
       <View className="flex-1 relative z-10 bg-surface-container-low">
         {/* Map Background */}
        
-        <LiveMapScreen ref={mapRef} />
+        {/* <LiveMapScreen ref={mapRef} /> */}
         
 
         <LinearGradient
