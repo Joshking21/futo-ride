@@ -1,6 +1,6 @@
 [build]
   # Tell Netlify where the sub-project lives relative to the root
-  base = "apps/website" # or "packages/website", wherever your folder is
+  base = "website" # or "packages/website", wherever your folder is
 
   # The command to build your website (run relative to the base directory)
   command = "npm run build"
