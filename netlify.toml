@@ -1,5 +1,4 @@
 [build]
   # Empty string tells Netlify there is no NPM build step
   command = ""
-  publish = "website"
-  
+  publish = "pitch"
