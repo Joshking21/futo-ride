@@ -1,3 +1,5 @@
 [build]
-  # Tell Netlify to serve files directly out of your website folder
+  # Empty string tells Netlify there is no NPM build step
+  command = ""
   publish = "website"
+  
